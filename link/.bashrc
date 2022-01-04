@@ -1,14 +1,14 @@
-# Prioritize SB1 stuff if present
-if [ -d  /home/sb1a.sparebank1.no ]; then
-  # Source global definitions
-  if [ -f /etc/bashrc ]; then
-	   . /etc/bashrc
-  fi
+# # Prioritize SB1 stuff if present
+# if [ -d  /home/sb1a.sparebank1.no ]; then
+#   # Source global definitions
+#   if [ -f /etc/bashrc ]; then
+# 	   . /etc/bashrc
+#   fi
 
-  # User specific aliases and functions
-  [ -f /home/sb1a.sparebank1.no/a504a4l/opt/etc/shrc ] && . /home/sb1a.sparebank1.no/a504a4l/opt/etc/shrc
+#   # User specific aliases and functions
+#   [ -f /home/sb1a.sparebank1.no/a504a4l/opt/etc/shrc ] && . /home/sb1a.sparebank1.no/a504a4l/opt/etc/shrc
 
-fi
+# fi
 
 # Where the magic happens.
 export DOTFILES=~/.dotfiles

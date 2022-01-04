@@ -20,8 +20,8 @@ function brew_install_casks() {
 casks=(
   # Applications
 #  flowsync
-  logitech-myharmony
-  sonos
+#  logitech-myharmony
+#  sonos
   steam
 )
 

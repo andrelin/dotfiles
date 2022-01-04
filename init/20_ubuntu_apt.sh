@@ -29,14 +29,15 @@ apt_packages+=(
   curl
   git-core
   htop
-  sl
+#  sl
+  the-silver-searcher
+  tree
   vim
   zsh
-  thefuck
-  ruby-full
-  neovim
-  tree
-  keychain
+#  thefuck
+#  ruby-full
+#  neovim
+#  keychain
 )
 
 # https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-ansible-on-ubuntu-16-04

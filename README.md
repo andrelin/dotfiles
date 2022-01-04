@@ -1,8 +1,8 @@
-# Dotfiles ![](https://github.com/runesto/dotfiles/workflows/Test%20dotfiles%20installation%20on%20mac/badge.svg)
+# Dotfiles ![](https://github.com/andrelin/dotfiles/workflows/Test%20dotfiles%20installation%20on%20mac/badge.svg)
 
 My macOS / Ubuntu dotfiles.
 
-Shamelessly copied from https://github.com/oyvinmar/dotfiles (who again copied from https://github.com/cowboy/dotfiles, who again... yeah, you get the picture...)
+Shamelessly copied from https://github.com/runesto/dotfiles
 
 Some notable tweaks:
  - Removed oyvinmars additions for Volta, Teamocil and Hyper
@@ -106,12 +106,12 @@ Why? Because I often completely break this repo while updating. Which means that
 
 1. [Read my gently-worded note](#heed-this-critically-important-warning-before-you-install)
 1. Fork this repo
-1. Open a terminal/shell and do this (change `runesto` and `master` as appropriate):
+1. Open a terminal/shell and do this (change `andrelin` and `master` as appropriate):
 
 #### Ubuntu
 
 ```sh
-export DOTFILES_GH_USER=runesto
+export DOTFILES_GH_USER=andrelin
 export DOTFILES_GH_BRANCH=master
 bash -c "$(wget -qO- https://raw.github.com/$DOTFILES_GH_USER/dotfiles/$DOTFILES_GH_BRANCH/bin/dotfiles)" && source ~/.bashrc
 ```
@@ -119,7 +119,7 @@ bash -c "$(wget -qO- https://raw.github.com/$DOTFILES_GH_USER/dotfiles/$DOTFILES
 #### macOS
 
 ```sh
-export DOTFILES_GH_USER=runesto
+export DOTFILES_GH_USER=andrelin
 export DOTFILES_GH_BRANCH=master
 bash -c "$(curl -fsSL https://raw.github.com/$DOTFILES_GH_USER/dotfiles/$DOTFILES_GH_BRANCH/bin/dotfiles)" && source ~/.bashrc
 ```
@@ -133,13 +133,13 @@ There's a lot of stuff that requires admin access via `sudo`, so be warned that 
 #### Ubuntu
 
 ```sh
-bash -c "$(wget -qO- https://raw.github.com/runesto/dotfiles/master/bin/dotfiles)" && source ~/.bashrc
+bash -c "$(wget -qO- https://raw.github.com/andrelin/dotfiles/master/bin/dotfiles)" && source ~/.bashrc
 ```
 
 #### macOS
 
 ```sh
-bash -c "$(curl -fsSL https://raw.github.com/runesto/dotfiles/master/bin/dotfiles)" && source ~/.bashrc
+bash -c "$(curl -fsSL https://raw.github.com/andrelin/dotfiles/master/bin/dotfiles)" && source ~/.bashrc
 ```
 
 ## Aliases and Functions
@@ -156,5 +156,5 @@ In addition to the aforementioned [dotfiles][dotfiles] script, there are a few o
 
 ## License
 
-Copyright (c) 2019 Rune Storløpa
+Copyright (c) 2022 Andreas Lind-Johansen
 Licensed under the MIT license.

@@ -20,5 +20,6 @@ brew doctor
 brew update
 
 e_header "Tapping extra casks"
-brew tap homebrew/cask-drivers # To install cask sonos
-brew tap homebrew/cask-versions # For old temurin versions
+brew tap homebrew/cask-fonts    # For more fonts
+brew tap homebrew/cask-drivers  # For driver casks
+brew tap homebrew/cask-versions # For old versions

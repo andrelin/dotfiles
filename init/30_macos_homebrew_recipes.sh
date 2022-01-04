@@ -4,13 +4,10 @@ is_macos || return 1
 # Exit if Homebrew is not installed.
 [[ ! "$(type -P brew)" ]] && e_error "Brew recipes need Homebrew to install." && return 1
 
-
-
-
 # Install Homebrew recipes.
 function brew_install_recipes() {
   recipes=($(setdiff "${recipes[*]}" "$(brew list --formulae)"))
-  if (( ${#recipes[@]} > 0 )); then
+  if ((${#recipes[@]} > 0)); then
     e_header "Installing Homebrew recipes/casks: ${recipes[*]}"
     for recipe in "${recipes[@]}"; do
       brew install $recipe
@@ -22,7 +19,7 @@ function brew_install_recipes() {
 # Install Homebrew casks.
 function brew_install_casks() {
   casks=($(setdiff "${casks[*]}" "$(brew list --casks)"))
-  if (( ${#casks[@]} > 0 )); then
+  if ((${#casks[@]} > 0)); then
     e_header "Installing Homebrew casks: ${casks[*]}"
     for cask in "${casks[@]}"; do
       brew install --cask $cask
@@ -31,31 +28,48 @@ function brew_install_casks() {
   fi
 }
 
+# Install Homebrew casks.
+function brew_install_fonts() {
+  fonts=($(setdiff "${fonts[*]}" "$(brew list --fonts)"))
+  if ((${#fonts[@]} > 0)); then
+    e_header "Installing Homebrew fonts: ${fonts[*]}"
+    for font in "${fonts[@]}"; do
+      brew install --cask $font
+    done
+    brew cleanup
+  fi
+}
+
 # Homebrew recipes
 recipes=(
-  act
-  aws-iam-authenticator
-  awscli
+  #  act
+  #  aws-iam-authenticator
+  #  awscli
   bash-completion
-  bat
+  #  bat
   curl
-  dos2unix
+  #  dos2unix
   git
   git-secret
   gnupg
+  gnu-units
+  google-java-format
   gradle
-  httpie
+  #  httpie
+  java11
   jenv
-  # kubernetes-cli # (part of Docker-cask)
+  kube-ps1
   kubectx
-  # kubernetes-helm@2.11.0 #Ruter
+  kubernetes-cli # (part of Docker-cask)
   maven
   mas
   n
-  # datawire/blackbird/telepresence # Ruter
+  the_silver_searcher
   tree
   watch
   wget
+  zsh
+  zsh-syntax-highlighting
 )
 
 brew_install_recipes
@@ -64,39 +78,52 @@ brew_install_recipes
 casks=(
   # Applications
   1password
+  aerial
   alfred
-  asana
+  #  asana
+  bettertouchtool
+  discord
+  #  disk-inventory-x
   docker
-  disk-inventory-x
-  dropbox
-  evernote
+  #  dropbox
+  #  evernote
   firefox
-  flux
-  freemind
+  #  flux
+  #  freemind
   google-chrome
+  guitar-pro
+  harvest
   intellij-idea
   intellij-idea-ce
   iterm2
-  kindle
-  kiwi-for-gmail
-  mailplane
-  # macpass # Ruter
-  microsoft-office
-  # osxfuse # Telepresence
-  proxifier # TietoEvry
-  postman
-  remember-the-milk
-  skype
+  #  kindle
+  #  kiwi-for-gmail
+  #  mailplane
+  #  microsoft-office
+  microsoft-teams
+  musescore
+  pocket-casts
+  #  postman
+  #  remember-the-milk
+  rectangle
+  #  skype
   slack
-  snagit
+  #  snagit
   spotify
+  steam
   sublime-text
-  temurin11 # TietoEvry
-  the-unarchiver
+  #  tableplus
+  #  the-unarchiver
   vlc
-  zoom
+  whatsapp
+  #  zoom
 )
 
 brew_install_casks
 
-# Misc cleanup!
+fonts=(
+  font-fontawesome
+  font-jetbrains-mono
+)
+
+brew_install_fonts

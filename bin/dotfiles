@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 [[ "$1" == "source" ]] || \
 
-echo 'Dotfiles - runesto'
+echo 'Dotfiles - andrelin'
 
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then cat <<HELP
 
 Usage: $(basename "$0")
 
 See the README for documentation.
-https://github.com/runesto/dotfiles
+https://github.com/andrelin/dotfiles
 
 HELP
 exit; fi
@@ -415,11 +415,11 @@ while true; do sudo -n true; sleep 10; kill -0 "$$" || exit; done 2>/dev/null &
 
 # Install a custom sudoers file that allows "sudo apt-get" to be executed
 # without asking for a password.
-sudoers_file=/etc/sudoers.d/runesto-dotfiles
+sudoers_file=/etc/sudoers.d/andrelin-dotfiles
 # Contents of the sudoers file.
 function sudoers_text() {
   cat <<EOF
-# This file was created by runesto's dotfiles script on $(date -I)
+# This file was created by andrelin's dotfiles script on $(date -I)
 # (which will never update it, only recreate it if it's missing)
 # Sudoers reference: http://ubuntuforums.org/showthread.php?t=1132821
 
@@ -490,7 +490,7 @@ if [[ ! -d $DOTFILES ]]; then
   # Dotfiles directory doesn't exist? Clone it!
   e_header "Downloading dotfiles"
   git clone --branch ${DOTFILES_GH_BRANCH:-master} --recursive \
-    git://github.com/${DOTFILES_GH_USER:-runesto}/dotfiles.git $DOTFILES
+    git://github.com/${DOTFILES_GH_USER:-andrelin}/dotfiles.git $DOTFILES
   cd $DOTFILES
 elif [[ "$1" != "restart" ]]; then
   # Make sure we have the latest files.
@@ -543,7 +543,7 @@ function is_git_repo_ssh() {
 cd $DOTFILES
 if ! is_git_repo_ssh; then
   echo -e "\ndotfiles git-remote isn't ssh. Trying to change."
-  git remote set-url origin git@github.com:${DOTFILES_GH_USER:-runesto}/dotfiles.git
+  git remote set-url origin git@github.com:${DOTFILES_GH_USER:-andrelin}/dotfiles.git
   if ! is_git_repo_ssh; then
     e_error "Tried to make git-remote ssh. Didn't work."
   else

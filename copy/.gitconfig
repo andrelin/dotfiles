@@ -1,8 +1,8 @@
 [user]
-  name = Rune Storløpa
+  name = Andreas Lind-Johansen
   email = <>
 [core]
-  editor = vim
+  editor = subl
   excludesfile = ~/.gitignore_global
   precomposeunicode = true
 [alias]
@@ -28,7 +28,6 @@
 [help]
   autocorrect = 1
 
-
 [apply]
   whitespace = strip
 
@@ -44,5 +43,8 @@
 [includeIf "gitdir:~/src/private/"]
   path = ~/.gitconfig_private
 
-[includeIf "gitdir:~/src/tietoevry/"]
-  path = ~/.gitconfig_tietoevry
+[includeIf "gitdir:~/src/spk/"]
+  path = ~/.gitconfig_spk
+
+[includeIf "gitdir:~/src/uptime/"]
+  path = ~/.gitconfig_uptime

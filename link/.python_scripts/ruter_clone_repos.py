@@ -18,7 +18,7 @@ repos = {
     'TAAS'
     }
 
-root_dir = "/Users/runestorlopa/src/ruter/"
+root_dir = "/Users/andrelin/src/ruter/"
 
 for repo_to_clone in repos:
     if os.path.exists(root_dir + repo_to_clone):

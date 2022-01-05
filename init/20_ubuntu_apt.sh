@@ -25,9 +25,12 @@ function add_ppa() {
 
 # Misc.
 apt_packages+=(
+  ansible
   build-essential
   curl
+  git
   git-core
+  git-secret
   htop
 #  sl
   silversearcher-ag

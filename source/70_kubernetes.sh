@@ -52,12 +52,12 @@ kafkatools-msk(){
 
 
 # TODO: Generify port fwd commands
-def fwd-jenkins() {
+function fwd-jenkins() {
     export JENKINS_POD_NAME=$(kubectl get pods --namespace core -l "app.kubernetes.io/component=jenkins-master" -l "app.kubernetes.io/instance=jenkins" -o jsonpath="{.items[0].metadata.name}")
     kubectl --namespace core port-forward $JENKINS_POD_NAME 8081:8080
 }
 
-def fwd-chartmuseum() {
+function fwd-chartmuseum() {
     export CHARTMUSEUM_POD_NAME=$(kubectl get pods --namespace core -l "app=chartmuseum" -l "release=chartmuseum" -o jsonpath="{.items[0].metadata.name}")
     kubectl --namespace core port-forward $CHARTMUSEUM_POD_NAME 8080:8080
 }

@@ -1,0 +1,11 @@
+- name: Add Microsoft public GPG key
+  get_url:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    dest: /usr/share/keyrings/
+    force: yes
+  become: true
+
+- name: Add Microsoft Ubuntu repository
+  apt_repository:
+    repo: deb [arch=amd64, signed-by=/usr/share/keyrings/microsoft.asc] https://packages.microsoft.com/{{ ansible_distribution|lower }}/{{ ansible_distribution_version }}/prod {{ ansible_distribution_release }} main
+  become: true

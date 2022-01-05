@@ -1,0 +1,20 @@
+- name: Add GPG
+  package:
+    name: gpg
+  become: true
+
+- name: Download docker public GPG key
+  get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /tmp/docker-public-key.gpg
+  become: true
+
+- name: Add Docker public GPG key to keyrings
+  shell: |
+    gpg --dearmor --yes -o /usr/share/keyrings/docker-archive-keyring.gpg /tmp/docker-public-key.gpg
+  become: true
+
+- name: Add Docker Ubuntu repository
+  apt_repository:
+    repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+  become: true

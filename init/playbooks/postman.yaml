@@ -1,0 +1,27 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Download postman
+    get_url:
+      url: https://dl.pstmn.io/download/latest/linux64
+      dest: /tmp/postman.tar.gz
+
+  - name: Unpack and link postman
+    shell: |
+      rm -rf /opt/Postman
+      tar -xzf /tmp/postman.tar.gz -C /opt
+      rm /tmp/postman.tar.gz
+      ln -s /opt/Postman/Postman /usr/bin/postman
+    become: true
+
+  - name: Create Unity desktop filedir
+    file:
+      path:  ~/.local/share/applications
+      state: directory
+      mode: 0755
+  - name: Create Unity Desktop file
+    copy:
+      src: ../files/postman.desktop
+      dest: ~/.local/share/applications/postman.desktop
+      mode: 0644
+

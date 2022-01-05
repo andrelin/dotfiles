@@ -1,0 +1,69 @@
+---
+- hosts: localhost
+  tasks:
+    - import_tasks: ../tasks/add-docker-repo.yaml
+
+    - name: Remove old docker versions
+      package:
+        name:
+          - docker
+          - docker-engine
+          - docker.io
+          - containerd
+          - runc
+        state: absent
+      become: true
+
+    - name: Install Docker
+      package:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: latest
+      become: true
+
+    - name: Create /etc/docker
+      file:
+        path: /etc/docker
+        state: directory
+      become: true
+
+      # Melder inn i docker-gruppen for å slippe sudo
+      # lookup('env','USER') fungerer ikke fordi i docker-testen får ikke brukeren $USER satt
+    - name: Get username
+      shell: whoami
+      register: username
+    - name: Adding existing user {{username.stdout}} to group docker
+      user: name={{username.stdout}}
+        groups=docker
+        append=yes
+      become: true
+
+    - name: Configure docker for SPK LAN
+      copy:
+        dest: "/etc/docker/daemon.json"
+        content: |
+          {
+            "insecure-registries": ["old-dockerhub.spk.no:5000"],
+            "dns": ["10.150.10.11", "10.150.10.12", "10.150.10.13"]
+          }
+      become: true
+
+    - name: Download Docker Compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/1.29.2/docker-compose-{{ ansible_system }}-{{ ansible_architecture}}
+        dest: /usr/local/bin/docker-compose
+      become: true
+
+    - name: Install Docker Compose
+      file:
+        path: /usr/local/bin/docker-compose
+        mode: '0755'
+      become: true
+
+    - name: Download Docker Compose bash completion
+      get_url:
+        url: https://raw.githubusercontent.com/docker/compose/1.29.2/contrib/completion/bash/docker-compose
+        dest: /etc/bash_completion.d/docker-compose
+      become: true

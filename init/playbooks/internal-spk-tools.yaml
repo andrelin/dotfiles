@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  tasks:
+    - import_tasks: ../tasks/add-spk-repo.yaml
+
+    - name: Install internal SPK tools
+      apt:
+        name:
+        - appconfig-gen
+        - log4bash
+        - runbatch
+        - spkdeploy
+        state: latest
+      become: true

@@ -1,0 +1,22 @@
+---
+- hosts: localhost
+  tasks:
+    - name: Install Ubuntu packages
+      package:
+        name: "{{item}}"
+        state: latest
+      become: true
+      with_items:
+        - apparmor
+        - curl
+        - clipit
+        - exuberant-ctags
+        - gnome-shell-extensions
+        - htop
+        - make
+        - python3-apt
+        - python3-smbc # for printing
+        - smbclient    # printing og nettverksstasjoner
+        - vim
+        - wget
+        

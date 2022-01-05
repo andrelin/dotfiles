@@ -1,0 +1,36 @@
+---
+# https://docs.azul.com/core/zulu-openjdk/install/debian#install-from-azul-apt-repository
+- hosts: localhost
+  tasks:
+
+    - name: Install dependencies for adding Azul Zulu repo
+      apt:
+        name:
+        - gnupg
+        - curl
+      become: true
+
+    - name: Add public keys for Azul Zulu repository
+      apt_key:
+        keyserver: hkp://keyserver.ubuntu.com:80
+        id: B1998361219BD9C9
+      become: true
+
+    - name: Add Azul Zulu repository
+      apt:
+        deb: https://cdn.azul.com/zulu/bin/zulu-repo_1.0.0-3_all.deb
+      become: true
+
+    - name: Install Azulu Zulu JDK8, 11, and 17
+      apt:
+        name:
+          - zulu8-jdk
+          - zulu11-jdk
+          - zulu17-jdk
+        state: latest
+        update_cache: yes
+      become: true
+
+    - name: Default to JDK11
+      shell: update-java-alternatives --set zulu11-ca-amd64
+      become: true

@@ -1,0 +1,22 @@
+---
+- hosts: localhost
+  tasks:
+    - import_tasks: ../tasks/add-ms-repo.yaml
+    - import_tasks: ../tasks/add-spk-repo.yaml
+
+    - name: Install mssqsl tools from Microsoft Ubuntu repo
+      # Må bruke shell for å kunne akseptere EULA
+      shell: 'ACCEPT_EULA=Y apt-get -y install mssql-tools'
+      become: true
+
+    - name: Configure PATH for mssqsl
+      lineinfile:
+        dest: ~/.bashrc
+        regexp: '/opt/mssql-tools/bin'
+        line: 'export PATH="$PATH:/opt/mssql-tools/bin"'
+
+    - name: Install database-shell-commands from internal SPK repo
+      apt:
+        name: database-shell-commands
+        state: latest
+      become: true

@@ -43,10 +43,6 @@ apt_packages+=(
 #  keychain
 )
 
-# https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-ansible-on-ubuntu-16-04
-# add_ppa ppa:ansible/ansible
-# apt_packages+=(ansible)
-
 # Sublime Text
 wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
 echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list

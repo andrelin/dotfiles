@@ -1,0 +1,12 @@
+---
+- hosts: localhost
+
+- import_playbook: base.yaml
+# - import_playbook: git.yaml
+- import_playbook: internal-spk-tools.yaml
+- import_playbook: database-shell-commands.yaml
+- import_playbook: docker.yaml
+- import_playbook: screen.yaml
+- import_playbook: java.yaml
+- import_playbook: maven.yaml
+- import_playbook: postman.yaml

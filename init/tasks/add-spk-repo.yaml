@@ -1,0 +1,11 @@
+- name: Add SPK key
+  get_url:
+    url: http://yum.spk.no/pub/install/nexus/nexus_apt_{{ ansible_distribution_release }}_public.gpg.key
+    dest: /usr/share/keyrings/
+    force: yes
+  become: true
+
+- name: Add internal SPK repository
+  apt_repository:
+    repo: deb [arch=all, signed-by=/usr/share/keyrings/nexus_apt_{{ ansible_distribution_release }}_public.gpg.key] http://nexus.spk.no/repository/spk-apt-{{ ansible_distribution_release }}/ {{ ansible_distribution_release }} main
+  become: true

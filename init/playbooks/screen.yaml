@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  tasks:
+    - name: Install screen
+      package:
+        name: screen
+        state: latest
+      become: true
+  
+    - name: Copy .screenrc
+      copy:
+        src: ../files/.screenrc
+        dest: ~/
+        mode: 0644
+

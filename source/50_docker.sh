@@ -10,3 +10,23 @@ function dockerclean () { (
 function dockerstopall () { 
 	(docker rm -f $(docker ps -a -q)) 
 } 
+
+function docker-ip () {
+    docker inspect --format '{{ .NetworkSettings.IPAddress }}' $@
+}
+
+function docker-ip-latest () {
+    docker-ip $(docker ps -l -q)
+}
+
+function docker-clean-exited () {
+    docker rm $(docker ps -q -f status=exited)
+}
+
+function docker-clean-images () {
+    docker rmi $(docker images --filter "dangling=true" -q --no-trunc)
+}
+
+function docker-stop-all () {
+    docker stop $(docker ps -q -f status=running)
+}

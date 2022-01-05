@@ -12,8 +12,3 @@ alias l='ls -Alh'
 
 # Aliasing eachdir like this allows you to use aliases/functions as commands.
 alias eachdir=". eachdir"
-
-# Create a new directory and enter it
-function md() {
-  mkdir -p "$@" && cd "$@"
-}

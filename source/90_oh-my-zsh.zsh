@@ -1,6 +1,6 @@
 export ZSH=$HOME/.oh-my-zsh
 ZSH_CUSTOM="$HOME/.config/omz"
-ZSH_THEME="andrelin"
+ZSH_THEME="frisk"
 
 plugins=(
     aws
@@ -28,7 +28,7 @@ plugins=(
 
 
 if is_macos; then
-	plugins += (
+	plugins+=(
 		brew
 		macos
 	)

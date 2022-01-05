@@ -1,6 +1,3 @@
-[submodule "vendor/pure"]
-	path = vendor/pure
-	url = https://github.com/sindresorhus/pure.git
 [submodule "vendor/zsh-completions"]
 	path = vendor/zsh-completions
 	url = https://github.com/zsh-users/zsh-completions.git

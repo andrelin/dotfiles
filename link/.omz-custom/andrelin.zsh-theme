@@ -1,5 +1,5 @@
 PROMPT=$'
-%{$fg[blue]%}%~%{$reset_color%} $(git_prompt_info)$(virtualenv_prompt_info)$(kube_ps1) [%T]
+%{$fg[blue]%}%~%{$reset_color%} $(git_prompt_info)$(virtualenv_prompt_info) [%T]
 > '
 
 PROMPT2="_> "

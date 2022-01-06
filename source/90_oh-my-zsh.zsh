@@ -28,10 +28,10 @@ plugins=(
 
 
 if is_macos; then
-	plugins+=(
-		brew
-		macos
-	)
+	# plugins+=(
+	# 	brew
+	# 	macos
+	# )
 
 	source "/usr/local/opt/kube-ps1/share/kube-ps1.sh"
 

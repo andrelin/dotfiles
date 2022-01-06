@@ -18,8 +18,8 @@ export HISTFILE="$HOME/.zsh_history"
 # setopt HIST_IGNORE_ALL_DUPS
 # # Write to the history file immediately, not when the shell exits.
 # setopt INC_APPEND_HISTORY
-# Share history between all sessions.
-# setopt SHARE_HISTORY
+# # Share history between all sessions.
+# # setopt SHARE_HISTORY
 
 #
 # zsh-history-substring-search

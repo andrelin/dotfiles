@@ -18,3 +18,5 @@ refresh-cur() {
 refresh-dev() {
     refresh-from-branch master development
 }
+
+alias gc="git commit"

@@ -68,3 +68,7 @@ fi
 shell () {
   ps | grep `echo $$` | awk '{ print $4 }'
 }
+
+function connect-spk() {
+    globalprotect connect --portal vpn-tu-linux.pensjonskassa.no
+}

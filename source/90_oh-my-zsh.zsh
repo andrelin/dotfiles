@@ -28,7 +28,7 @@ plugins=(
 
 
 if is_macos; then
-	# plugins += (
+	# plugins+=(
 	# 	brew
 	# 	macos
 	# )

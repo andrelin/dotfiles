@@ -24,3 +24,5 @@ function dotfiles() {
 }
 
 src
+
+source $ZSH/oh-my-zsh.sh

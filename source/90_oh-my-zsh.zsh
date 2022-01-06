@@ -1,6 +1,6 @@
 export ZSH=$HOME/.oh-my-zsh
-ZSH_CUSTOM="$HOME/.config/omz"
-ZSH_THEME="frisk"
+ZSH_CUSTOM="$HOME/.omz-custom"
+ZSH_THEME="andrelin"
 
 plugins=(
     aws
@@ -20,18 +20,16 @@ plugins=(
     python
     sublime
     sudo
-    theme
     web-search
     z
-    zsh-syntax-highlighting
 )
 
 
 if is_macos; then
-	# plugins+=(
-	# 	brew
-	# 	macos
-	# )
+	plugins+=(
+		brew
+		macos
+	)
 
 	source "/usr/local/opt/kube-ps1/share/kube-ps1.sh"
 

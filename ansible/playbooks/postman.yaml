@@ -21,7 +21,7 @@
       mode: 0755
   - name: Create Unity Desktop file
     copy:
-      src: ../files/postman.desktop
+      src: ~/postman.desktop
       dest: ~/.local/share/applications/postman.desktop
       mode: 0644
 

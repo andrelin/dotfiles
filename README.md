@@ -1,6 +1,6 @@
 # Dotfiles 
 ![Installs on macOs](https://github.com/andrelin/dotfiles/workflows/Test%20dotfiles%20installation%20on%20mac/badge.svg)
-![Installs on Ubuntu](https://github.com/andrelin/dotfiles/.github/workflows/test_on_ubuntu.yml/badge.svg)
+![Installs on Ubuntu](https://github.com/andrelin/dotfiles/actions/workflows/test_on_ubuntu.yml/badge.svg)
 
 My macOS / Ubuntu dotfiles.
 

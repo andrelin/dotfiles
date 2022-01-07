@@ -6,10 +6,3 @@
         name: screen
         state: latest
       become: true
-  
-    - name: Copy .screenrc
-      copy:
-        src: $DOTFILES/ansible/files/.screenrc
-        dest: ~/
-        mode: 0644
-

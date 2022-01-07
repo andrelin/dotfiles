@@ -10,3 +10,4 @@
 - import_playbook: java.yaml
 - import_playbook: maven.yaml
 - import_playbook: postman.yaml
+- import_playbook: zsh.yaml

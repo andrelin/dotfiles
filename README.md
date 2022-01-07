@@ -1,13 +1,10 @@
-# Dotfiles ![](https://github.com/andrelin/dotfiles/workflows/Test%20dotfiles%20installation%20on%20mac/badge.svg)
+# Dotfiles 
+![Installs on macOs](https://github.com/andrelin/dotfiles/workflows/Test%20dotfiles%20installation%20on%20mac/badge.svg)
+![Installs on Ubuntu](https://github.com/andrelin/dotfiles/.github/workflows/test_on_ubuntu.yml/badge.svg)
 
 My macOS / Ubuntu dotfiles.
 
 Shamelessly copied from https://github.com/runesto/dotfiles
-
-Some notable tweaks:
- - Removed oyvinmars additions for Volta, Teamocil and Hyper
- - Automatic addition of private ssh keys found in `~/.ssh` to Keychain
- - Added support for applications in Mac App Store
 
 ## About this project
 

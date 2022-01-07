@@ -1,0 +1,27 @@
+---
+- hosts: localhost
+
+  tasks:
+  - name: Install zsh
+    become: yes
+    apt:
+     name: zsh
+     state: present
+
+  - name: Set zsh as default
+    become: yes
+    ini_file:
+      path: '/etc/sssd/sssd.conf'
+      section: nss
+      option: default_shell
+      value '/bin/zsh'
+      create: false
+      state: present
+    notify: 'restart sssd'
+
+  handlers:
+    - name: "restart sssd"
+      become: true
+      service:
+        name: sssd.service
+        state: restarted

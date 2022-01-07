@@ -9,7 +9,7 @@
   
     - name: Copy .screenrc
       copy:
-        src: ../files/.screenrc
+        src: $DOTFILES/ansible/files/.screenrc
         dest: ~/
         mode: 0644
 

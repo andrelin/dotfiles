@@ -31,3 +31,5 @@ function dotfiles() {
 }
 
 src
+
+export PATH="$PATH:/opt/mssql-tools/bin"

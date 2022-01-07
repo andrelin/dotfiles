@@ -23,6 +23,8 @@ function dotfiles() {
   $DOTFILES/bin/dotfiles "$@" && src
 }
 
-src
+export PATH="$PATH:/opt/mssql-tools/bin"
 
 source $ZSH/oh-my-zsh.sh
+
+src

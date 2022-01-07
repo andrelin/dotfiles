@@ -24,7 +24,6 @@ plugins=(
     z
 )
 
-
 if is_macos; then
 	plugins+=(
 		brew
@@ -37,3 +36,5 @@ if is_macos; then
 
 	export LC_ALL=en_US.UTF-8
 fi
+
+source $ZSH/oh-my-zsh.sh

@@ -14,7 +14,7 @@
       path: '/etc/sssd/sssd.conf'
       section: nss
       option: default_shell
-      value: '/bin/zsh'
+      value: '/usr/bin/zsh'
       create: false
       state: present
     notify: 'restart sssd'

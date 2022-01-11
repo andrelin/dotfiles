@@ -33,7 +33,6 @@ apt_packages+=(
   git-secret
   htop
 #  sl
-  ofono
   silversearcher-ag
   tree
   vim

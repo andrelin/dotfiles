@@ -1,4 +1,5 @@
 # User variables
+export SPK_CONFIG_ROOT=$HOME/spk-config
 export PROJECT_HOME="$HOME/src"
 export JIRA_RAPID_BOARD=true
 

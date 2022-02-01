@@ -14,6 +14,7 @@ plugins=(
     gradle
     kubectl
     jira
+    mvn
     ng
     npm
     pip

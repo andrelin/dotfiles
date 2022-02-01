@@ -3,7 +3,7 @@ is_rhel && return 1
 
 # Editing
 
-export EDITOR=subl
+export EDITOR=vim
 export VISUAL="$EDITOR"
 
 function q() {
@@ -14,7 +14,8 @@ function q() {
     $EDITOR - > /dev/null
   fi
 }
-
 alias qv="q $DOTFILES/link/.{,g}vimrc +'cd $DOTFILES'"
 alias qs="q $DOTFILES"
 
+# For when you have vim on the brain
+alias :q=exit

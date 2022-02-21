@@ -2,9 +2,10 @@
   name = Andreas Lind-Johansen
   email = <>
 [core]
-  editor = subl
+  editor = vim
   excludesfile = ~/.gitignore_global
   precomposeunicode = true
+  filemode = false
 [alias]
   co = checkout
   ci = commit
@@ -25,6 +26,7 @@
   clearlocal = !git branch --merged | grep -v master | xargs -n 1 git branch -d
   clearremote = !git branch -r --merged | grep -v master | sed s/origin\\/// | xargs -n 1 git push --delete origin
   stash-all = stash save --include-untracked
+
 [help]
   autocorrect = 1
 
@@ -39,12 +41,4 @@
 
 [push]
   default = tracking
-
-[includeIf "gitdir:~/src/private/"]
-  path = ~/.gitconfig_private
-
-[includeIf "gitdir:~/src/spk/"]
-  path = ~/.gitconfig_spk
-
-[includeIf "gitdir:~/src/uptime/"]
-  path = ~/.gitconfig_uptime
+  

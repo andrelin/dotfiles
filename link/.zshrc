@@ -1,4 +1,5 @@
 export DOTFILES=~/.dotfiles
+export ZSH=$HOME/.oh-my-zsh
 
 # fpath
 fpath=($DOTFILES/zfunctions $DOTFILES/vendor/zsh-completions/src $fpath)

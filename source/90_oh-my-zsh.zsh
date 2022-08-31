@@ -31,7 +31,7 @@ if is_macos; then
 		macos
 	)
 
-	source "/usr/local/opt/kube-ps1/share/kube-ps1.sh"
+	# source "/usr/local/opt/kube-ps1/share/kube-ps1.sh"
 
 	test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 

@@ -43,8 +43,6 @@ function brew_install_fonts() {
 # Homebrew recipes
 recipes=(
   #  act
-  #  aws-iam-authenticator
-  #  awscli
   bash-completion
   #  bat
   curl
@@ -56,6 +54,7 @@ recipes=(
   google-java-format
   gradle
   #  httpie
+  java
   java11
   jenv
   kube-ps1
@@ -64,6 +63,8 @@ recipes=(
   maven
   mas
   n
+  openjdk@11
+  openjdk@17
   the_silver_searcher
   tree
   watch
@@ -80,43 +81,25 @@ casks=(
   1password
   aerial
   alfred
-  #  asana
   bettertouchtool
   discord
-  #  disk-inventory-x
   docker
-  #  dropbox
-  #  evernote
   firefox
   #  flux
-  #  freemind
   google-chrome
-  guitar-pro
-  harvest
   intellij-idea
-  intellij-idea-ce
+  # intellij-idea-ce
   iterm2
-  #  kindle
-  #  kiwi-for-gmail
-  #  mailplane
-  #  microsoft-office
   microsoft-teams
-  musescore
   pocket-casts
-  #  postman
-  #  remember-the-milk
+  postman
   rectangle
-  #  skype
   slack
-  #  snagit
   spotify
-  steam
   sublime-text
-  #  tableplus
-  #  the-unarchiver
+  tableplus
   vlc
   whatsapp
-  #  zoom
 )
 
 brew_install_casks

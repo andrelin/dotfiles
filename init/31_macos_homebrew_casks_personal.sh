@@ -19,10 +19,9 @@ function brew_install_casks() {
 # Homebrew casks
 casks=(
   # Applications
-#  flowsync
-#  logitech-myharmony
-#  sonos
-  steam
+#  guitar-pro
+#  musescore
+#  steam
 )
 
 brew_install_casks

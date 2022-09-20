@@ -24,6 +24,7 @@ function dotfiles() {
   $DOTFILES/bin/dotfiles "$@" && src
 }
 
+export PATH="~/.vdi-tools/bin:$PATH"
 export PATH="$PATH:/opt/mssql-tools/bin"
 
 source $ZSH/oh-my-zsh.sh

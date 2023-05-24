@@ -1,0 +1,24 @@
+#!/bin/bash
+
+SPK_PROPERTIES=$SPK_CONFIG_ROOT/spk.properties
+
+ShowDB() {
+	local server=$(grep -m1 '^DB_SERVER=' $SPK_PROPERTIES | cut -d= -f2)
+	local database=$(grep -m1 '^DB_DATABASE=' $SPK_PROPERTIES | cut -d= -f2)
+	echo "Database = $server/$database"
+}
+
+SetDB() {
+	local server_database=$1 
+	local server=$(echo $server_database | cut -d/ -f1)
+	local database=$(echo $server_database | cut -d/ -f2)
+	perl -pi -e "s/^(DB_SERVER=).*$/\$1$server/; s/^(DB_DATABASE=).*$/\$1$database/;" $SPK_PROPERTIES
+	ShowDB
+}
+
+if [[ -z $1 ]]; then
+	ShowDB
+	echo "Bruk '$(basename $0) server/database' for å oppdatere spk.properties"
+else
+	SetDB $1
+fi

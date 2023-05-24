@@ -1,8 +1,8 @@
 refresh-from-branch() {
     FROM_BRANCH=$1
     TO_BRANCH=$2
-    git checkout ${FROM_BRANCH} && git pull && git fetch --all && \
-    git checkout ${TO_BRANCH} && git pull && \
+    git checkout ${FROM_BRANCH} && git pull --rebase && git fetch --all && \
+    git checkout ${TO_BRANCH} && git pull --rebase && \
     git merge ${FROM_BRANCH} && git push
 }
 

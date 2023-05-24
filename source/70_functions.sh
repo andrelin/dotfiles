@@ -72,3 +72,8 @@ shell () {
 function connect-spk() {
     globalprotect connect --portal vpn-tu-linux.pensjonskassa.no
 }
+
+ad ()
+{
+    ldapsearch "(&(|(objectclass=person)(objectclass=group))(|(cn=${1}*)(samAccountName=${1}*)))"
+}

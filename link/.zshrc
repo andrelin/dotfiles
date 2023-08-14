@@ -26,6 +26,7 @@ function dotfiles() {
 
 export PATH="~/.vdi-tools/bin:$PATH"
 export PATH="$PATH:/opt/mssql-tools/bin"
+export SSH_AUTH_SOCK="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
 
 source $ZSH/oh-my-zsh.sh
 
@@ -36,7 +37,9 @@ export JENV_SHELL=zsh
 export JENV_LOADED=1
 unset JAVA_HOME
 unset JDK_HOME
-source '/opt/homebrew/Cellar/jenv/0.5.5_2/libexec/libexec/../completions/jenv.zsh'
+
+# source '/opt/homebrew/Cellar/jenv/0.5.5_2/libexec/libexec/../completions/jenv.zsh'
+
 jenv rehash 2>/dev/null
 jenv refresh-plugins
 jenv() {

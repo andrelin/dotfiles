@@ -69,10 +69,6 @@ shell () {
   ps | grep `echo $$` | awk '{ print $4 }'
 }
 
-function connect-spk() {
-    globalprotect connect --portal vpn-tu-linux.pensjonskassa.no
-}
-
 ad ()
 {
     ldapsearch "(&(|(objectclass=person)(objectclass=group))(|(cn=${1}*)(samAccountName=${1}*)))"

@@ -30,29 +30,25 @@ function brew_install_casks() {
 
 # Homebrew recipes
 recipes=(
-  #  act
+  bash
   bash-completion
-  #  bat
   curl
-  #  dos2unix
   git
   git-secret
   gnupg
   gnu-units
-  google-java-format
   gradle
-  #  httpie
   java
-  java11
   jenv
+  jq
   kube-ps1
   kubectx
   kubernetes-cli # (part of Docker-cask)
   maven
   mas
   n
-  openjdk@11
   openjdk@17
+  openjdk
   the_silver_searcher
   tree
   watch

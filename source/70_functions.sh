@@ -73,3 +73,7 @@ ad ()
 {
     ldapsearch "(&(|(objectclass=person)(objectclass=group))(|(cn=${1}*)(samAccountName=${1}*)))"
 }
+
+check-tests () {
+    mvn clean verify | grep run: | grep -v elapsed
+}

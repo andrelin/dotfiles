@@ -39,7 +39,3 @@ if is_macos; then
 fi
 
 source $ZSH/oh-my-zsh.sh
-
-if [ ! -z "\${which mvnd}" ]; then
-    unalias mvnd
-fi

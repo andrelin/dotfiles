@@ -1,0 +1,41 @@
+[core]
+  editor = vim
+  excludesfile = ~/.gitignore_global
+  precomposeunicode = true
+  filemode = false
+  longpaths = true
+
+[help]
+  autocorrect = 1
+
+[apply]
+  whitespace = strip
+
+[color]
+  branch = auto
+  diff = auto
+  status = auto
+  ui = auto
+
+[push]
+  default = tracking
+
+[gpg]
+  format = ssh
+
+[gpg "ssh"]
+  program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+  allowedSignersFile = /Users/andrelin/.ssh/allowed_signers
+
+[commit]
+  gpgsign = true
+
+[user]
+  name = Andreas Lind-Johansen
+  email = andreas@lindjo.no
+
+[include]
+  path = ~/.gitconfig_credentials
+
+[includeIf "gitdir:~/src/politiet/"]
+  path = ~/.gitconfig_politiet

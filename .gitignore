@@ -1,0 +1,23 @@
+# Runtime data
+/caches/
+/backups/
+
+# SSH — ignore everything, allowlist version-controlled files
+/link/.ssh/*
+/link/.ssh/keys/*
+!/link/.ssh/keys/.gitkeep
+!/link/.ssh/config_macos
+!/link/.ssh/config_linux
+
+# Other
+.idea
+.claude
+.DS_Store
+
+# Git Secret
+.gitsecret/keys/random_seed
+!*.secret
+
+# Git Secret — decrypted files (encrypted .secret versions are tracked)
+copy/.gitconfig_credentials
+link/.ssh/allowed_signers

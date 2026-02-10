@@ -1,0 +1,17 @@
+name: Ubuntu
+on: [push]
+
+jobs:
+  build:
+    name: Test on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: bash -c "./bin/dotfiles -p"
+
+      - name: Run tests
+        run: |
+          export DOTFILES=$PWD
+          for t in test/test_*.sh; do bash "$t"; done

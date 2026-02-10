@@ -1,0 +1,22 @@
+name: RHEL
+on: [push]
+
+jobs:
+  build:
+    name: Test on RHEL 9
+    runs-on: ubuntu-latest
+    container:
+      image: redhat/ubi9
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install prerequisites
+        run: yum install -y sudo git
+
+      - name: Configure
+        run: bash -c "./bin/dotfiles -p"
+
+      - name: Run tests
+        run: |
+          export DOTFILES=$PWD
+          for t in test/test_*.sh; do bash "$t"; done

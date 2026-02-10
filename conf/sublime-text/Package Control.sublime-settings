@@ -1,0 +1,10 @@
+{
+	"installed_packages":
+	[
+		"ANSIescape",
+		"GitGutter",
+		"gruvbox",
+		"Package Control",
+		"Reindent on save",
+	]
+}

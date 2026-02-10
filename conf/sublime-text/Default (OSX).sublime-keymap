@@ -1,0 +1,5 @@
+[
+    { "keys": ["super+shift+c"], "command": "toggle_comment", "args": { "block": false } },
+    { "keys": ["alt+m"], "command": "markdown_preview", "args": {"target": "browser", "parser":"markdown"} },
+]
+

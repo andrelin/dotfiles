@@ -42,7 +42,7 @@ jobs:
 
       - name: Cache Homebrew
         id: cache-brew
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: brew-cache
           key: wsl-brew-${{ steps.month.outputs.stamp }}-${{ hashFiles('init/20_homebrew.sh', 'init/30_homebrew_helpers.sh', 'init/31_homebrew_recipes.sh') }}

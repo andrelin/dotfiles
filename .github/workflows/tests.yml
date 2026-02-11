@@ -1,0 +1,75 @@
+name: Tests
+on: [push]
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            runner: macOS-latest
+          - name: Ubuntu
+            runner: ubuntu-latest
+          - name: RHEL 9
+            runner: ubuntu-latest
+            container: redhat/ubi9
+            prerequisites: yum install -y sudo git
+          - name: WSL (Ubuntu 24.04)
+            runner: windows-latest
+            shell: wsl-bash {0}
+            wsl: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          set-safe-directory: true
+
+      # WSL setup
+      - if: matrix.wsl
+        uses: Vampire/setup-wsl@v5
+        with:
+          distribution: Ubuntu-24.04
+          additional-packages: curl git sudo
+          wsl-conf: |
+            [automount]
+            options = "metadata"
+
+      - if: matrix.wsl
+        name: Fix line endings
+        shell: wsl-bash {0}
+        run: find . -type f \( -name '*.sh' -o -name '*.zsh' -o -path '*/bin/*' \) -exec sed -i 's/\r$//' {} +
+
+      # RHEL prerequisites
+      - if: matrix.prerequisites
+        name: Install prerequisites
+        run: ${{ matrix.prerequisites }}
+
+      # Common steps
+      - name: Configure
+        shell: ${{ matrix.shell || 'bash' }}
+        run: |
+          ln -sf "$PWD" ~/.dotfiles
+          export DOTFILES=$PWD
+          ./bin/dotfiles 2>&1 | tee /tmp/dotfiles_output.txt || true
+          while IFS= read -r line; do
+            stripped="$(echo "$line" | sed $'s/\033\[[0-9;]*m//g' | xargs)"
+            if echo "$stripped" | grep -qiE 'err|error'; then
+              echo "::error::$stripped"
+            elif echo "$stripped" | grep -qiE 'warn|warning'; then
+              echo "::warning::$stripped"
+            elif echo "$stripped" | grep -qF '➜'; then
+              echo "::notice::$stripped"
+            fi
+          done < /tmp/dotfiles_output.txt
+
+      - name: Run tests
+        shell: ${{ matrix.shell || 'bash' }}
+        run: |
+          export DOTFILES=$PWD
+          failed=0
+          for t in test/test_*.sh; do bash "$t" || failed=1; done
+          exit $failed

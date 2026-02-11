@@ -1,9 +1,9 @@
 # Dotfiles
 
-![macOS](https://github.com/andrelin/dotfiles/actions/workflows/test_on_mac.yml/badge.svg)
-![Ubuntu](https://github.com/andrelin/dotfiles/actions/workflows/test_on_ubuntu.yml/badge.svg)
-![WSL](https://github.com/andrelin/dotfiles/actions/workflows/test_on_wsl.yml/badge.svg)
-![RHEL](https://github.com/andrelin/dotfiles/actions/workflows/test_on_rhel.yml/badge.svg)
+![macOS](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=macOS)
+![Ubuntu](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=Ubuntu)
+![WSL](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=WSL)
+![RHEL](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=RHEL)
 
 My macOS / Ubuntu / WSL 2 / RHEL dotfiles.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source $DOTFILES/source/01_dotfiles.sh
+source "$DOTFILES/test/helper.sh"
 
 e_header "$(basename "$0" .sh)"
 
@@ -126,3 +126,5 @@ test_assert
 IFS= read -rd '' actual < <(array_join_filter fixture1 ', ')
 expected=$'a, b, c d,  e ,   \'f\'  ,  \"g\'h\" , i\n'
 test_assert
+
+test_done

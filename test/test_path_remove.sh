@@ -24,18 +24,18 @@ r11="$(path_remove /a/b/c /a/b/d /a/b/e)"
 
 PATH="$saved_path"
 
-assert "$r1" "/a/b:/a/b/c:/a/b:/a/b/d"
-assert "$r2" "/a/b:/a/b/c:/a/b:/a/b/d"
-assert "$r3" "/a/b/c:/a/b/d"
-assert "$r4" "/a/b:/a/b:/a/b/d"
-assert "$r5" "/a/b:/a/b/c:/a/b"
+assert "$r1" "/a/b:/a/b/c:/a/b:/a/b/d" "non-matching path unchanged"
+assert "$r2" "/a/b:/a/b/c:/a/b:/a/b/d" "non-existent path unchanged"
+assert "$r3" "/a/b/c:/a/b/d" "remove duplicates"
+assert "$r4" "/a/b:/a/b:/a/b/d" "remove middle"
+assert "$r5" "/a/b:/a/b/c:/a/b" "remove last"
 
-assert "$r6" "/a/b:/a/b c/d:/a/b:/a/b c/e"
-assert "$r7" "/a/b:/a/b c/d:/a/b:/a/b c/e"
-assert "$r8" "/a/b c/d:/a/b c/e"
-assert "$r9" "/a/b:/a/b:/a/b c/e"
-assert "$r10" "/a/b:/a/b c/d:/a/b"
+assert "$r6" "/a/b:/a/b c/d:/a/b:/a/b c/e" "spaces: non-matching unchanged"
+assert "$r7" "/a/b:/a/b c/d:/a/b:/a/b c/e" "spaces: non-existent unchanged"
+assert "$r8" "/a/b c/d:/a/b c/e" "spaces: remove non-spaced"
+assert "$r9" "/a/b:/a/b:/a/b c/e" "spaces: remove spaced"
+assert "$r10" "/a/b:/a/b c/d:/a/b" "spaces: remove last spaced"
 
-assert "$r11" "/a/b:/x:/y:/z"
+assert "$r11" "/a/b:/x:/y:/z" "remove multiple at once"
 
 test_done

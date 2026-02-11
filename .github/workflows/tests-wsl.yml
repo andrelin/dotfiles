@@ -7,6 +7,7 @@ jobs:
     runs-on: windows-latest
     env:
       CI: "true"
+      SHELL_FNS: e_header src is_macos jdk mkcd gpc q mkpg
     defaults:
       run:
         shell: wsl-bash {0}
@@ -77,15 +78,50 @@ jobs:
           done < /tmp/dotfiles_output.txt
           exit $errors
 
-      - name: Shell startup
+      - name: Bash startup
         shell: wsl-bash -u runner {0}
         run: |
           cd ~/dotfiles
           export DOTFILES=$PWD
-          bash --login -c 'echo "Bash source: OK"'
-          if command -v zsh >/dev/null && [[ -d "$HOME/.oh-my-zsh" ]]; then
-            SHELL=$(which zsh) zsh -c 'source ~/.zshrc && echo "Zsh source: OK"'
+          bash --login -c '
+            echo "Bash $(bash --version | head -1)"
+            echo "DOTFILES=$DOTFILES"
+            failed=0
+            for fn in $SHELL_FNS; do
+              if declare -f "$fn" >/dev/null 2>&1; then
+                echo "  ✔ $fn"
+              else
+                echo "  ✖ $fn NOT defined"
+                failed=1
+              fi
+            done
+            exit $failed
+          '
+
+      - name: Zsh startup
+        shell: wsl-bash -u runner {0}
+        run: |
+          cd ~/dotfiles
+          if ! command -v zsh >/dev/null || [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+            echo "Zsh or oh-my-zsh not installed, skipping"
+            exit 0
           fi
+          export DOTFILES=$PWD
+          SHELL=$(which zsh) zsh -c '
+            source ~/.zshrc
+            echo "Zsh $ZSH_VERSION"
+            echo "DOTFILES=$DOTFILES"
+            failed=0
+            for fn in $SHELL_FNS; do
+              if typeset -f "$fn" >/dev/null 2>&1; then
+                echo "  ✔ $fn"
+              else
+                echo "  ✖ $fn NOT defined"
+                failed=1
+              fi
+            done
+            exit $failed
+          '
 
       - name: Run tests
         shell: wsl-bash -u runner {0}

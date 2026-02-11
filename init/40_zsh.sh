@@ -9,7 +9,11 @@ if ! is_zsh; then
   fi
 
   echo "Setting default shell to zsh"
-  chsh -s "$zsh_path"
+  if [[ "$CI" ]]; then
+    sudo chsh -s "$zsh_path" "$(whoami)" 2>/dev/null || true
+  else
+    chsh -s "$zsh_path"
+  fi
 
   # Update shell export for other scripts (i.e. volta)
   export SHELL=$(which zsh)

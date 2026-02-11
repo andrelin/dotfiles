@@ -28,8 +28,9 @@ function e_arrow()    { echo -e " \033[1;34m➜\033[0m  $@"; }
 
 # For testing some of these functions.
 function assert() {
-  local success modes equals result
+  local success modes equals result label
   modes=(e_error e_success); equals=("!=" "==");
+  label="${3:+(${3}) }"
   [[ "$1" == "$2" ]] && success=1 || success=0
   if [[ "$(echo "$1" | wc -l)" != 1 || "$(echo "$2" | wc -l)" != 1 ]]; then
     result="$(diff <(echo "$1") <(echo "$2") | sed '
@@ -39,9 +40,9 @@ function assert() {
       s/^> /expected |/
       2,$s/^/    /
     ')"
-    [[ ! "$result" ]] && result="(multiline comparison)"
+    [[ ! "$result" ]] && result="${label}OK" || result="${label}${result}"
   else
-    result="\"$1\" ${equals[success]} \"$2\""
+    result="${label}\"$1\" ${equals[success]} \"$2\""
   fi
   ${modes[success]} "$result"
 }

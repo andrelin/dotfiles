@@ -12,7 +12,7 @@ jobs:
       run:
         shell: wsl-bash {0}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           submodules: recursive
           set-safe-directory: true
@@ -35,12 +35,35 @@ jobs:
           cp -r "$PWD" /home/runner/dotfiles
           chown -R runner:runner /home/runner
 
+      - name: Month stamp
+        id: month
+        shell: bash
+        run: echo "stamp=$(date +%Y-%m)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Homebrew
+        id: cache-brew
+        uses: actions/cache@v4
+        with:
+          path: brew-cache
+          key: wsl-brew-${{ steps.month.outputs.stamp }}-${{ hashFiles('init/20_homebrew.sh', 'init/30_homebrew_helpers.sh', 'init/31_homebrew_recipes.sh') }}
+
+      - name: Restore Homebrew from cache
+        if: steps.cache-brew.outputs.cache-hit == 'true'
+        run: |
+          if [[ -f brew-cache/brew.tar.gz ]]; then
+            tar xzf brew-cache/brew.tar.gz -C /
+          fi
+
       - name: Configure
         shell: wsl-bash -u runner {0}
         run: |
           cd ~/dotfiles
           ln -sf "$PWD" ~/.dotfiles
           export DOTFILES=$PWD
+          # Use cached Homebrew if available.
+          if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          fi
           ./bin/dotfiles 2>&1 | tee /tmp/dotfiles_output.txt || true
 
           errors=0
@@ -77,6 +100,14 @@ jobs:
             prev="$stripped"
           done < /tmp/dotfiles_output.txt
           exit $errors
+
+      - name: Save Homebrew to cache
+        if: steps.cache-brew.outputs.cache-hit != 'true'
+        run: |
+          if [[ -d /home/linuxbrew/.linuxbrew/bin ]]; then
+            mkdir -p brew-cache
+            tar czf brew-cache/brew.tar.gz -C / home/linuxbrew/.linuxbrew
+          fi
 
       - name: Bash startup
         shell: wsl-bash -u runner {0}

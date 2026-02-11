@@ -4,6 +4,12 @@ is_wsl || return 1
 # Exit if winget.exe is not available.
 [[ ! "$(type -P winget.exe 2>/dev/null)" ]] && e_error "Winget apps need winget.exe." && return 1
 
+# In CI, install one app to verify winget works.
+if [[ "$CI" ]]; then
+  winget.exe install --id "SublimeHQ.SublimeText.4" --accept-package-agreements --accept-source-agreements
+  return 0
+fi
+
 apps=(
   "AgileBits.1Password"
   "Google.Chrome"

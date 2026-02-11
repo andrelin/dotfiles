@@ -2,7 +2,7 @@
 
 ![macOS](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=macOS)
 ![Ubuntu](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=Ubuntu)
-![WSL](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=WSL)
+![WSL](https://github.com/andrelin/dotfiles/actions/workflows/tests-wsl.yml/badge.svg)
 ![RHEL](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=RHEL)
 
 My macOS / Ubuntu / WSL 2 / RHEL dotfiles.

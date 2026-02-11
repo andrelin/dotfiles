@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# Sort arrays in Claude Code settings files for deterministic output.
+# Sorts .permissions.deny and .permissions.allow alphabetically.
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+for file in .claude/settings.json .claude/settings.local.json; do
+  [[ -f "$file" ]] || continue
+
+  sorted="$(jq '
+    if .permissions.deny then .permissions.deny |= sort else . end |
+    if .permissions.allow then .permissions.allow |= sort else . end
+  ' "$file")"
+
+  tmp="$(mktemp "$file.XXXXXX")"
+  printf '%s\n' "$sorted" > "$tmp"
+  mv "$tmp" "$file"
+done

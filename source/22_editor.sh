@@ -15,7 +15,9 @@ function q() {
 
 # qv — edit vim config files
 # qs — open dotfiles directory
+# shellcheck disable=SC2139 # Intentional — expand $DOTFILES at alias definition time
 alias qv="q $DOTFILES/link/.{,g}vimrc +'cd $DOTFILES'"
+# shellcheck disable=SC2139 # Intentional — expand $DOTFILES at alias definition time
 alias qs="q $DOTFILES"
 
 # For when you have vim on the brain

@@ -4,7 +4,7 @@ Run once during `dotfiles` setup. Numbered by dependency order:
 
 | Range | Category              | Examples                  |
 |-------|-----------------------|---------------------------|
-| 10–19 | System prerequisites  | SSH, Xcode                |
+| 10–19 | System prerequisites  | SSH, Xcode, git hooks     |
 | 20–29 | Package manager       | Homebrew                  |
 | 30–39 | Package installation  | Formulae, casks           |
 | 40–49 | Shell setup           | Zsh                       |

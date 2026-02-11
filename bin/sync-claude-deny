@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+#
+# Sync git-secret paths into Claude Code deny rules.
+# Reads .gitsecret/paths/mapping.cfg and ensures every tracked secret
+# has a corresponding Read(./path) entry in .claude/settings.json.
+#
+# Usage: sync-claude-deny [--check]
+#   --check  Exit 1 if any mapping.cfg paths are missing from deny list (for CI)
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+mapping=".gitsecret/paths/mapping.cfg"
+settings=".claude/settings.json"
+
+# Nothing to do if mapping.cfg doesn't exist.
+[[ -f "$mapping" ]] || exit 0
+
+# Build the list of deny entries from mapping.cfg (format: filepath:hash).
+mapfile -t new_entries < <(
+  cut -d: -f1 "$mapping" |
+  sed '/^$/d' |
+  while IFS= read -r path; do echo "Read(./$path)"; done |
+  sort -u
+)
+
+# Nothing to do if mapping.cfg is empty.
+(( ${#new_entries[@]} )) || exit 0
+
+# Read existing deny entries (empty array if settings.json doesn't exist).
+if [[ -f "$settings" ]]; then
+  mapfile -t existing < <(jq -r '.permissions.deny // [] | .[]' "$settings")
+else
+  existing=()
+fi
+
+# --check mode: verify all new entries are already present.
+if [[ "${1:-}" == "--check" ]]; then
+  missing=0
+  for entry in "${new_entries[@]}"; do
+    found=0
+    for existing_entry in "${existing[@]}"; do
+      if [[ "$entry" == "$existing_entry" ]]; then
+        found=1
+        break
+      fi
+    done
+    if (( !found )); then
+      echo "Missing deny entry: $entry" >&2
+      missing=1
+    fi
+  done
+  exit "$missing"
+fi
+
+# Merge: union of existing + new, sorted and deduplicated.
+mapfile -t merged < <(
+  printf '%s\n' "${existing[@]}" "${new_entries[@]}" | sort -u
+)
+
+# Build JSON array of merged entries.
+deny_json="$(printf '%s\n' "${merged[@]}" | jq -R . | jq -s .)"
+
+# Update (or create) settings.json with the merged deny list.
+if [[ -f "$settings" ]]; then
+  updated="$(jq --argjson deny "$deny_json" '.permissions.deny = $deny' "$settings")"
+else
+  updated="$(jq -n --argjson deny "$deny_json" '{permissions: {deny: $deny}}')"
+fi
+
+# Atomic write.
+tmp="$(mktemp "$settings.XXXXXX")"
+printf '%s\n' "$updated" > "$tmp"
+mv "$tmp" "$settings"

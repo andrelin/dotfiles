@@ -21,10 +21,10 @@ exit; fi
 export DOTFILES=~/.dotfiles
 
 # Logging stuff.
-function e_header()   { echo -e "\n\033[1m$@\033[0m"; }
-function e_success()  { echo -e " \033[1;32m✔\033[0m  $@"; }
-function e_error()    { echo -e " \033[1;31m✖\033[0m  $@"; }
-function e_arrow()    { echo -e " \033[1;34m➜\033[0m  $@"; }
+function e_header()   { echo -e "\n\033[1m$*\033[0m"; }
+function e_success()  { echo -e " \033[1;32m✔\033[0m  $*"; }
+function e_error()    { echo -e " \033[1;31m✖\033[0m  $*"; }
+function e_arrow()    { echo -e " \033[1;34m➜\033[0m  $*"; }
 
 # For testing some of these functions.
 function assert() {
@@ -95,7 +95,7 @@ function is_linux() {
 
 function get_os() {
   for os in macos linux ubuntu ubuntu_desktop rhel wsl; do
-    is_$os; [[ $? == ${1:-0} ]] && echo $os
+    is_"$os"; [[ $? == "${1:-0}" ]] && echo "$os"
   done
 }
 
@@ -118,7 +118,7 @@ function path_remove() {
 # Display a fancy multi-select menu.
 # Inspired by http://serverfault.com/a/298312
 function prompt_menu() {
-  local exitcode prompt choices nums i n
+  local exitcode prompt nums i n
   exitcode=0
   if [[ "$2" ]]; then
     _prompt_menu_draws "$1"
@@ -184,6 +184,7 @@ function _prompt_menu_add() {
 # prints whatever map_fn prints. If map_fn is omitted, all input array items
 # are printed.
 # Usage: array_map array_name [map_fn]
+# shellcheck disable=SC1087 # Indirect array access via eval: ${$var[idx]} is intentional
 function array_map() {
   local __i__ __val__ __arr__=$1; shift
   for __i__ in $(eval echo "\${!$__arr__[@]}"); do
@@ -210,6 +211,7 @@ function array_filter() { __array_filter 1 "$@"; }
 # Works like array_filter, but outputs array indices instead of array items.
 function array_filter_i() { __array_filter 0 "$@"; }
 # The core function. Wheeeee.
+# shellcheck disable=SC1087 # Indirect array access via eval: ${$var[idx]} is intentional
 function __array_filter() {
   local __i__ __val__ __mode__ __arr__
   __mode__=$1; shift; __arr__=$1; shift
@@ -235,6 +237,7 @@ function array_join() { __array_join 1 "$@"; }
 # Works like array_join, but removes empty items first.
 function array_join_filter() { __array_join 0 "$@"; }
 
+# shellcheck disable=SC1087,SC2124 # Indirect array access via eval; separator arg joined as string intentionally
 function __array_join() {
   local __i__ __val__ __out__ __init__ __mode__ __arr__
   __mode__=$1; shift; __arr__=$1; shift
@@ -270,7 +273,10 @@ function setdiff() {
   if [[ "$1" == 1 ]]; then debug=1; shift; fi
   if [[ "$1" ]]; then
     local setdiff_new setdiff_cur setdiff_out
-    setdiff_new=($1); setdiff_cur=($2)
+    # shellcheck disable=SC2206 # Args are space-delimited lists; word splitting is intentional
+    setdiff_new=($1)
+    # shellcheck disable=SC2206
+    setdiff_cur=($2)
   fi
   setdiff_out=()
   for a in "${setdiff_new[@]}"; do
@@ -281,6 +287,7 @@ function setdiff() {
     [[ "$skip" ]] || setdiff_out=("${setdiff_out[@]}" "$a")
   done
   [[ "$debug" ]] && for a in setdiff_new setdiff_cur setdiff_out; do
+    # shellcheck disable=SC1087 # Indirect array access via eval for debug output
     echo "$a ($(eval echo "\${#$a[*]}")) $(eval echo "\${$a[*]}")" 1>&2
   done
   [[ "$1" ]] && echo "${setdiff_out[@]}"
@@ -317,6 +324,7 @@ function init_files() {
     IFS=$'\n' read -d '' -r -a menu_selects < "$init_file"
   else
     # Otherwise default to all scripts not specifically for other OSes
+    # shellcheck disable=SC2207 # get_os outputs single-word OS names; safe to split
     oses=($(get_os 1))
     personal="personal"
     for opt in "${menu_options[@]}"; do
@@ -369,7 +377,9 @@ function link_do() {
 function do_stuff() {
   is_rhel && [[ "$1" != "init" ]] && [[ "$1" != "link" ]] && e_header "Not yet supporting the $1 function in RHEL" && return 0
   local base dest skip
+  # shellcheck disable=SC2206 # Glob expansion is intentional
   local files=($DOTFILES/$1/*)
+  # shellcheck disable=SC2207 # Output is file paths from $1_files; splitting is safe
   [[ $(declare -f "$1_files") ]] && files=($($1_files "${files[@]}"))
   # No files? abort.
   if (( ${#files[@]} == 0 )); then return; fi
@@ -499,11 +509,11 @@ if [[ ! -d $DOTFILES ]]; then
   e_header "Downloading dotfiles"
   git clone --branch ${DOTFILES_GH_BRANCH:-main} --recursive \
     https://github.com/${DOTFILES_GH_USER:-andrelin}/dotfiles.git $DOTFILES
-  cd $DOTFILES
+  cd "$DOTFILES" || exit
 elif [[ "$1" != "restart" ]]; then
   # Make sure we have the latest files.
   e_header "Updating dotfiles"
-  cd $DOTFILES
+  cd "$DOTFILES" || exit
   prev_head="$(git rev-parse HEAD)"
   git pull
   git submodule update --init --recursive --quiet
@@ -538,13 +548,13 @@ do_stuff link
 do_stuff init
 
 function is_git_repo_ssh() {
-  cd $DOTFILES
+  cd "$DOTFILES" || return
   [[ "$(git remote -v)" == *"git@github.com"* ]] && return 0
   return 1
 }
 
 # Check if git-remote is ssh. If not try to change
-cd $DOTFILES
+cd "$DOTFILES" || exit
 if ! is_git_repo_ssh; then
   echo -e "\ndotfiles git-remote isn't ssh. Trying to change."
   git remote set-url origin git@github.com:${DOTFILES_GH_USER:-andrelin}/dotfiles.git

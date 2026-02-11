@@ -10,7 +10,7 @@ fi
 
 # Add all private keys in ~/.ssh/keys to the agent.
 if is_macos; then
-  find -L ~/.ssh/keys -type f ! -name "*.pub" ! -name ".gitkeep" | xargs ssh-add --apple-use-keychain
+  find -L ~/.ssh/keys -type f ! -name "*.pub" ! -name ".gitkeep" -exec ssh-add --apple-use-keychain {} +
 else
-  find -L ~/.ssh/keys -type f ! -name "*.pub" ! -name ".gitkeep" | xargs ssh-add
+  find -L ~/.ssh/keys -type f ! -name "*.pub" ! -name ".gitkeep" -exec ssh-add {} +
 fi

@@ -1,6 +1,7 @@
 export DOTFILES=~/.dotfiles
 
 # Source all files in "source"
+# shellcheck disable=SC2120 # src() is called with args elsewhere; $1 is optional
 function src() {
   local file
   if [[ "$1" ]]; then

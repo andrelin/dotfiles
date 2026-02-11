@@ -41,8 +41,9 @@ if [ ! "$1" ]; then
 fi
 
 # For underlining headers.
-local h1="$(tput smul)"
-local h2="$(tput rmul)"
+local h1 h2
+h1="$(tput smul)"
+h2="$(tput rmul)"
 
 # Store any dirs passed before -- in an array.
 local dashes d
@@ -67,7 +68,8 @@ for d in "${dirs[@]}"; do
   # If the dir isn't /, strip the trailing /.
   [[ "$d" != "/" ]] && d="${d%/}"
   # Execute the command, grabbing all stdout and stderr.
-  output="$( (cd "$d"; eval "$@") 2>&1 )"
+  # shellcheck disable=SC2294 # eval is intentional — allows compound commands like 'git fetch && git merge'
+  output="$( (cd "$d" || exit; eval "$@") 2>&1 )"
   if [[ "$output" ]]; then
     # If the command had output, display a header and that output.
     echo -e "${h1}${d}${h2}\n$output\n"
@@ -78,7 +80,7 @@ for d in "${dirs[@]}"; do
 done
 
 # List any dirs that had no output.
-if [[ ${#nops[@]} > 0 ]]; then
+if [[ ${#nops[@]} -gt 0 ]]; then
   echo "${h1}no output from${h2}"
   for d in "${nops[@]}"; do echo "$d"; done
 fi

@@ -67,6 +67,7 @@ function brew_prompt_optional() {
 # that are already installed.
 function brew_install_recipes() {
   # setdiff "A" "B" returns items in A that are not in B.
+  # shellcheck disable=SC2207 # Package names have no spaces; word splitting is safe
   recipes=($(setdiff "${recipes[*]}" "$(brew list --formulae)"))
   if ((${#recipes[@]} > 0)); then
     e_header "Installing Homebrew recipes: ${recipes[*]}"
@@ -114,6 +115,7 @@ function cask_app_name() {
 # already managed by Homebrew or present in /Applications/.
 function brew_install_casks() {
   # Remove casks already managed by Homebrew.
+  # shellcheck disable=SC2207 # Cask names have no spaces; word splitting is safe
   casks=($(setdiff "${casks[*]}" "$(brew list --casks)"))
 
   # Also skip casks whose apps are already in /Applications/.

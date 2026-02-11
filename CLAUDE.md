@@ -43,3 +43,5 @@ Because `link/` items are symlinked as-is, directories like `link/.ssh` become t
 
 - `conf/sublime-text/` — linked by `init/51_sublime_text.sh` into Sublime Text's `Packages/User/`
 - `conf/intellij/` — linked by `init/50_macos_intellij.sh`
+
+**Note:** `conf/` is unrelated to the old `config/` / `do_stuff config` feature from the upstream fork, which was removed years ago. Do not confuse them.

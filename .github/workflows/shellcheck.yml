@@ -1,0 +1,21 @@
+name: ShellCheck
+on: [push]
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run ShellCheck
+        run: |
+          shellcheck --version
+          failed=0
+          for f in bin/dotfiles bin/eachdir bin/isip \
+                   init/*.sh source/*.sh test/*.sh \
+                   link/.bashrc link/.bash_profile; do
+            echo "--- $f ---"
+            shellcheck -x -s bash --severity=warning "$f" || failed=1
+          done
+          exit $failed

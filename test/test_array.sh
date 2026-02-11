@@ -3,8 +3,10 @@ source "$DOTFILES/test/helper.sh"
 
 e_header "$(basename "$0" .sh)"
 
-# Fixtures
+# Fixtures — accessed indirectly by name via array_map/array_filter
+# shellcheck disable=SC2034 # Accessed indirectly by name via array_map
 empty=()
+# shellcheck disable=SC2034 # Accessed indirectly by name via array_map
 fixture1=(a b "" "c d" " e " "  'f'  " " \"g'h\" " i "")
 
 # Tests

@@ -40,8 +40,10 @@ recipes_optional=(
 )
 
 # Prompt for optional recipes and append selections
+# shellcheck disable=SC2154 # brew_cache_dir is defined in sourced 30_homebrew_helpers.sh
 selected_recipes=$(brew_prompt_optional "Homebrew recipes" "$brew_cache_dir/recipes_optional" "${recipes_optional[@]}")
 if [[ -n "$selected_recipes" ]]; then
+  # shellcheck disable=SC2206 # Package names have no spaces; word splitting is safe
   recipes+=($selected_recipes)
 fi
 

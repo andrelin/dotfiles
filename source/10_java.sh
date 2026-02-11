@@ -14,7 +14,8 @@ jdk() {
 
 # Set default JAVA_HOME to the latest installed OpenJDK.
 if [[ -d "$(brew --prefix openjdk 2>/dev/null)" ]]; then
-	export JAVA_HOME="$(brew --prefix openjdk)"
+	JAVA_HOME="$(brew --prefix openjdk)"
+	export JAVA_HOME
 	export PATH="$JAVA_HOME/bin:$PATH"
 fi
 

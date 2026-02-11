@@ -4,6 +4,7 @@
   precomposeunicode = true
   filemode = false
   longpaths = true
+  autocrlf = input
 
 [help]
   autocorrect = 1

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git secret*)",
+      "Read(./copy/.gitconfig_credentials)",
+      "Read(./link/.ssh/allowed_signers)"
+    ]
+  }
+}

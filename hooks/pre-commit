@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook for dotfiles repo.
+
+set -euo pipefail
+
+# Sync Claude Code deny rules when git-secret paths change.
+if git diff --cached --name-only | grep -q '^\.gitsecret/paths/mapping\.cfg$'; then
+  bin/sync-claude-deny
+  git add .claude/settings.json
+fi
+
+# Sort Claude Code settings when staged.
+if git diff --cached --name-only | grep -q '^\.claude/settings\.json$'; then
+  bin/sort-claude-settings
+  git add .claude/settings.json
+fi

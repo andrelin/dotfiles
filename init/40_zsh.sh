@@ -16,7 +16,8 @@ if ! is_zsh; then
   fi
 
   # Update shell export for other scripts (i.e. volta)
-  export SHELL=$(which zsh)
+  SHELL=$(which zsh)
+  export SHELL
   export ZSH=$HOME/.oh-my-zsh
 
   if [[ ! -d $ZSH ]]; then

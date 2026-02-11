@@ -1,0 +1,3 @@
+# Dotfiles source files dynamically — ShellCheck can't resolve these.
+disable=SC1090
+disable=SC1091

@@ -7,7 +7,6 @@ jobs:
     runs-on: windows-latest
     env:
       CI: "true"
-      SHELL_FNS: e_header src is_macos jdk mkcd gpc q mkpg
     defaults:
       run:
         shell: wsl-bash {0}
@@ -17,7 +16,7 @@ jobs:
           submodules: recursive
           set-safe-directory: true
 
-      - uses: Vampire/setup-wsl@v5
+      - uses: Vampire/setup-wsl@6a8db447be7ed35f2f499c02c6e60ff77ef11278 # v6.0.0
         with:
           distribution: Ubuntu-24.04
           additional-packages: curl git sudo
@@ -26,7 +25,7 @@ jobs:
             options = "metadata"
 
       - name: Fix line endings
-        run: find . -type f \( -name '*.sh' -o -name '*.zsh' -o -path '*/bin/*' \) -exec sed -i 's/\r$//' {} +
+        run: find . -type f \( -name '*.sh' -o -name '*.zsh' -o -name '.*rc' -o -name '.*_profile' -o -name '.gitignore_*' -o -path '*/bin/*' \) -exec sed -i 's/\r$//' {} +
 
       - name: Create non-root user
         run: |
@@ -84,11 +83,13 @@ jobs:
         run: |
           cd ~/dotfiles
           export DOTFILES=$PWD
+          err=$(mktemp)
           bash --login -c '
             echo "Bash $(bash --version | head -1)"
             echo "DOTFILES=$DOTFILES"
+            fns="e_header src is_macos jdk mkcd gpc q mkpg"
             failed=0
-            for fn in $SHELL_FNS; do
+            for fn in $fns; do
               if declare -f "$fn" >/dev/null 2>&1; then
                 echo "  ✔ $fn"
               else
@@ -97,7 +98,14 @@ jobs:
               fi
             done
             exit $failed
-          '
+          ' 2>"$err"
+          rc=$?
+          if [ -s "$err" ]; then
+            echo "::error::Bash startup produced errors on stderr:"
+            cat "$err"
+            exit 1
+          fi
+          exit "$rc"
 
       - name: Zsh startup
         shell: wsl-bash -u runner {0}
@@ -107,12 +115,14 @@ jobs:
           command -v zsh >/dev/null || { echo "zsh not found"; exit 1; }
           [[ -d "$HOME/.oh-my-zsh" ]] || { echo "oh-my-zsh not installed"; exit 1; }
           export DOTFILES=$PWD
+          err=$(mktemp)
           SHELL=$(which zsh) zsh -c '
             source ~/.zshrc
             echo "Zsh $ZSH_VERSION"
             echo "DOTFILES=$DOTFILES"
+            fns="e_header src is_macos jdk mkcd gpc q mkpg"
             failed=0
-            for fn in ${=SHELL_FNS}; do
+            for fn in ${=fns}; do
               if typeset -f "$fn" >/dev/null 2>&1; then
                 echo "  ✔ $fn"
               else
@@ -121,7 +131,14 @@ jobs:
               fi
             done
             exit $failed
-          '
+          ' 2>"$err"
+          rc=$?
+          if [ -s "$err" ]; then
+            echo "::error::Zsh startup produced errors on stderr:"
+            cat "$err"
+            exit 1
+          fi
+          exit "$rc"
 
       - name: Run tests
         shell: wsl-bash -u runner {0}

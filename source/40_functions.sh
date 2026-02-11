@@ -1,7 +1,7 @@
 # mkdir, cd into it
 mkcd() {
     mkdir -p "$*"
-    cd "$*"
+    cd "$*" || return
 }
 
 # Decide which archive type we have, then extract it.

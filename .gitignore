@@ -10,9 +10,10 @@
 !/link/.ssh/config_linux
 
 # Other
-.idea
-.claude
 .DS_Store
+.idea
+.claude/*
+!.claude/settings.json
 
 # Git Secret
 .gitsecret/keys/random_seed

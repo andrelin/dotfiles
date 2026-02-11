@@ -36,6 +36,7 @@ On subsequent runs, step 1 is skipped, step 2 just updates the already-existing 
 - The `/bin` directory contains executable shell scripts (including the [dotfiles][dotfiles] script) and symlinks to executable shell scripts. This directory is added to the path.
 - The `/caches` directory contains cached files, used by some scripts or functions.
 - The `/conf` directory stores app configuration files (Sublime Text, IntelliJ) that are linked into app-specific locations by dedicated init scripts.
+- The `/hooks` directory contains git hooks that are symlinked into `.git/hooks/` by [init/12_git_hooks.sh](init/12_git_hooks.sh).
 - The `/source` directory contains files that are sourced whenever a new shell is opened (in alphanumeric order, hence the funky names).
 - The `/test` directory contains unit tests for especially complicated bash functions.
 - The `/vendor` directory contains third-party libraries (zsh plugins as git submodules).
@@ -69,6 +70,7 @@ Scripts in the `/init` subdirectory will be executed. A whole bunch of things wi
 #### All platforms
 
 - SSH config and private keys via [init/10_ssh_private_keys.sh](init/10_ssh_private_keys.sh)
+- Git hooks (symlinked from `/hooks`) via [init/12_git_hooks.sh](init/12_git_hooks.sh)
 - Sublime Text settings via [init/51_sublime_text.sh](init/51_sublime_text.sh)
 
 ## Hacking my dotfiles
@@ -148,6 +150,8 @@ The `/bin` directory is added to `$PATH` and contains:
 - [dotfiles][dotfiles] - (re)initialize dotfiles. It might ask for your password (for `sudo`).
 - [eachdir](bin/eachdir) - run one or more commands in one or more directories.
 - [isip](bin/isip) - list bound IP addresses, or check if a specific IP is bound.
+- [sync-claude-deny](bin/sync-claude-deny) - sync git-secret paths into Claude Code deny rules. Use `--check` to verify without modifying.
+- [sort-claude-settings](bin/sort-claude-settings) - sort arrays in Claude Code settings files for deterministic output.
 
 The `src` function (defined in [.zshrc](link/.zshrc) and [.bashrc](link/.bashrc)) re-sources all files in `/source`, useful after making changes without opening a new shell.
 

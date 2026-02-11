@@ -73,8 +73,10 @@ function brew_install_recipes() {
     for recipe in "${recipes[@]}"; do
       brew install $recipe
     done
-    brew upgrade
-    brew cleanup
+    if [[ ! "$CI" ]]; then
+      brew upgrade
+      brew cleanup
+    fi
   fi
 }
 
@@ -132,6 +134,6 @@ function brew_install_casks() {
     for cask in "${casks[@]}"; do
       brew install --cask $cask
     done
-    brew cleanup
+    [[ ! "$CI" ]] && brew cleanup
   fi
 }

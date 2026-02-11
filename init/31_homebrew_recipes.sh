@@ -1,6 +1,13 @@
 # Exit if Homebrew is not installed.
 [[ ! "$(type -P brew)" ]] && e_error "Brew recipes need Homebrew to install." && return 1
 
+# In CI, only install recipes needed by downstream scripts.
+if [[ "$CI" ]]; then
+  recipes=(bash zsh)
+  brew_install_recipes
+  return 0
+fi
+
 recipes=(
   bash
   bash-completion

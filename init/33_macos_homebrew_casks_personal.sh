@@ -4,6 +4,9 @@ is_macos || return 1
 # Exit if Homebrew is not installed.
 [[ ! "$(type -P brew)" ]] && e_error "Brew casks need Homebrew to install." && return 1
 
+# Nothing to verify in CI that isn't already covered by the casks script.
+[[ "$CI" ]] && return 0
+
 casks_personal=(
   guitar-pro
   musescore

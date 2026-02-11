@@ -1,0 +1,125 @@
+name: Tests
+on: [push]
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container || '' }}
+    env:
+      SHELL_FNS: e_header src is_macos jdk mkcd gpc q mkpg
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            runner: macOS-latest
+          - name: Ubuntu
+            runner: ubuntu-latest
+          - name: RHEL 9
+            runner: ubuntu-latest
+            container: redhat/ubi9
+            prerequisites: yum install -y sudo git && git config --global --add safe.directory '*'
+    steps:
+      # Container prerequisites (must run before checkout for git)
+      - if: matrix.prerequisites
+        name: Install prerequisites
+        run: ${{ matrix.prerequisites }}
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: recursive
+          set-safe-directory: true
+
+      - name: Configure
+        run: |
+          ln -sf "$PWD" ~/.dotfiles
+          export DOTFILES=$PWD
+          ./bin/dotfiles 2>&1 | tee /tmp/dotfiles_output.txt || true
+
+          errors=0
+          section="setup"
+          prev=""
+          while IFS= read -r line; do
+            stripped="$(echo "$line" | sed $'s/\033\[[0-9;]*m//g; s/^[[:space:]]*//; s/[[:space:]]*$//')"
+            [[ -z "$stripped" ]] && continue
+
+            # Track current init script section
+            if [[ "$stripped" =~ ^Sourcing\ (.+\.sh)$ ]]; then
+              section="${BASH_REMATCH[1]}"
+              prev=""
+              continue
+            fi
+
+            # Skip known CI noise
+            case "$stripped" in
+              *"non-interactive mode"*) prev="$stripped"; continue ;;
+              *"write error: Broken pipe"*) prev="$stripped"; continue ;;
+              *"is not in your PATH"*) prev="$stripped"; continue ;;
+            esac
+
+            if echo "$stripped" | grep -qiE '\berror\b|\bfatal\b'; then
+              msg="$stripped"
+              [[ -n "$prev" ]] && msg="$stripped%0A  context: $prev"
+              echo "::error title=$section::$msg"
+              ((errors++))
+            elif echo "$stripped" | grep -qiE '\bwarn\b|\bwarning\b'; then
+              msg="$stripped"
+              [[ -n "$prev" ]] && msg="$stripped%0A  context: $prev"
+              echo "::warning title=$section::$msg"
+            fi
+            prev="$stripped"
+          done < /tmp/dotfiles_output.txt
+          exit $errors
+
+      - name: Bash startup
+        run: |
+          export DOTFILES=$PWD
+          bash --login -c '
+            echo "Bash $(bash --version | head -1)"
+            echo "DOTFILES=$DOTFILES"
+            failed=0
+            for fn in $SHELL_FNS; do
+              if declare -f "$fn" >/dev/null 2>&1; then
+                echo "  ✔ $fn"
+              else
+                echo "  ✖ $fn NOT defined"
+                failed=1
+              fi
+            done
+            exit $failed
+          '
+
+      - name: Zsh startup
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null)" || eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null)" || true
+          command -v zsh >/dev/null || { echo "zsh not found"; exit 1; }
+          [[ -d "$HOME/.oh-my-zsh" ]] || { echo "oh-my-zsh not installed"; exit 1; }
+          export DOTFILES=$PWD
+          SHELL=$(which zsh) zsh -c '
+            source ~/.zshrc
+            echo "Zsh $ZSH_VERSION"
+            echo "DOTFILES=$DOTFILES"
+            failed=0
+            for fn in ${=SHELL_FNS}; do
+              if typeset -f "$fn" >/dev/null 2>&1; then
+                echo "  ✔ $fn"
+              else
+                echo "  ✖ $fn NOT defined"
+                failed=1
+              fi
+            done
+            exit $failed
+          '
+
+      - name: Run tests
+        run: |
+          export DOTFILES=$PWD
+          # Use Homebrew bash on macOS (system bash is 3.2).
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null)" || eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null)" || true
+          failed=0
+          for t in test/test_*.sh; do bash "$t" || failed=1; done
+          exit $failed

@@ -1,6 +1,7 @@
 # Install Flatpak and add Flathub (Linux desktop only). Skip on macOS and WSL.
 is_macos && return 0
 is_wsl && return 0
+[[ "$CI" ]] && return 0
 
 # Install flatpak if not available.
 if [[ ! "$(type -P flatpak)" ]]; then

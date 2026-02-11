@@ -4,6 +4,13 @@ is_macos || return 1
 # Exit if Homebrew is not installed.
 [[ ! "$(type -P brew)" ]] && e_error "Brew casks need Homebrew to install." && return 1
 
+# In CI, install one cask to verify Homebrew cask support works.
+if [[ "$CI" ]]; then
+  casks=(sublime-text)
+  brew_install_casks
+  return 0
+fi
+
 casks=(
   1password
   font-jetbrains-mono

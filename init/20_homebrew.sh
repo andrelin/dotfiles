@@ -8,8 +8,8 @@ if ! is_macos; then
     sudo apt-get install -qq -y build-essential procps curl file git
   elif is_rhel; then
     e_header "Installing Homebrew build dependencies (yum)"
-    sudo yum groupinstall -y 'Development Tools'
-    sudo yum install -y procps-ng curl file git
+    sudo yum groupinstall -y 'Development Tools' 2>/dev/null || sudo yum install -y gcc gcc-c++ make
+    sudo yum install -y --skip-broken procps-ng curl file git
   fi
 fi
 
@@ -38,6 +38,6 @@ fi
 
 e_header "Updating Homebrew"
 
-brew doctor
+[[ ! "$CI" ]] && brew doctor
 
 brew update

@@ -5,6 +5,9 @@ is_wsl && return 0
 # Exit if Flatpak is not installed.
 [[ ! "$(type -P flatpak)" ]] && e_error "Flatpak apps need Flatpak to install." && return 1
 
+# Skip in CI — Flatpak requires system-level permissions not available in CI.
+[[ "$CI" ]] && return 0
+
 apps=(
   com.onepassword.1Password
   com.google.Chrome

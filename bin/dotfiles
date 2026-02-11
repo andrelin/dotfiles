@@ -28,8 +28,9 @@ function e_arrow()    { echo -e " \033[1;34m➜\033[0m  $@"; }
 
 # For testing some of these functions.
 function assert() {
-  local success modes equals result
+  local success modes equals result label
   modes=(e_error e_success); equals=("!=" "==");
+  label="${3:+(${3}) }"
   [[ "$1" == "$2" ]] && success=1 || success=0
   if [[ "$(echo "$1" | wc -l)" != 1 || "$(echo "$2" | wc -l)" != 1 ]]; then
     result="$(diff <(echo "$1") <(echo "$2") | sed '
@@ -39,9 +40,9 @@ function assert() {
       s/^> /expected |/
       2,$s/^/    /
     ')"
-    [[ ! "$result" ]] && result="(multiline comparison)"
+    [[ ! "$result" ]] && result="${label}OK" || result="${label}${result}"
   else
-    result="\"$1\" ${equals[success]} \"$2\""
+    result="${label}\"$1\" ${equals[success]} \"$2\""
   fi
   ${modes[success]} "$result"
 }
@@ -213,7 +214,7 @@ function __array_filter() {
   local __i__ __val__ __mode__ __arr__
   __mode__=$1; shift; __arr__=$1; shift
   for __i__ in $(eval echo "\${!$__arr__[@]}"); do
-    __val__="$(eval echo "\${$__arr__[__i__]}")"
+    __val__="$(eval echo "\"\${$__arr__[__i__]}\"")"
     if [[ "$1" ]]; then
       "$@" "$__val__" $__i__ >/dev/null
     else
@@ -377,8 +378,8 @@ function do_stuff() {
   # Iterate over files.
   for file in "${files[@]}"; do
     base="$(basename $file)"
-    # Skip hidden files (.DS_Store, etc.)
-    [[ "$base" == .* ]] && continue
+    # Skip .DS_Store (but not dotfiles like .bashrc).
+    [[ "$base" == .DS_Store ]] && continue
     # Get dest path.
     if [[ $(declare -f "$1_dest") ]]; then
       dest="$("$1_dest" "$base")"
@@ -497,7 +498,7 @@ if [[ ! -d $DOTFILES ]]; then
   # Dotfiles directory doesn't exist? Clone it!
   e_header "Downloading dotfiles"
   git clone --branch ${DOTFILES_GH_BRANCH:-main} --recursive \
-    git://github.com/${DOTFILES_GH_USER:-andrelin}/dotfiles.git $DOTFILES
+    https://github.com/${DOTFILES_GH_USER:-andrelin}/dotfiles.git $DOTFILES
   cd $DOTFILES
 elif [[ "$1" != "restart" ]]; then
   # Make sure we have the latest files.

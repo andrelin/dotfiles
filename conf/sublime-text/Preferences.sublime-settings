@@ -31,7 +31,6 @@
 	"ignored_packages":
 	[
 		"Markdown",
-		"Markdown Preview",
 		"Reindent on save",
 		"Vintage",
 	],
@@ -52,4 +51,5 @@
 	"trim_trailing_white_space_on_save": true,
 	"word_wrap": false,
 	"wrap_width": 80,
+	"index_files": true,
 }

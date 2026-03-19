@@ -1,5 +1,7 @@
 # https://github.com/zsh-users/zsh-autosuggestions/blob/master/INSTALL.md
 source $DOTFILES/vendor/zsh-autosuggestions/zsh-autosuggestions.zsh
+# shellcheck disable=SC2034 # Read by zsh-autosuggestions plugin
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#777777"
 
 source $DOTFILES/vendor/zsh-completions/zsh-completions.plugin.zsh
 

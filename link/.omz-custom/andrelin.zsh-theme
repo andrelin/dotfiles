@@ -1,5 +1,18 @@
+# Lightweight kube-ps1 replacement
+function get_kube_prompt() {
+    # Get current context
+    local ctx=$(kubectl config current-context 2>/dev/null)
+    if [[ -n "$ctx" ]]; then
+        # Get current namespace (defaults to 'default' if not set)
+        local ns=$(kubectl config view --minify -o jsonpath='{..namespace}' 2>/dev/null)
+        ns=${ns:-default}
+        # Format the output (⎈ context:namespace)
+        echo "%F{cyan}(⎈ ${ctx}:${ns})%f "
+    fi
+}
+
 PROMPT=$'
-%{$fg[blue]%}%~%{$reset_color%} $(git_prompt_info)$(virtualenv_prompt_info) [%T]
+%{$fg[blue]%}%~%{$reset_color%} $(git_prompt_info)$(virtualenv_prompt_info)$(get_kube_prompt)[%T]
 > '
 
 PROMPT2="_> "

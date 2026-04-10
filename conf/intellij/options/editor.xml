@@ -6,4 +6,8 @@
   <component name="InlineCompletionOnboarding">
     <option name="onboardingFinished" value="true" />
   </component>
+  <component name="JsonEditorOptions">
+    <option name="COLON_MOVE_OUTSIDE_QUOTES" value="true" />
+    <option name="COMMA_MOVE_OUTSIDE_QUOTES" value="true" />
+  </component>
 </application>

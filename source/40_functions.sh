@@ -4,7 +4,14 @@ mkcd() {
     cd "$*" || return
 }
 
+# cd then list
+cl() {
+    cd "$1" && ls -la
+}
+
 # Decide which archive type we have, then extract it.
+# Shadowed at runtime by the omz `extract` plugin (broader format support);
+# kept here as a fallback if that plugin is ever removed.
 extract() {
     if [ -f $1 ] ; then
         case $1 in
@@ -28,8 +35,4 @@ extract() {
 # Search the dictionary
 dict() {
     ag "$@" /usr/share/dict/words
-}
-
-pyclean() {
-    find . | grep -E "(__pycache__|\.pyc$|\.egg-info$)" | xargs rm -rf
 }

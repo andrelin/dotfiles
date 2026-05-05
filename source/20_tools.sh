@@ -14,3 +14,12 @@ unset _kube_ps1
 if is_macos; then
   [[ -e "${HOME}/.iterm2_shell_integration.zsh" ]] && source "${HOME}/.iterm2_shell_integration.zsh"
 fi
+
+# fzf: key bindings and fuzzy completion.
+if command -v fzf >/dev/null 2>&1; then
+  if [[ -n "$ZSH_VERSION" ]]; then
+    source <(fzf --zsh)
+  elif [[ -n "$BASH_VERSION" ]]; then
+    eval "$(fzf --bash)"
+  fi
+fi

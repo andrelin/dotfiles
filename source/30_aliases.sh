@@ -1,18 +1,27 @@
-if locale -a 2>/dev/null | grep -q 'en_US.UTF-8\|en_US.utf8'; then
-  export LC_ALL=en_US.UTF-8
+# Navigation
+alias dot="cd ~/.dotfiles"   # jump to the dotfiles repo
+alias -- -='cd -'            # toggle back to the previous directory
+
+# Listing — base `ls` is colorized per platform; the rest inherit it via alias expansion.
+if is_macos; then
+  alias ls='ls -FG'          # append file-type markers, colorize (BSD ls)
+else
+  alias ls='ls -F --color=auto'  # append file-type markers, colorize (GNU ls)
 fi
+alias l='ls -Alh'            # all entries except . and .., long, human-readable sizes
+alias ll='ls -lh'            # long listing, human-readable sizes
+alias lt='ls -lhtr'          # long listing by mtime, newest last
 
-# Files will be created with these permissions:
-# files 644 -rw-r--r-- (666 minus 022)
-# dirs  755 drwxr-xr-x (777 minus 022)
-umask 022
+# Search
+alias grep='grep --color=auto'  # highlight matches in output
 
-alias dot="cd ~/.dotfiles"
-alias grep='grep --color=auto'
-
-alias ls='ls -F'
-alias ll='ls -lh'
-alias l='ls -Alh'
-
-# Aliasing eachdir like this allows you to use aliases/functions as commands.
+# Sourcing `eachdir` (rather than executing it) keeps it in the current shell,
+# so it can call your aliases and functions.
 alias eachdir=". eachdir"
+
+# Reload shell config after editing dotfiles.
+if [[ -n "$ZSH_VERSION" ]]; then
+  alias reload='source ~/.zshrc'
+elif [[ -n "$BASH_VERSION" ]]; then
+  alias reload='source ~/.bashrc'
+fi

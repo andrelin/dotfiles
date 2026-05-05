@@ -11,8 +11,6 @@ is_wsl && return 0
 apps=(
   com.onepassword.1Password
   com.google.Chrome
-  com.getpostman.Postman
-
   com.slack.Slack
   com.spotify.Client
   com.sublimetext.three
@@ -20,8 +18,7 @@ apps=(
 )
 
 apps_optional=(
-  org.musescore.MuseScore
-  com.valvesoftware.Steam
+  com.getpostman.Postman
 )
 
 # Install apps not already installed.

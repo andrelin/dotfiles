@@ -5,6 +5,13 @@ ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#777777"
 
 source $DOTFILES/vendor/zsh-completions/zsh-completions.plugin.zsh
 
-# N.B. Must run last
-# https://github.com/zsh-users/zsh-syntax-highlighting#why-must-zsh-syntax-highlightingzsh-be-sourced-at-the-end-of-the-zshrc-file
 source $DOTFILES/vendor/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# zsh-history-substring-search must load AFTER zsh-syntax-highlighting (per its docs).
+# https://github.com/zsh-users/zsh-history-substring-search#usage
+source $DOTFILES/vendor/zsh-history-substring-search/zsh-history-substring-search.zsh
+# Bind ↑/↓ to substring-search through current shell's keymap.
+if [[ -n "$ZSH_VERSION" ]]; then
+  bindkey "${terminfo[kcuu1]:-^[[A}" history-substring-search-up
+  bindkey "${terminfo[kcud1]:-^[[B}" history-substring-search-down
+fi

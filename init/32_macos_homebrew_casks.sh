@@ -19,7 +19,6 @@ casks=(
   iterm2
   microsoft-teams
   pocket-casts
-  postman
   rectangle
   slack
   spotify
@@ -30,6 +29,7 @@ casks_optional=(
   bettertouchtool
   claude-code
   fantastical
+  postman
 )
 
 # Prompt for optional casks and append selections

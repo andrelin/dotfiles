@@ -12,6 +12,7 @@ recipes=(
   bash
   bash-completion
   direnv
+  fzf
   git
   git-secret
   gnupg       # GNU Privacy Guard (OpenPGP)
@@ -33,6 +34,7 @@ recipes=(
 
 recipes_optional=(
   gh
+  k9s         # Kubernetes terminal UI
   kafka
   kube-ps1    # Kubernetes prompt info for bash and zsh
   kubectx

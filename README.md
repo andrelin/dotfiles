@@ -117,7 +117,7 @@ Also, before installing, be sure to [read my gently-worded note](#heed-this-crit
 
 ### macOS Notes
 
-You need to have [XCode](https://developer.apple.com/downloads/index.action?=xcode) or, at the very minimum, the [XCode Command Line Tools](https://developer.apple.com/downloads/index.action?=command%20line%20tools), which are available as a much smaller download.
+You need to have [XCode](https://developer.apple.com/download/?=xcode) or, at the very minimum, the [XCode Command Line Tools](https://developer.apple.com/download/?=command%20line%20tools), which are available as a much smaller download.
 
 The easiest way to install the XCode Command Line Tools is to open up a terminal, type `xcode-select --install` and follow the prompts.
 

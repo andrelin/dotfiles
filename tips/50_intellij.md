@@ -196,4 +196,4 @@ Adds syntax highlighting, templates, and a generator for `.gitignore`, `.dockeri
 
 > Settings → Plugins → search ".ignore" → install → restart.
 
-Plugin: <https://plugins.jetbrains.com/plugin/7495--ignore->
+Plugin: <https://plugins.jetbrains.com/plugin/7495--ignore>

@@ -15,7 +15,7 @@ kafka-topics --bootstrap-server localhost:9092 --describe --topic my-topic
 kafka-topics --bootstrap-server localhost:9092 --delete --topic my-topic
 ```
 
-Docs: <https://kafka.apache.org/documentation/#basic_ops>
+Docs: <https://kafka.apache.org/documentation/>
 
 ## Tip 41.2: Console Consumer
 

@@ -22,3 +22,9 @@
 # Git Secret — decrypted files (encrypted .secret versions are tracked)
 copy/.gitconfig_credentials
 link/.ssh/allowed_signers
+
+# Docusaurus website
+website/node_modules/
+website/build/
+website/.docusaurus/
+website/docs-generated/

@@ -94,6 +94,15 @@ Same applies to `README.md`, `init/README.md`, `source/README.md`, and `CLAUDE.m
 
 **doctoc / markdownlint** — every markdown file in the repo either has doctoc start/end markers or a `<!-- DOCTOC SKIP -->` comment at the top — never silent default. doctoc requires the **uppercase** form. Rule of thumb: use markers when a file has more than 5 H2/H3 headings; otherwise SKIP. The pre-commit hook auto-runs doctoc + markdownlint-cli2 on staged markdown; both tools are installed by `init/34_npm_globals.sh` when `dotfiles` runs.
 
+## Documentation site
+
+`website/` is a Docusaurus site that renders the repo's docs to GitHub Pages, served from the custom domain `https://dotfiles.lindjo.no`. It is build-time tooling, not part of the `dotfiles` install flow.
+
+- **Source of truth stays put.** `README.md`, `TIPS.md`, `tips/*.md`, `init/README.md`, and `source/README.md` are edited in their canonical locations. `website/scripts/gather-docs.ts` copies them into `website/docs-generated/` (gitignored) at build time, adding front-matter and rewriting links.
+- **Link-rewrite conventions.** The gather script rewrites repo-internal links (e.g. `bin/foo`, `init/12_git_hooks.sh`, `.gitignore`) to `https://github.com/andrelin/dotfiles/blob/main/...` URLs so they work on the rendered site. If you add a new top-level directory or root-level file that's referenced from any gathered doc, add it to `SOURCE_DIRS` or `ROOT_FILES` in `website/scripts/gather-docs.ts` — otherwise the build will report broken links.
+- **MDX gotcha.** Docusaurus parses markdown as MDX, which treats `<...>` as JSX. The gather script rewrites autolinks (`<https://example.com>` → `[url](url)`); inline `<placeholder>` text inside fenced code blocks is fine. If you write new MDX-incompatible markdown outside code blocks, extend the rewrites.
+- **Deploy.** `.github/workflows/deploy-docs.yml` builds and publishes on push to main when any of the source-of-truth docs or `website/` itself changes.
+
 ## CI philosophy
 
 This repo has no PRs and a single user — pushes go straight to main, and the production environment is whatever's on the user's machine. CI exists to surface "this needs your attention" promptly, not to gate merges.

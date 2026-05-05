@@ -7,6 +7,8 @@
 
 My macOS / Ubuntu / WSL 2 / RHEL dotfiles.
 
+Browseable docs: <https://dotfiles.lindjo.no>
+
 Forked from <https://github.com/runesto/dotfiles>
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -72,6 +74,7 @@ On subsequent runs, step 1 is skipped, step 2 just updates the already-existing 
 - The `/source` directory contains files that are sourced whenever a new shell is opened (in alphanumeric order, hence the funky names).
 - The `/test` directory contains unit tests for especially complicated bash functions.
 - The `/vendor` directory contains third-party libraries (zsh plugins as git submodules).
+- The `/website` directory is a Docusaurus site that renders the README, `TIPS.md`, and `tips/` files for GitHub Pages. Built and deployed by [.github/workflows/deploy-docs.yml](.github/workflows/deploy-docs.yml). Run `cd website && npm install && npm start` to develop locally.
 
 ### The "copy" step
 

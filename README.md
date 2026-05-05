@@ -1,4 +1,4 @@
-# Dotfiles
+# <img src="website/static/img/logo-dot-files.svg" alt="" class="title-logo" width="56" /> Dotfiles
 
 ![macOS](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=macOS)
 ![Ubuntu](https://github.com/andrelin/dotfiles/actions/workflows/tests.yml/badge.svg?nameFilter=Ubuntu)
@@ -196,5 +196,5 @@ A growing index of terminal tricks, repo features, and bundled-tool basics lives
 
 ## License
 
-Copyright (c) 2021-2026 Andreas Lind-Johansen
-Licensed under the MIT license.
+Copyright © 2022-2026 Andreas Lind-Johansen
+Licensed under the [MIT license](LICENSE).

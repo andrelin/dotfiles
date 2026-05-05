@@ -110,7 +110,14 @@ ensureDir(OUT);
 
 // ---- overview (root README.md) ----
 {
-  let body = stripH1(stripDoctoc(read('README.md')));
+  let body = stripDoctoc(read('README.md'));
+  // The README's H1 is `<logo> Dotfiles` (logo decorative). On the docs site
+  // the H1 is the page title — replace it with `<logo alt="Dotfiles"> Overview`
+  // so it reads as "Dotfiles Overview" with the logo carrying the wordmark.
+  body = body.replace(
+    /^# .*$/m,
+    '# <img src="/img/logo-dot-files.svg" alt="Dotfiles" class="title-logo" width="56" /> Overview',
+  );
   // Drop the README's own pointer to the rendered site — circular on the site itself.
   body = body.replace(/^Browseable docs:.*\n+/m, '');
   // Internal docs links: point at the gathered tree, not the source-tree

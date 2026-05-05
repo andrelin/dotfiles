@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Dotfiles">
+  <defs>
+    <radialGradient id="rainbow" cx="400" cy="400" r="433" gradientUnits="userSpaceOnUse">
+      <stop offset="0"     stop-color="#c084fc"/>
+      <stop offset="0.734" stop-color="#c084fc"/>
+      <stop offset="0.734" stop-color="#60a5fa"/>
+      <stop offset="0.786" stop-color="#60a5fa"/>
+      <stop offset="0.786" stop-color="#4ade80"/>
+      <stop offset="0.871" stop-color="#4ade80"/>
+      <stop offset="0.871" stop-color="#facc15"/>
+      <stop offset="0.914" stop-color="#facc15"/>
+      <stop offset="0.914" stop-color="#fb923c"/>
+      <stop offset="0.957" stop-color="#fb923c"/>
+      <stop offset="0.957" stop-color="#ef4444"/>
+      <stop offset="1"     stop-color="#ef4444"/>
+    </radialGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#0f172a"/>
+  <circle cx="80" cy="152" r="28" fill="url(#rainbow)"/>
+  <rect x="124" y="164" width="80" height="16" rx="4" fill="url(#rainbow)"/>
+</svg>

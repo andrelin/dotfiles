@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Dotfiles">
+  <defs>
+    <radialGradient id="rainbow" cx="208" cy="132" r="187.4" gradientUnits="userSpaceOnUse">
+      <stop offset="0"     stop-color="#c084fc"/>
+      <stop offset="0.140" stop-color="#c084fc"/>
+      <stop offset="0.140" stop-color="#60a5fa"/>
+      <stop offset="0.281" stop-color="#60a5fa"/>
+      <stop offset="0.281" stop-color="#4ade80"/>
+      <stop offset="0.421" stop-color="#4ade80"/>
+      <stop offset="0.421" stop-color="#facc15"/>
+      <stop offset="0.562" stop-color="#facc15"/>
+      <stop offset="0.562" stop-color="#fb923c"/>
+      <stop offset="0.701" stop-color="#fb923c"/>
+      <stop offset="0.701" stop-color="#ef4444"/>
+      <stop offset="1"     stop-color="#ef4444"/>
+    </radialGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#0f172a"/>
+  <path d="M96 56 h48 l32 32 v100 a8 8 0 0 1 -8 8 h-72 a8 8 0 0 1 -8 -8 v-124 a8 8 0 0 1 8 -8 z"
+        fill="#0f172a" stroke="url(#rainbow)" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M112 72 h48 l32 32 v100 a8 8 0 0 1 -8 8 h-72 a8 8 0 0 1 -8 -8 v-124 a8 8 0 0 1 8 -8 z"
+        fill="#0f172a" stroke="url(#rainbow)" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M128 88 h48 l32 32 v100 a8 8 0 0 1 -8 8 h-72 a8 8 0 0 1 -8 -8 v-124 a8 8 0 0 1 8 -8 z"
+        fill="#0f172a" stroke="url(#rainbow)" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M176 88 v24 a8 8 0 0 0 8 8 h24"
+        fill="none" stroke="url(#rainbow)" stroke-width="6" stroke-linejoin="round"/>
+  <line x1="144" y1="148" x2="192" y2="148" stroke="url(#rainbow)" stroke-width="5" stroke-linecap="round"/>
+  <line x1="144" y1="168" x2="200" y2="168" stroke="url(#rainbow)" stroke-width="5" stroke-linecap="round"/>
+  <line x1="144" y1="188" x2="180" y2="188" stroke="url(#rainbow)" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="56" cy="180" r="20" fill="url(#rainbow)"/>
+</svg>

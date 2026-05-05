@@ -1,8 +1,20 @@
+import {readFileSync} from 'node:fs';
+import path from 'node:path';
+import {transformSync} from 'esbuild';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const REPO = 'andrelin/dotfiles';
 const EDIT_BASE = `https://github.com/${REPO}/edit/main`;
+
+// Inlined synchronously in <head> so the random palette is applied before
+// the page paints — eliminates the flash of default colors that an
+// async-loaded clientModule would cause. The TS source is transpiled to JS
+// via esbuild at config-load time so we can keep types on the source.
+const earlyPaletteScript = transformSync(
+  readFileSync(path.resolve(__dirname, 'src/early-palette.ts'), 'utf-8'),
+  {loader: 'ts', format: 'iife', target: 'es2020'},
+).code;
 
 // Map gathered file paths back to their source-of-truth locations on GitHub,
 // so the "Edit this page" link points at the original file rather than the
@@ -22,8 +34,19 @@ const config: Config = {
   organizationName: 'andrelin',
   projectName: 'dotfiles',
   trailingSlash: false,
+  favicon: 'img/logo-dot-files.svg',
 
   onBrokenLinks: 'throw',
+
+  clientModules: ['./src/randomLogo.ts'],
+
+  headTags: [
+    {
+      tagName: 'script',
+      attributes: {},
+      innerHTML: earlyPaletteScript,
+    },
+  ],
 
   markdown: {
     hooks: {
@@ -62,6 +85,10 @@ const config: Config = {
   themeConfig: {
     navbar: {
       title: 'Dotfiles',
+      logo: {
+        alt: 'Dotfiles logo',
+        src: 'img/logo-dot-files.svg',
+      },
       items: [
         {
           type: 'docSidebar',

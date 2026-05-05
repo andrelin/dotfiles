@@ -37,3 +37,38 @@
 .header-github-link:hover::before {
   background-color: var(--ifm-navbar-link-hover-color);
 }
+
+/* Logo inline with the H1 title. `vertical-align: middle` lines the image up
+   with the x-height middle, which sits a bit below the visual text center
+   for an H1 — the small upward shim balances it on the cap-height middle. */
+.title-logo {
+  vertical-align: middle;
+  position: relative;
+  top: -0.15em;
+}
+
+/* Subtle rainbow gradient bg for the rainbow palette. The attribute is set on
+   <html> by early-palette.ts before the body renders; we use data-palette
+   instead of a class because React 19's hydration overwrites html.className.
+   Opacity is tuned per theme so the tint reads as a clear hint on white and
+   stays subdued on dark. */
+html[data-palette='rainbow'] body {
+  background-image: linear-gradient(135deg,
+    rgba(239, 68, 68, 0.25) 0%,
+    rgba(251, 146, 60, 0.25) 20%,
+    rgba(250, 204, 21, 0.25) 40%,
+    rgba(74, 222, 128, 0.25) 60%,
+    rgba(96, 165, 250, 0.25) 80%,
+    rgba(192, 132, 252, 0.25) 100%);
+  background-attachment: fixed;
+}
+
+html[data-palette='rainbow'][data-theme='dark'] body {
+  background-image: linear-gradient(135deg,
+    rgba(239, 68, 68, 0.10) 0%,
+    rgba(251, 146, 60, 0.10) 20%,
+    rgba(250, 204, 21, 0.10) 40%,
+    rgba(74, 222, 128, 0.10) 60%,
+    rgba(96, 165, 250, 0.10) 80%,
+    rgba(192, 132, 252, 0.10) 100%);
+}

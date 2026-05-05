@@ -2,6 +2,7 @@
   "default": true,
   "MD013": false,
   "MD024": { "siblings_only": true },
+  "MD033": { "allowed_elements": ["img"] },
   "MD040": false,
   "MD041": false
 }

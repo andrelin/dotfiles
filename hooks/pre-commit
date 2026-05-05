@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 #
 # Pre-commit hook for dotfiles repo.
+#
+# Uses mapfile (bash 4+). Re-execs under brew bash on macOS where
+# /usr/bin/bash is still 3.2.
+
+if ((BASH_VERSINFO[0] < 4)); then
+  for candidate in /opt/homebrew/bin/bash /usr/local/bin/bash; do
+    [[ -x "$candidate" ]] && exec "$candidate" "$0" "$@"
+  done
+  echo "ERROR: pre-commit hook needs bash 4+; current: $BASH_VERSION" >&2
+  echo "Install brew bash: brew install bash" >&2
+  exit 1
+fi
 
 set -euo pipefail
 
@@ -14,4 +26,32 @@ fi
 if git diff --cached --name-only | grep -q '^\.claude/settings\.json$'; then
   bin/sort-claude-settings
   git add .claude/settings.json
+fi
+
+# Enforce repo-wide: every tracked md must opt in to doctoc (markers) or opt out (SKIP).
+# Catches violations in unrelated files too — fix-first, never silent-default.
+mapfile -t all_md < <(git ls-files -- '*.md')
+missing=()
+for f in "${all_md[@]}"; do
+  [[ -f "$f" ]] || continue
+  grep -qE '<!-- (START doctoc|DOCTOC SKIP)' "$f" 2>/dev/null || missing+=("$f")
+done
+if (( ${#missing[@]} > 0 )); then
+  echo "ERROR: these tracked markdown files lack both doctoc markers and '<!-- DOCTOC SKIP -->':" >&2
+  printf '  %s\n' "${missing[@]}" >&2
+  echo "Add doctoc markers (for a ToC) or '<!-- DOCTOC SKIP -->' (to opt out) at the top." >&2
+  exit 1
+fi
+
+# Update ToCs and lint markdown in staged *.md files.
+mapfile -t md_files < <(git diff --cached --name-only --diff-filter=ACMR -- '*.md')
+if (( ${#md_files[@]} > 0 )); then
+  if command -v doctoc >/dev/null 2>&1; then
+    doctoc --github --notitle "${md_files[@]}" >/dev/null
+    git add "${md_files[@]}"
+  fi
+  if command -v markdownlint-cli2 >/dev/null 2>&1; then
+    markdownlint-cli2 --fix "${md_files[@]}" >/dev/null
+    git add "${md_files[@]}"
+  fi
 fi

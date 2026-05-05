@@ -15,15 +15,13 @@ apps=(
   "Google.Chrome"
   "JetBrains.IntelliJ-IDEA.Ultimate"
   "Microsoft.Teams"
-  "Postman.Postman"
   "SlackTechnologies.Slack"
   "Spotify.Spotify"
   "SublimeHQ.SublimeText.4"
 )
 
 apps_optional=(
-  "Musescore.Musescore"
-  "Valve.Steam"
+  "Postman.Postman"
 )
 
 # Install apps not already present.

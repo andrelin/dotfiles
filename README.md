@@ -7,11 +7,43 @@
 
 My macOS / Ubuntu / WSL 2 / RHEL dotfiles.
 
-Forked from https://github.com/runesto/dotfiles
+Forked from <https://github.com/runesto/dotfiles>
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [About this project](#about-this-project)
+- [How the "dotfiles" command works](#how-the-dotfiles-command-works)
+  - [Other subdirectories](#other-subdirectories)
+  - [The "copy" step](#the-copy-step)
+  - [The "link" step](#the-link-step)
+  - [The "init" step](#the-init-step)
+    - [macOS](#macos)
+    - [Linux / WSL](#linux--wsl)
+    - [All platforms](#all-platforms)
+- [Hacking my dotfiles](#hacking-my-dotfiles)
+- [Installation](#installation)
+  - [macOS Notes](#macos-notes)
+  - [Ubuntu / WSL Notes](#ubuntu--wsl-notes)
+  - [Heed this critically important warning before you install](#heed-this-critically-important-warning-before-you-install)
+  - [Actual installation](#actual-installation)
+    - [Ubuntu / WSL](#ubuntu--wsl)
+    - [macOS](#macos-1)
+  - [Actual installation (for me)](#actual-installation-for-me)
+    - [Ubuntu / WSL](#ubuntu--wsl-1)
+    - [macOS](#macos-2)
+- [Aliases and Functions](#aliases-and-functions)
+- [Scripts](#scripts)
+- [Tips](#tips)
+- [License](#license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## About this project
 
-I finally decided that I wanted to be able to execute a single command to "bootstrap" a new system to pull down all of my dotfiles and configs, as well as install all the tools I commonly use. In addition, I wanted to be able to re-execute that command at any time to synchronize anything that might have changed. Finally, I wanted to make it easy to re-integrate changes back in, so that other machines could be updated.
+I finally decided that I wanted to be able to execute a single command to "bootstrap" a new system to pull down all of my dotfiles and configs, as well as install all the tools I commonly use.
+In addition, I wanted to be able to re-execute that command at any time to synchronize anything that might have changed.
+Finally, I wanted to make it easy to re-integrate changes back in, so that other machines could be updated.
 
 That command is [dotfiles][dotfiles], and this is my "dotfiles" Git repo.
 
@@ -62,8 +94,8 @@ Scripts in the `/init` subdirectory will be executed. A whole bunch of things wi
 
 #### Linux / WSL
 
-- Flatpak (Linux desktop) via [init/21_linux_flatpak.sh](init/21_linux_flatpak.sh) and [init/34_linux_flatpak_apps.sh](init/34_linux_flatpak_apps.sh)
-- Winget (WSL) via [init/22_wsl_winget.sh](init/22_wsl_winget.sh)
+- Flatpak (Linux desktop) via [init/21_linux_flatpak.sh](init/21_linux_flatpak.sh) and [init/32_linux_flatpak_apps.sh](init/32_linux_flatpak_apps.sh)
+- Winget (WSL) via [init/22_wsl_winget.sh](init/22_wsl_winget.sh) and [init/32_wsl_winget_apps.sh](init/32_wsl_winget_apps.sh)
 - Homebrew via [init/20_homebrew.sh](init/20_homebrew.sh)
 - Homebrew recipes via [init/31_homebrew_recipes.sh](init/31_homebrew_recipes.sh)
 
@@ -85,7 +117,7 @@ Also, before installing, be sure to [read my gently-worded note](#heed-this-crit
 
 ### macOS Notes
 
-You need to have [XCode](https://developer.apple.com/downloads/index.action?=xcode) or, at the very minimum, the [XCode Command Line Tools](https://developer.apple.com/downloads/index.action?=command%20line%20tools), which are available as a much smaller download.
+You need to have [XCode](https://developer.apple.com/download/?=xcode) or, at the very minimum, the [XCode Command Line Tools](https://developer.apple.com/download/?=command%20line%20tools), which are available as a much smaller download.
 
 The easiest way to install the XCode Command Line Tools is to open up a terminal, type `xcode-select --install` and follow the prompts.
 
@@ -154,6 +186,10 @@ The `/bin` directory is added to `$PATH` and contains:
 - [sort-claude-settings](bin/sort-claude-settings) - sort arrays in Claude Code settings files for deterministic output.
 
 The `src` function (defined in [.zshrc](link/.zshrc) and [.bashrc](link/.bashrc)) re-sources all files in `/source`, useful after making changes without opening a new shell.
+
+## Tips
+
+A growing index of terminal tricks, repo features, and bundled-tool basics lives in [TIPS.md](TIPS.md), with one file per category under [tips/](tips/). Run `tips` in a shell to print them all, `tips <FILE>` (e.g. `tips 22`) for one section, `tips <FILE>.<N>` (e.g. `tips 22.3`) for a single tip, `tips <D>x` for a whole decade, `tips -l` to list titles, or `tips -h` for usage.
 
 ## License
 

@@ -1,0 +1,46 @@
+name: Markdown
+
+on: [push]
+
+permissions:
+  contents: read
+
+jobs:
+  markdown:
+    name: Markdown lint + ToCs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Install doctoc and markdownlint-cli2
+        run: npm install -g doctoc markdownlint-cli2
+
+      - name: markdownlint-cli2
+        run: markdownlint-cli2 '**/*.md' '#node_modules' '#vendor'
+
+      - name: Enforce doctoc opt-in/opt-out on every markdown file
+        run: |
+          mapfile -t md_files < <(find . -type f -name '*.md' -not -path './node_modules/*' -not -path './vendor/*')
+          missing=()
+          for f in "${md_files[@]}"; do
+            grep -qE '<!-- (START doctoc|DOCTOC SKIP)' "$f" || missing+=("$f")
+          done
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::These markdown files lack both doctoc markers and '<!-- DOCTOC SKIP -->':"
+            printf '  %s\n' "${missing[@]}"
+            exit 1
+          fi
+
+      - name: doctoc — verify ToCs are up to date
+        run: |
+          mapfile -t md_files < <(find . -type f -name '*.md' -not -path './node_modules/*' -not -path './vendor/*')
+          doctoc --github --notitle "${md_files[@]}"
+          if ! git diff --quiet -- '*.md'; then
+            echo "::error::doctoc found stale ToCs. Re-run doctoc locally on all markdown files and commit."
+            git --no-pager diff -- '*.md'
+            exit 1
+          fi

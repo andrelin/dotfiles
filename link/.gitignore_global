@@ -44,3 +44,6 @@ Desktop.ini
 .swo
 .*.swp
 .*.swo
+
+# Claude Code
+.claude/

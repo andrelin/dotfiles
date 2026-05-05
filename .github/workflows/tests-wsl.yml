@@ -1,6 +1,9 @@
 name: Tests (WSL)
 on: [push]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: WSL (Ubuntu 24.04)

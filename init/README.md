@@ -1,3 +1,5 @@
+<!-- DOCTOC SKIP -->
+
 # Init Scripts
 
 Run once during `dotfiles` setup. Numbered by dependency order:
@@ -11,5 +13,6 @@ Run once during `dotfiles` setup. Numbered by dependency order:
 | 50–59 | App configuration     | IntelliJ, Sublime Text    |
 
 Filename conventions:
+
 - `_macos_`, `_linux_`, `_wsl_`, `_ubuntu_`, `_rhel_` — auto-deselected on other platforms
 - `_personal_` — default unchecked (must be explicitly selected)

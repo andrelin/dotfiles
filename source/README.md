@@ -1,3 +1,5 @@
+<!-- DOCTOC SKIP -->
+
 # Source Scripts
 
 Sourced every shell session. Numbered by category:

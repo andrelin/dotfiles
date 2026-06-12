@@ -45,5 +45,7 @@ Desktop.ini
 .*.swp
 .*.swo
 
-# Claude Code
+# Claude Code — ignore most local agent state, but skills/ is project
+# content (custom slash-commands checked into the repo).
 .claude/
+!.claude/skills/

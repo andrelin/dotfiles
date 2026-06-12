@@ -103,6 +103,14 @@ Same applies to `README.md`, `init/README.md`, `source/README.md`, and `CLAUDE.m
 - **MDX gotcha.** Docusaurus parses markdown as MDX, which treats `<...>` as JSX. The gather script rewrites autolinks (`<https://example.com>` → `[url](url)`); inline `<placeholder>` text inside fenced code blocks is fine. If you write new MDX-incompatible markdown outside code blocks, extend the rewrites.
 - **Deploy.** `.github/workflows/deploy-docs.yml` builds and publishes on push to main when any of the source-of-truth docs or `website/` itself changes.
 
+## Dependabot and Renovate PRs
+
+Never close Dependabot or Renovate PRs, and never write `closes #N` / `fixes #N` / `resolves #N` against one in a commit or PR description — those phrases auto-close
+the linked PR on merge.
+When bundling several bot PRs into one human-authored PR, just land the human PR;
+the bots detect that their changes are now on `main` and close their own PRs (and the dashboard issues) on the next cycle.
+Also do not close the Renovate dependency-dashboard issue (#3) — it's the bot's working state, and Renovate keeps it open by design.
+
 ## CI philosophy
 
 This repo has no PRs and a single user — pushes go straight to main, and the production environment is whatever's on the user's machine. CI exists to surface "this needs your attention" promptly, not to gate merges.

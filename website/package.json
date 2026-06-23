@@ -34,7 +34,7 @@
   },
   "overrides": {
     "serialize-javascript": "^7.0.6",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.1"
   },
   "browserslist": {
     "production": [">0.5%", "not dead", "not op_mini all"],

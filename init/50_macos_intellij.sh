@@ -23,6 +23,8 @@ for subdir in codestyles colors keymaps options options/mac; do
     fi
     if [[ -e "$dest" ]]; then
       e_arrow "Backing up $base."
+      # Read by bin/dotfiles after all init scripts run, to report where backups went.
+      export backup=1
       # shellcheck disable=SC2154 # backup_dir is defined in bin/dotfiles which sources this script
       mkdir -p "$backup_dir"
       mv "$dest" "$backup_dir"

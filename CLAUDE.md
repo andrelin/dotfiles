@@ -4,6 +4,22 @@
 
 Personal dotfiles for macOS, Ubuntu, WSL 2, and RHEL.
 
+## Repo-only context (multi-machine constraint)
+
+The user works on this repo from **more than one machine**.
+Anything saved to local Claude state (`~/.claude/projects/.../memory/`, settings outside the repo) lives on one machine and silently desyncs from every other.
+
+**Rule: all durable context goes in the repository.**
+Conventions, workflow preferences, gotchas — into `CLAUDE.md` or the appropriate file under `docs/`.
+Never use personal memory as the system of record for this repo.
+
+When you'd otherwise be tempted to write a memory file, write to the repo instead.
+If the user asks you to "remember" something, default to a `CLAUDE.md` / docs edit unless they specifically say local-only.
+The one exception is a single pointer memory recording this very rule, so a fresh session on any machine discovers the convention before it can violate it.
+
+**Corollary: no hardcoded absolute paths in repo-tracked files.**
+Use paths relative to the repo root, or `"$(git rev-parse --show-toplevel)/…"`, so every machine resolves them identically.
+
 ## File conventions
 
 Every file written or edited in this repo must end with a trailing newline (POSIX-style — final `\n` after the last visible line). Applies to all file types: shell scripts, markdown, config, etc.

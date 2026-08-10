@@ -15,26 +15,26 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@docusaurus/core": "^3.10.1",
-    "@docusaurus/preset-classic": "^3.10.1",
+    "@docusaurus/core": "^3.10.2",
+    "@docusaurus/preset-classic": "^3.10.2",
     "@mdx-js/react": "^3.1.1",
     "clsx": "^2.1.1",
     "prism-react-renderer": "^2.4.1",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "^3.10.1",
-    "@docusaurus/tsconfig": "^3.10.1",
-    "@docusaurus/types": "^3.10.1",
-    "@types/node": "^24.13.2",
+    "@docusaurus/module-type-aliases": "^3.10.2",
+    "@docusaurus/tsconfig": "^3.10.2",
+    "@docusaurus/types": "^3.10.2",
+    "@types/node": "^24.13.3",
     "esbuild": "^0.28.1",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.11",
     "typescript": "~6.0.3"
   },
   "overrides": {
-    "serialize-javascript": "^7.0.5",
-    "uuid": "^14.0.0"
+    "serialize-javascript": "^7.0.7",
+    "uuid": "^14.0.1"
   },
   "browserslist": {
     "production": [">0.5%", "not dead", "not op_mini all"],
@@ -45,6 +45,6 @@
     ]
   },
   "engines": {
-    "node": ">=24.16.0"
+    "node": ">=24.19.0"
   }
 }

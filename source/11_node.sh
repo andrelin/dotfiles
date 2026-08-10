@@ -21,3 +21,16 @@ if [[ -n "$_nvm_prefix" ]]; then
   [ -s "$_nvm_prefix/etc/bash_completion.d/nvm" ] && \. "$_nvm_prefix/etc/bash_completion.d/nvm"
 fi
 unset _nvm_prefix
+
+# pnpm — where globally-installed pnpm packages land. The location is
+# platform-specific: macOS uses ~/Library, Linux follows the XDG data dir.
+if is_macos; then
+  export PNPM_HOME="$HOME/Library/pnpm"
+else
+  export PNPM_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/pnpm"
+fi
+
+# Add to PATH once, and only if pnpm is actually installed.
+if [[ -d "$PNPM_HOME" && ":$PATH:" != *":$PNPM_HOME/bin:"* ]]; then
+  export PATH="$PNPM_HOME/bin:$PATH"
+fi

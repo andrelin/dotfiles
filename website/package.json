@@ -28,8 +28,8 @@
     "@docusaurus/tsconfig": "^3.10.2",
     "@docusaurus/types": "^3.10.2",
     "@types/node": "^24.13.3",
-    "esbuild": "^0.28.1",
-    "tsx": "^4.23.11",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.12",
     "typescript": "~6.0.3"
   },
   "overrides": {
@@ -37,7 +37,11 @@
     "uuid": "^14.0.1"
   },
   "browserslist": {
-    "production": [">0.5%", "not dead", "not op_mini all"],
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
     "development": [
       "last 3 chrome version",
       "last 3 firefox version",

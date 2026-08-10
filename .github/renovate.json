@@ -7,6 +7,7 @@
     ":configMigration"
   ],
   "timezone": "Europe/Oslo",
+  "schedule": ["* 0-6 * * 1"],
   "rangeStrategy": "bump",
   "packageRules": [
     {
@@ -19,6 +20,11 @@
       "matchPackageNames": ["*"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true
+    },
+    {
+      "description": "TypeScript 7 removed tsconfig 'baseUrl', which @docusaurus/tsconfig still sets, so `npm run typecheck` fails. Unhold once Docusaurus ships a TS7-compatible tsconfig.",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
     }
   ]
 }

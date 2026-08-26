@@ -37,7 +37,7 @@ So you never end up with stale deny rules or shuffled settings arrays in commits
 
 ## Tip 24.4: Shared config and skills in `~/.claude`
 
-Everything under `claude/` is symlinked into `~/.claude/` by [init/52_macos_claude.sh](init/52_macos_claude.sh),
+Everything under `claude/` is symlinked into `~/.claude/` by [init/52_macos_claude.sh](../init/52_macos_claude.sh),
 so every machine gets the same Claude Code context from one place:
 
 - `claude/CLAUDE.md` → `~/.claude/CLAUDE.md` — global instructions loaded into every session.

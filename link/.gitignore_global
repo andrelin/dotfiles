@@ -47,5 +47,8 @@ Desktop.ini
 
 # Claude Code — ignore most local agent state, but skills/ is project
 # content (custom slash-commands checked into the repo).
-.claude/
-!.claude/skills/
+# `**/` keeps it matching at any depth, and excluding the *contents* rather than the
+# directory is what lets the negation work — git cannot re-include a path whose parent
+# directory is itself excluded, so a bare `.claude/` would silently defeat `!…/skills/`.
+**/.claude/*
+!**/.claude/skills/

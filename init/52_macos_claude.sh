@@ -9,7 +9,7 @@ e_header "Linking Claude Code config"
 mkdir -p "$HOME/.claude"
 
 for src in "$DOTFILES"/claude/*; do
-  [[ -f "$src" ]] || continue
+  [[ -f "$src" || -d "$src" ]] || continue
   base="$(basename "$src")"
   dest="$HOME/.claude/$base"
 
@@ -27,6 +27,6 @@ for src in "$DOTFILES"/claude/*; do
     mv "$dest" "$backup_dir"
   fi
 
-  ln -sf "$src" "$dest"
+  ln -sfn "$src" "$dest"
   e_success "Linking ~/.claude/$base."
 done

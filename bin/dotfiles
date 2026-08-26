@@ -431,58 +431,66 @@ export prompt_delay=5; is_dotfiles_bin || prompt_delay=15
 # See https://gist.github.com/cowboy/3118588
 while true; do sudo -n true; sleep 10; kill -0 "$$" || exit; done 2>/dev/null &
 
-# Install a custom sudoers file that allows "sudo apt-get" to be executed
-# without asking for a password.
-sudoers_file=/etc/sudoers.d/andrelin-dotfiles
-# Contents of the sudoers file.
+# Passwordless "sudo apt-get" via a sudoers drop-in.
+# Ubuntu-only: the command alias points at apt-get, which RHEL and macOS don't use.
+# is_ubuntu also covers WSL running Ubuntu, which reports Ubuntu in /etc/issue.
+sudoers_file="/etc/sudoers.d/${USER}-dotfiles"
+
 function sudoers_text() {
   cat <<EOF
-# This file was created by andrelin's dotfiles script on $(date -I)
-# (which will never update it, only recreate it if it's missing)
-# Sudoers reference: http://ubuntuforums.org/showthread.php?t=1132821
+# Created by the dotfiles script for $USER on $(date -I).
+# Never updated in place — only recreated if it goes missing.
 
-# Command aliases.
 Cmnd_Alias APT = /usr/bin/apt-get
 
-# Members of the sudo and admin groups can run these commands without password.
+# Members of the sudo group can run these commands without a password.
 %sudo ALL=(ALL) ALL, NOPASSWD:APT
-%admin ALL=(ALL) ALL, NOPASSWD:APT
 EOF
 }
-# Bash commands to update the sudoers file.
+
+# A malformed drop-in breaks sudo for every user on the machine, so the file is
+# validated in a temp location and only moved into /etc/sudoers.d once it passes.
 function sudoers_code() {
   cat <<EOF
-echo "$(sudoers_text)" > $sudoers_file
-chmod 0440 $sudoers_file
-if visudo -c; then
-  echo; echo "Sudoers file created."
+tmp="\$(mktemp)"
+cat > "\$tmp" <<'SUDOERS'
+$(sudoers_text)
+SUDOERS
+chmod 0440 "\$tmp"
+if visudo -cf "\$tmp" >/dev/null; then
+  mv "\$tmp" "$sudoers_file"
+  echo "Sudoers file created: $sudoers_file"
 else
-  rm $sudoers_file
-  echo; echo "Unable to create sudoers file."
+  rm -f "\$tmp"
+  echo "Sudoers file failed validation; nothing was installed."
 fi
 EOF
 }
+
 # Offer to create the sudoers file if it doesn't exist.
-# if is_ubuntu && [[ ! -e $sudoers_file ]]; then
-#   cat <<EOF
+# -t 0 keeps the prompt out of non-interactive runs (CI runs this script on Ubuntu
+# runners, where the guard would otherwise be true and the read would sit waiting).
+if is_ubuntu && [[ -t 0 ]] && [[ ! -e "$sudoers_file" ]]; then
+  cat <<EOF
 
-# The sudoers file can be updated to allow "sudo apt-get" to be executed
-# without asking for a password. You can verify that this worked correctly by
-# running "sudo -k apt-get". If it doesn't ask for a password, and the output
-# looks normal, it worked.
+The sudoers file can be updated to allow "sudo apt-get" to run without asking
+for a password. Verify with "sudo -k apt-get": if it doesn't ask for a password
+and the output looks normal, it worked.
 
-# THIS SHOULD ONLY BE ATTEMPTED IF YOU ARE LOGGED IN AS ROOT IN ANOTHER SHELL.
+The file is validated with visudo before being installed, so a bad one is
+discarded rather than left in place.
 
-# This will be skipped if "Y" isn't pressed within the next $prompt_delay seconds.
-# EOF
-#   read -N 1 -t $prompt_delay -p "Update sudoers file? [y/N] " update_sudoers; echo
-#   if [[ "$update_sudoers" =~ [Yy] ]]; then
-#     e_header "Creating sudoers file"
-#     sudo bash -c "$(sudoers_code)"
-#   else
-#     echo "Skipping."
-#   fi
-# fi
+This will be skipped if "Y" isn't pressed within the next $prompt_delay seconds.
+EOF
+  read -N 1 -t "$prompt_delay" -p "Update sudoers file? [y/N] " update_sudoers || true
+  echo
+  if [[ "${update_sudoers:-}" =~ [Yy] ]]; then
+    e_header "Creating sudoers file"
+    sudo bash -c "$(sudoers_code)"
+  else
+    echo "Skipping."
+  fi
+fi
 
 # Ensure that we can actually, like, compile anything.
 if [[ ! "$(type -P gcc)" ]] && is_macos; then

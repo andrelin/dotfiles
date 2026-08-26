@@ -43,7 +43,8 @@ Forked from <https://github.com/runesto/dotfiles>
 
 ## About this project
 
-I finally decided that I wanted to be able to execute a single command to "bootstrap" a new system to pull down all of my dotfiles and configs, as well as install all the tools I commonly use.
+I finally decided that I wanted to be able to execute a single command to "bootstrap" a new system to pull down
+all of my dotfiles and configs, as well as install all the tools I commonly use.
 In addition, I wanted to be able to re-execute that command at any time to synchronize anything that might have changed.
 Finally, I wanted to make it easy to re-integrate changes back in, so that other machines could be updated.
 
@@ -59,30 +60,48 @@ When [dotfiles][dotfiles] is run for the first time, it does a few things:
 1. This repo is cloned into your user directory, under `~/.dotfiles`.
 1. Files in `/copy` are copied into `~/`. ([read more](#the-copy-step))
 1. Files in `/link` are symlinked into `~/`. ([read more](#the-link-step))
-1. You are prompted to choose scripts in `/init` to be executed. The installer auto-selects scripts based on OS (e.g., `_macos_` scripts are only selected on macOS). Scripts with `_personal_` in the filename are default unchecked.
+1. You are prompted to choose scripts in `/init` to be executed.
+   The installer auto-selects scripts based on OS (e.g. `_macos_` scripts are only selected on macOS).
+   Scripts with `_personal_` in the filename are default unchecked.
 1. Your chosen init scripts are executed (in alphanumeric order, hence the funky names). ([read more](#the-init-step))
 
-On subsequent runs, step 1 is skipped, step 2 just updates the already-existing repo, and step 5 remembers what you selected the last time. The other steps are the same.
+On subsequent runs, step 1 is skipped, step 2 just updates the already-existing repo, and step 5 remembers what
+you selected the last time. The other steps are the same.
 
 ### Other subdirectories
 
-- The `/backups` directory gets created when necessary. Any files in `~/` that would have been overwritten by files in `/copy` or `/link` get backed up there.
-- The `/bin` directory contains executable shell scripts (including the [dotfiles][dotfiles] script) and symlinks to executable shell scripts. This directory is added to the path.
+- The `/backups` directory gets created when necessary.
+  Any files in `~/` that would have been overwritten by files in `/copy` or `/link` get backed up there.
+- The `/bin` directory contains executable shell scripts (including the [dotfiles][dotfiles] script) and symlinks
+  to executable shell scripts. This directory is added to the path.
 - The `/caches` directory contains cached files, used by some scripts or functions.
+- The `/claude` directory holds shared Claude Code config — `CLAUDE.md`, `skills/` and the statusline script —
+  symlinked into `~/.claude/` by [init/52_macos_claude.sh](init/52_macos_claude.sh).
+  Only these entries are linked; machine-local state in `~/.claude` (sessions, history) is left alone.
 - The `/conf` directory stores app configuration files (Sublime Text, IntelliJ) that are linked into app-specific locations by dedicated init scripts.
 - The `/hooks` directory contains git hooks that are symlinked into `.git/hooks/` by [init/12_git_hooks.sh](init/12_git_hooks.sh).
 - The `/source` directory contains files that are sourced whenever a new shell is opened (in alphanumeric order, hence the funky names).
 - The `/test` directory contains unit tests for especially complicated bash functions.
 - The `/vendor` directory contains third-party libraries (zsh plugins as git submodules).
-- The `/website` directory is a Docusaurus site that renders the README, `TIPS.md`, and `tips/` files for GitHub Pages. Built and deployed by [.github/workflows/deploy-docs.yml](.github/workflows/deploy-docs.yml). Run `cd website && npm install && npm start` to develop locally.
+- The `/website` directory is a Docusaurus site that renders the README, `TIPS.md` and `tips/` files for GitHub
+  Pages. Built and deployed by [.github/workflows/deploy-docs.yml](.github/workflows/deploy-docs.yml).
+  Run `cd website && npm install && npm start` to develop locally.
 
 ### The "copy" step
 
-Any file in the `/copy` subdirectory will be copied into `~/`. Sensitive information is managed via git-secrets, but files that may need local edits (like [copy/.gitconfig](copy/.gitconfig)) should be _copied_ rather than linked as a second line of defense. Because the file you'll be editing is no longer in `~/.dotfiles`, it's less likely to be accidentally committed into your public dotfiles repo.
+Any file in the `/copy` subdirectory will be copied into `~/`.
+Sensitive information is managed via git-secrets, but files that may need local edits
+(like [copy/.gitconfig](copy/.gitconfig)) should be _copied_ rather than linked as a second line of defense.
+Because the file you'll be editing is no longer in `~/.dotfiles`, it's less likely to be accidentally committed
+into your public dotfiles repo.
 
 ### The "link" step
 
-Any file in the `/link` subdirectory gets symlinked into `~/` with `ln -s`. Edit one or the other, and you change the file in both places. Don't link files containing sensitive data, or you might accidentally commit that data! If you're linking a directory that might contain sensitive data (like `~/.ssh`) add the sensitive files to your [.gitignore](.gitignore) file!
+Any file in the `/link` subdirectory gets symlinked into `~/` with `ln -s`.
+Edit one or the other, and you change the file in both places.
+Don't link files containing sensitive data, or you might accidentally commit that data!
+If you're linking a directory that might contain sensitive data (like `~/.ssh`) add the sensitive files to your
+[.gitignore](.gitignore) file!
 
 ### The "init" step
 
@@ -110,9 +129,13 @@ Scripts in the `/init` subdirectory will be executed. A whole bunch of things wi
 
 ## Hacking my dotfiles
 
-Because the [dotfiles][dotfiles] script is completely self-contained, you should be able to delete everything else from your dotfiles repo fork, and it will still work. The only thing it really cares about are the `/copy`, `/link` and `/init` subdirectories, which will be ignored if they are empty or don't exist.
+Because the [dotfiles][dotfiles] script is completely self-contained, you should be able to delete everything
+else from your dotfiles repo fork, and it will still work.
+The only thing it really cares about are the `/copy`, `/link` and `/init` subdirectories, which will be ignored
+if they are empty or don't exist.
 
-If you modify things and notice a bug or an improvement, [file an issue](https://github.com/andrelin/dotfiles/issues) or [a pull request](https://github.com/andrelin/dotfiles/pulls) and let me know.
+If you modify things and notice a bug or an improvement, [file an issue](https://github.com/andrelin/dotfiles/issues)
+or [a pull request](https://github.com/andrelin/dotfiles/pulls) and let me know.
 
 Also, before installing, be sure to [read my gently-worded note](#heed-this-critically-important-warning-before-you-install).
 
@@ -120,7 +143,9 @@ Also, before installing, be sure to [read my gently-worded note](#heed-this-crit
 
 ### macOS Notes
 
-You need to have [XCode](https://developer.apple.com/download/?=xcode) or, at the very minimum, the [XCode Command Line Tools](https://developer.apple.com/download/?=command%20line%20tools), which are available as a much smaller download.
+You need to have [XCode](https://developer.apple.com/download/?=xcode) or, at the very minimum,
+the [XCode Command Line Tools](https://developer.apple.com/download/?=command%20line%20tools),
+which are available as a much smaller download.
 
 The easiest way to install the XCode Command Line Tools is to open up a terminal, type `xcode-select --install` and follow the prompts.
 
@@ -132,7 +157,9 @@ You should at least update/upgrade APT with `sudo apt-get -qq update && sudo apt
 
 **If you're not me, please _do not_ install dotfiles directly from this repo!**
 
-Why? Because I often completely break this repo while updating. Which means that if I do that and you run the `dotfiles` command, your home directory will burst into flames, and you'll have to go buy a new computer. No, not really, but it will be very messy.
+Why? Because I often completely break this repo while updating.
+Which means that if I do that and you run the `dotfiles` command, your home directory will burst into flames,
+and you'll have to go buy a new computer. No, not really, but it will be very messy.
 
 ### Actual installation
 
@@ -156,7 +183,9 @@ export DOTFILES_GH_BRANCH=main
 bash -c "$(curl -fsSL https://raw.github.com/$DOTFILES_GH_USER/dotfiles/$DOTFILES_GH_BRANCH/bin/dotfiles)" && source ~/.zshrc
 ```
 
-Since you'll be using the [dotfiles][dotfiles] command on subsequent runs, you'll only have to set the `DOTFILES_GH_USER` variable for the initial install, but if you have a custom branch, you _will_ need to export `DOTFILES_GH_BRANCH` for subsequent runs.
+Since you'll be using the [dotfiles][dotfiles] command on subsequent runs, you'll only have to set the
+`DOTFILES_GH_USER` variable for the initial install, but if you have a custom branch, you _will_ need to export
+`DOTFILES_GH_BRANCH` for subsequent runs.
 
 There's a lot of stuff that requires admin access via `sudo`, so be warned that you might need to enter your password here or there.
 
@@ -176,7 +205,10 @@ bash -c "$(curl -fsSL https://raw.github.com/andrelin/dotfiles/main/bin/dotfiles
 
 ## Aliases and Functions
 
-To keep things easy, the `~/.zshrc` and `~/.bashrc` files are very simple, and should never need to be modified. Instead, add your aliases, functions, settings, etc into one of the files in the `source` subdirectory, or add a new file. They're all automatically sourced when a new shell is opened. Take a look, I have [a lot of aliases and functions](source).
+To keep things easy, the `~/.zshrc` and `~/.bashrc` files are very simple, and should never need to be modified.
+Instead, add your aliases, functions, settings, etc into one of the files in the `source` subdirectory, or add a
+new file. They're all automatically sourced when a new shell is opened.
+Take a look, I have [a lot of aliases and functions](source).
 
 ## Scripts
 
@@ -188,11 +220,15 @@ The `/bin` directory is added to `$PATH` and contains:
 - [sync-claude-deny](bin/sync-claude-deny) - sync git-secret paths into Claude Code deny rules. Use `--check` to verify without modifying.
 - [sort-claude-settings](bin/sort-claude-settings) - sort arrays in Claude Code settings files for deterministic output.
 
-The `src` function (defined in [.zshrc](link/.zshrc) and [.bashrc](link/.bashrc)) re-sources all files in `/source`, useful after making changes without opening a new shell.
+The `src` function (defined in [.zshrc](link/.zshrc) and [.bashrc](link/.bashrc)) re-sources all files in
+`/source`, useful after making changes without opening a new shell.
 
 ## Tips
 
-A growing index of terminal tricks, repo features, and bundled-tool basics lives in [TIPS.md](TIPS.md), with one file per category under [tips/](tips/). Run `tips` in a shell to print them all, `tips <FILE>` (e.g. `tips 22`) for one section, `tips <FILE>.<N>` (e.g. `tips 22.3`) for a single tip, `tips <D>x` for a whole decade, `tips -l` to list titles, or `tips -h` for usage.
+A growing index of terminal tricks, repo features and bundled-tool basics lives in [TIPS.md](TIPS.md), with one
+file per category under [tips/](tips/).
+Run `tips` in a shell to print them all, `tips <FILE>` (e.g. `tips 22`) for one section, `tips <FILE>.<N>`
+(e.g. `tips 22.3`) for a single tip, `tips <D>x` for a whole decade, `tips -l` to list titles, or `tips -h` for usage.
 
 ## License
 

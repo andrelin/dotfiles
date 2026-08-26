@@ -30,7 +30,9 @@ fi
 
 # Enforce repo-wide: every tracked md must opt in to doctoc (markers) or opt out (SKIP).
 # Catches violations in unrelated files too — fix-first, never silent-default.
-mapfile -t all_md < <(git ls-files -- '*.md')
+# claude/ and .claude/ are exempt: a ToC is a navigation aid for humans browsing on GitHub,
+# and nothing under either is read that way — both are context loaded by an agent.
+mapfile -t all_md < <(git ls-files -- '*.md' ':(exclude)claude/' ':(exclude).claude/')
 missing=()
 for f in "${all_md[@]}"; do
   [[ -f "$f" ]] || continue
@@ -45,13 +47,28 @@ fi
 
 # Update ToCs and lint markdown in staged *.md files.
 mapfile -t md_files < <(git diff --cached --name-only --diff-filter=ACMR -- '*.md')
-if (( ${#md_files[@]} > 0 )); then
-  if command -v doctoc >/dev/null 2>&1; then
-    doctoc --github --notitle "${md_files[@]}" >/dev/null
-    git add "${md_files[@]}"
-  fi
-  if command -v markdownlint-cli2 >/dev/null 2>&1; then
-    markdownlint-cli2 --fix "${md_files[@]}" >/dev/null
-    git add "${md_files[@]}"
-  fi
+mapfile -t toc_files < <(git diff --cached --name-only --diff-filter=ACMR -- '*.md' ':(exclude)claude/' ':(exclude).claude/')
+if (( ${#toc_files[@]} > 0 )) && command -v doctoc >/dev/null 2>&1; then
+  doctoc --github --notitle "${toc_files[@]}" >/dev/null
+  git add "${toc_files[@]}"
+fi
+if (( ${#md_files[@]} > 0 )) && command -v markdownlint-cli2 >/dev/null 2>&1; then
+  markdownlint-cli2 --fix "${md_files[@]}" >/dev/null
+  git add "${md_files[@]}"
+fi
+
+# Warn when a commit adds or removes a user-facing alias, function or bin/ script without
+# touching tips/. Narrow on purpose: matching *any* source/ edit fires on refactors that
+# have no user-facing surface, and a warning nobody reads is worse than none.
+# Advisory only — plenty of definitions are internal helpers that want no tip.
+defs=$(git diff --cached --unified=0 -- source bin \
+  | grep -cE '^[+-][[:space:]]*(alias [A-Za-z0-9_.-]+=|function [A-Za-z0-9_-]+|[A-Za-z0-9_-]+\(\))' || true)
+bin_files=$(git diff --cached --name-status -- bin | grep -cE '^[AD]' || true)
+tips_staged=$(git diff --cached --name-only -- tips TIPS.md | grep -c . || true)
+
+if (( defs > 0 || bin_files > 0 )) && (( tips_staged == 0 )); then
+  echo "NOTE: this commit changes $defs alias/function definition line(s) and $bin_files bin/ script(s)," >&2
+  echo "      but stages nothing under tips/ or TIPS.md." >&2
+  echo "      If any of it is user-facing, add or update its tip in this commit (see the writing-tips skill)." >&2
+  echo "      Internal helpers need no tip — this is advisory and does not block the commit." >&2
 fi

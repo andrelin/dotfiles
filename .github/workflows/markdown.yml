@@ -22,9 +22,11 @@ jobs:
       - name: markdownlint-cli2
         run: markdownlint-cli2 '**/*.md' '#node_modules' '#vendor'
 
-      - name: Enforce doctoc opt-in/opt-out on every markdown file
+      # claude/ and .claude/ are exempt: a ToC is a navigation aid for humans browsing on
+      # GitHub, and nothing under either is read that way — both are agent-loaded context.
+      - name: Enforce doctoc opt-in/opt-out on every markdown file outside claude/
         run: |
-          mapfile -t md_files < <(find . -type f -name '*.md' -not -path './node_modules/*' -not -path './vendor/*')
+          mapfile -t md_files < <(find . -type f -name '*.md' -not -path './node_modules/*' -not -path './vendor/*' -not -path './claude/*' -not -path './.claude/*')
           missing=()
           for f in "${md_files[@]}"; do
             grep -qE '<!-- (START doctoc|DOCTOC SKIP)' "$f" || missing+=("$f")
@@ -37,7 +39,7 @@ jobs:
 
       - name: doctoc — verify ToCs are up to date
         run: |
-          mapfile -t md_files < <(find . -type f -name '*.md' -not -path './node_modules/*' -not -path './vendor/*')
+          mapfile -t md_files < <(find . -type f -name '*.md' -not -path './node_modules/*' -not -path './vendor/*' -not -path './claude/*' -not -path './.claude/*')
           doctoc --github --notitle "${md_files[@]}"
           if ! git diff --quiet -- '*.md'; then
             echo "::error::doctoc found stale ToCs. Re-run doctoc locally on all markdown files and commit."

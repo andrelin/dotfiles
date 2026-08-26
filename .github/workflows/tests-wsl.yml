@@ -1,5 +1,14 @@
 name: Tests (WSL)
-on: [push]
+on:
+  push:
+    paths-ignore:
+      # Docs and site content: none of it affects whether dotfiles installs or lints.
+      - 'website/**'
+      - 'tips/**'
+      - 'claude/**'
+      - '.claude/**'
+      - '*.md'
+      - 'LICENSE'
 
 permissions:
   contents: read
@@ -22,6 +31,10 @@ jobs:
       - uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
         with:
           distribution: Ubuntu-24.04
+          # The distro image is ~371 MB and Actions cache counts against the account's
+          # storage quota, while minutes are free on a public repo. Re-downloading each
+          # run is the cheaper side of that trade.
+          use-cache: 'false'
           additional-packages: curl git sudo
           wsl-conf: |
             [automount]

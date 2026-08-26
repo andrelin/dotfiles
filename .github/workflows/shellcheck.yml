@@ -1,5 +1,14 @@
 name: ShellCheck
-on: [push]
+on:
+  push:
+    paths-ignore:
+      # Docs and site content: none of it affects whether dotfiles installs or lints.
+      - 'website/**'
+      - 'tips/**'
+      - 'claude/**'
+      - '.claude/**'
+      - '*.md'
+      - 'LICENSE'
 
 permissions:
   contents: read

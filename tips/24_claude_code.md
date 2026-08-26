@@ -31,5 +31,21 @@ From `bin/sort-claude-settings`.
 
 - Touching `.gitsecret/paths/mapping.cfg` → runs `sync-claude-deny` and re-stages the resulting `.claude/settings.json`.
 - Touching `.claude/settings.json` → runs `sort-claude-settings` and re-stages it.
+- Adding or removing an alias, function or `bin/` script without staging anything under `tips/` → prints an advisory reminder (never blocks).
 
 So you never end up with stale deny rules or shuffled settings arrays in commits. The hook does other things too (e.g. doctoc + markdownlint on staged markdown) — see `hooks/pre-commit` for the whole picture. Symlinked into `.git/hooks/pre-commit` by `init/12_git_hooks.sh`.
+
+## Tip 24.4: Shared config and skills in `~/.claude`
+
+Everything under `claude/` is symlinked into `~/.claude/` by [init/52_macos_claude.sh](init/52_macos_claude.sh),
+so every machine gets the same Claude Code context from one place:
+
+- `claude/CLAUDE.md` → `~/.claude/CLAUDE.md` — global instructions loaded into every session.
+- `claude/skills/` → `~/.claude/skills/` — reusable skills, one directory per skill with a `SKILL.md`.
+- `claude/statusline-command.sh` → `~/.claude/statusline-command.sh`.
+
+Only these entries are linked; machine-local state (`projects/`, `sessions/`, `history.jsonl`) stays untouched.
+Anything already at one of those paths is moved into `backups/` first, and the run tells you so.
+
+Add a skill by creating `claude/skills/<name>/SKILL.md` with `name` and `description` front-matter.
+Because `skills/` is linked as a directory, it shows up in `~/.claude` immediately — no need to re-run `dotfiles`.

@@ -49,7 +49,7 @@ tips -h               Help
 - [21. Git](tips/21_git.md) — workflow helpers, repo diagnostics
 - [22. Local dev infra](tips/22_dev_infra.md) — docker, kubernetes (`kdel*`), kafka, throwaway Postgres
 - [23. JVM](tips/23_jvm.md) — `jdk` switching, Maven OpenRewrite recipes
-- [24. Claude Code integration](tips/24_claude_code.md) — `sync-claude-deny`, `sort-claude-settings`, pre-commit automation
+- [24. Claude Code integration](tips/24_claude_code.md) — `sync-claude-deny`, `sort-claude-settings`, pre-commit automation, shared `~/.claude` config and skills
 
 ## 3x — Zsh ecosystem
 
@@ -62,8 +62,9 @@ tips -h               Help
 
 ## 5x — IDEs and editors
 
-- [50. IntelliJ IDEA](tips/50_intellij.md) — semantic highlighting, Rainbow Brackets, Key Promoter X, Search Everywhere, Recent Files
-- [51. Sublime Text](tips/51_sublime_text.md) — Package Control, `q`/`qq` snippets
+- [50. IntelliJ IDEA — configuration](tips/50_intellij_config.md) — semantic highlighting, Rainbow Brackets, Key Promoter X, auto-import
+- [51. IntelliJ IDEA — usage](tips/51_intellij_usage.md) — Search Everywhere, Recent Files, refactoring, stack traces
+- [52. Sublime Text](tips/52_sublime_text.md) — Package Control, `q`/`qq` snippets
 
 ## 6x — Web tools
 

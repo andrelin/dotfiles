@@ -29,11 +29,11 @@
     "@docusaurus/types": "^3.10.2",
     "@types/node": "^24.13.3",
     "esbuild": "^0.28.2",
-    "tsx": "^4.23.12",
+    "tsx": "^4.23.13",
     "typescript": "~6.0.3"
   },
   "overrides": {
-    "serialize-javascript": "^7.1.0",
+    "serialize-javascript": "^7.1.1",
     "uuid": "^14.0.2"
   },
   "browserslist": {

@@ -1,10 +1,22 @@
+# On macOS the Homebrew keg root only carries bin/ symlinks, so tools that validate
+# JAVA_HOME against a real JDK layout (IntelliJ's Gradle JVM) reject it even though
+# java runs fine. The nested Contents/Home is the actual JDK home; Linux has none.
+_java_home_for_prefix() {
+	if [[ -d "$1/libexec/openjdk.jdk/Contents/Home" ]]; then
+		echo "$1/libexec/openjdk.jdk/Contents/Home"
+	else
+		echo "$1"
+	fi
+}
+
 # Switch JDK version using Homebrew paths (all platforms).
 # Usage: jdk 17, jdk 21, jdk 25
 jdk() {
 	local prefix
 	prefix="$(brew --prefix "openjdk@$1" 2>/dev/null)"
 	if [[ -d "$prefix" ]]; then
-		export JAVA_HOME="$prefix"
+		JAVA_HOME="$(_java_home_for_prefix "$prefix")"
+		export JAVA_HOME
 		export PATH="$JAVA_HOME/bin:$PATH"
 		java -version
 	else
@@ -14,7 +26,7 @@ jdk() {
 
 # Set default JAVA_HOME to OpenJDK 25.
 if [[ -d "$(brew --prefix openjdk@25 2>/dev/null)" ]]; then
-	JAVA_HOME="$(brew --prefix openjdk@25)"
+	JAVA_HOME="$(_java_home_for_prefix "$(brew --prefix openjdk@25)")"
 	export JAVA_HOME
 	export PATH="$JAVA_HOME/bin:$PATH"
 fi

@@ -15,6 +15,10 @@ jdk              # show currently active JDK and available versions
 echo $JAVA_HOME  # see where it pointed JAVA_HOME
 ```
 
+On macOS `JAVA_HOME` lands on the nested `libexec/openjdk.jdk/Contents/Home`, not the Homebrew keg root.
+The keg root carries only `bin/` symlinks, so anything that validates a real JDK layout — IntelliJ's Gradle JVM —
+rejects it even though `java` runs fine from it. Linux has no such nesting and gets the prefix as-is.
+
 Requires the matching `openjdk@17` / `openjdk@21` Homebrew formulae installed (already in `init/31_homebrew_recipes.sh`). From `source/10_java.sh`.
 
 ## Tip 23.2: Maven OpenRewrite Recipes

@@ -42,7 +42,10 @@ so every machine gets the same Claude Code context from one place:
 
 - `claude/CLAUDE.md` → `~/.claude/CLAUDE.md` — global instructions loaded into every session.
 - `claude/skills/` → `~/.claude/skills/` — reusable skills, one directory per skill with a `SKILL.md`.
-- `claude/statusline-command.sh` → `~/.claude/statusline-command.sh`.
+- `claude/statusline-command.sh` → `~/.claude/statusline-command.sh` — the status line.
+  Row 1 is the working directory and git branch, styled like the zsh prompt
+  ([link/.omz-custom/andrelin.zsh-theme](../link/.omz-custom/andrelin.zsh-theme)), then the model;
+  row 2 is the context and rate-limit bars.
 
 Only these entries are linked; machine-local state (`projects/`, `sessions/`, `history.jsonl`) stays untouched.
 Anything already at one of those paths is moved into `backups/` first, and the run tells you so.

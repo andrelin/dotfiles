@@ -3,6 +3,7 @@
 input=$(cat)
 
 model=$(echo "$input" | jq -r '.model.display_name // "Unknown model"')
+cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // empty')
 ctx_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 session_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 five_hour_resets_at=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
@@ -11,6 +12,9 @@ week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empt
 # ANSI colour codes — yellow at 75 %+, red at 90 %+.
 YELLOW=$'\033[33m'
 RED=$'\033[31m'
+BLUE=$'\033[34m'
+GREEN=$'\033[32m'
+CYAN=$'\033[36m'
 RESET=$'\033[0m'
 BOLD=$'\033[1m'
 BOLD_OFF=$'\033[22m'
@@ -40,9 +44,37 @@ colourise() {
   fi
 }
 
-# Row 1: model name
+# Path and branch, matching the zsh prompt in link/.omz-custom/andrelin.zsh-theme:
+# a blue %~-style path, then the branch in green with a red * when the tree is dirty.
+prompt_dir=""
+git_segment=""
+if [ -n "$cwd" ]; then
+  case "$cwd" in
+    "$HOME")   prompt_dir="~" ;;
+    "$HOME"/*) prompt_dir="~${cwd#"$HOME"}" ;;
+    *)         prompt_dir="$cwd" ;;
+  esac
+
+  # Detached HEAD falls back to the short SHA, the same as the theme's git_prompt_info.
+  branch=$(git -C "$cwd" symbolic-ref --quiet --short HEAD 2>/dev/null \
+    || git -C "$cwd" rev-parse --short HEAD 2>/dev/null)
+
+  if [ -n "$branch" ]; then
+    dirty=""
+    if [ -n "$(git -C "$cwd" status --porcelain --ignore-submodules=dirty 2>/dev/null | head -n 1)" ]; then
+      dirty=" ${RED}*${GREEN}"
+    fi
+    git_segment=" ${GREEN}[${branch}${dirty}]${RESET}"
+  fi
+fi
+
+# Row 1: path, branch, model
 # Row 2: progress bars
-row1="${model}"
+# The model wears the theme's cyan-parenthesis idiom, the one its kube and
+# virtualenv segments use for "what this shell is currently pointed at".
+model_segment="${CYAN}(${model})${RESET}"
+row1="${model_segment}"
+[ -n "$prompt_dir" ] && row1="${BLUE}${prompt_dir}${RESET}${git_segment} ${model_segment}"
 row2=""
 
 # Context window bar

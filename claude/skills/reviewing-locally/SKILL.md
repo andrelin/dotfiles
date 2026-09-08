@@ -1,6 +1,6 @@
 ---
 name: reviewing-locally
-description: Set up a code review correctly on customer or company work - fetch the default branch, diff against it so the merge-base isn't stale, rebase the branch first when it's behind, and stay in the local clone rather than the hosting platform's API or web UI. Read before reviewing a branch, MR or PR, including before running the built-in /code-review, whose target and findings depend on the diff being set up right.
+description: Read before reviewing a branch, MR or PR on customer or company work, and before running /code-review on one - its target and its findings both depend on the diff being set up first. Covers where a review reads from and what it may post, not how to find bugs.
 ---
 
 # Reviewing a branch locally, against a freshly fetched default branch
@@ -36,6 +36,28 @@ and check what it is allowed to post before using it on an engagement where the 
 **Why:** a diff against a stale merge-base shows changes that landed on the default branch as if the author made
 them, which wastes review effort on code nobody in the MR wrote — and it hides conflicts the author still has to
 resolve. Rebasing first is also what the author will have to do anyway, so a clean replay is information.
+
+## The excuses, and what's actually true
+
+Every one of these is a reason to reach for the platform anyway. None of them survives contact with why the rule
+exists: on an engagement the user owns the remote, and a review that touches it spends their credibility.
+
+| Excuse | Reality |
+| --- | --- |
+| "`gh pr view` is faster." | Faster to start, then gives you a diff against a merge-base you never picked. |
+| "I'm only reading, not writing." | Reads are how the habit forms, and some of them (`gh pr view --comment`) aren't reads. |
+| "The user pasted a PR link, so they want the platform." | They gave you the target. Where you read it from is still the local clone. |
+| "`--comment` saves the user a step." | It posts under their name to their client's repo. That is theirs to do, every time. |
+| "The findings are obviously right, so posting is harmless." | Being right isn't authorisation. Posted-and-right costs what posted-and-wrong costs. |
+| "They approved posting on the last MR." | An approval covers one action, not a policy — see `~/.claude/CLAUDE.md` § *Work contexts*. |
+
+## Red flags — stop
+
+- You typed `gh`, `glab` or `az` and the review hasn't started yet.
+- You're reading a diff you didn't produce with `git diff`.
+- You're about to pass `--comment`, `--post` or any other posting flag.
+- The branch is behind `origin/main` and you started reading anyway.
+- You're planning what to post rather than what to report back here.
 
 ## Read it from the clone
 

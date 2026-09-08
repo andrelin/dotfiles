@@ -1,6 +1,6 @@
 ---
 name: writing-claude-md
-description: How to write and maintain a CLAUDE.md - audience and style, when material belongs in a skill instead, and keeping personal context separable so the file stays shareable. Read before creating a CLAUDE.md, adding or reworking a section in one, or deciding whether a new rule should live in CLAUDE.md, a skill, or a reference doc.
+description: Read before creating a CLAUDE.md, before adding or reworking a section in one, and when deciding whether a new rule belongs in CLAUDE.md, a skill or a reference doc. Covers audience, the cost of a line that loads every session, and what must stay out of a shared repo.
 ---
 
 # Writing CLAUDE.md files
@@ -60,30 +60,61 @@ The tempting non-spec ones are `when_to_use` (a separate trigger field), `user-i
 
 Front matter is exempt from the markdown line-length rule — see `~/.claude/CLAUDE.md` § *Markdown line breaks*.
 
-## Keep personal context out, or at least separable
+## Keep personal context out — it goes in `CLAUDE.local.md`
 
 Personal context is anything tied to one person: their team or role, what the agent may do on their behalf,
 their personal files and trackers, their standing preferences.
 
-**In a customer or company repo, none of it gets committed.** A `CLAUDE.md` checked into someone else's
-repository is a shared file — personal working arrangements do not belong in a colleague's checkout, and on a
-company repo the history is walked through in front of an audience.
+**The default home is a `CLAUDE.local.md` beside the `CLAUDE.md`**, kept out of git.
+Claude Code loads it automatically and appends it *after* the `CLAUDE.md` in the same directory, so the personal
+half is the last thing read at that level and wins on any conflict.
+Nothing personal reaches the history, and the shared file stays adoptable by anyone.
 
-Put it somewhere outside the repo that the agent still reads:
+**How you keep it out of git depends on whose repo it is:**
 
-- **The `CLAUDE.md` at the root of the customer's tree**, above the individual repos and not itself in git.
-  This is the normal home for it, and `~/.claude/CLAUDE.md` already directs the agent there before customer work.
-- **`~/.claude/CLAUDE.md`** for anything that holds across every engagement rather than this one.
+- **A repo the user owns** — add `CLAUDE.local.md` to `.gitignore` and commit that line.
+  It also tells the next person the convention exists.
+- **A customer's or an employer's repo** — use `.git/info/exclude` instead.
+  It ignores the file per-clone and is never committed, where editing their `.gitignore` would commit a personal
+  filename into their history — the leak this whole section exists to prevent.
+  Leaving it untracked and unignored is not the third option: it shows up in every `git status` and gets staged
+  by accident.
 
-Neither is version-controlled with the customer's code, so nothing personal reaches their history.
+That replaces the older habit of gathering personal context into a marked section of the committed file.
+Reach for that only where no local file can be used at all, and then keep it to one clearly-marked section
+rather than sprinkling it through.
 
-**In a repo the user owns, it may be committed — but in one clearly-marked section**, not sprinkled through the
-file. That's the difference between a file someone can adopt and one they'd have to audit line by line: gathered
-in one place, they rewrite that section and keep the rest.
+**Where to put it when the project spans git worktrees.** A gitignored `CLAUDE.local.md` exists only in the
+worktree that created it, so one per worktree means three copies drifting apart.
+Two ways out, in order of preference:
+
+- **Put it in a directory *above* the worktrees** — a customer or project tree root. Every `CLAUDE.md` and
+  `CLAUDE.local.md` from the working directory upward is loaded, so one file there covers every worktree below it.
+- **Import a home-directory file** from the local file: `@~/.claude/<project>-instructions.md`.
+  Note that an import in a *project*-level file resolving outside the working directory triggers a one-time
+  approval dialog; declining disables it permanently for that project.
+
+**`~/.claude/CLAUDE.md`** stays the home for anything that holds across every project rather than this one.
 
 The same test applies to the rest of any `CLAUDE.md`: a sentence that only makes sense from one person's seat
-("default to staying in our modules") either moves into that section, moves out of the repo, or gets rewritten
+("default to staying in our modules") either moves to the local file, moves out of the repo, or gets rewritten
 neutrally.
+
+A shared `CLAUDE.md` that has a local counterpart should say so, in one line, so the next person creates theirs
+instead of editing the shared file — and so the sections that refer back to it still read on their own.
+
+## The excuses for adding a section
+
+Every line here loads on every task in the project, forever. That cost is invisible at the moment of writing,
+which is why the file grows.
+
+| Excuse | Reality |
+| --- | --- |
+| "This is important, so it belongs in CLAUDE.md." | Importance isn't frequency. Important-but-occasional is a skill. |
+| "The agent keeps forgetting, so I'll repeat it." | Repetition dilutes rather than reinforces. Find why the first statement didn't bind. |
+| "It's only a few lines." | Multiplied by every session in the project's life. Skills cost nothing until they match. |
+| "A skill might not trigger." | Then the `description` is wrong. Fix the trigger — that's cheaper than a permanent tax. |
+| "I'll tidy it up later." | Nothing forces the tidy-up, and a stale rule is followed as confidently as a live one. |
 
 ## Maintaining one
 

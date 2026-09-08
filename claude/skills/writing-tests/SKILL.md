@@ -1,6 +1,6 @@
 ---
 name: writing-tests
-description: Make every test able to fail for a real reason - the anti-patterns that pass forever regardless of behaviour (asserting a literal the author just typed, round-tripping through no logic, asserting a mock returns what it was told to return), what is worth testing instead, and the litmus test to apply before writing one. Read before writing or reviewing tests.
+description: Read before writing a test, and before approving one in someone else's diff. Covers which tests can fail for a real reason and which pass forever regardless of behaviour; complements a TDD workflow rather than replacing one.
 ---
 
 # Test actual logic, not literals
@@ -41,6 +41,20 @@ coverage — so the untested branch beside it looks tested.
   only line of defence — negative tests there are high-value logic tests, and this rule is not licence to skip
   them.
 - **Boundaries** — empty, null, one, many, the off-by-one at each end.
+
+## The excuses, and what's actually true
+
+| Excuse | Reality |
+| --- | --- |
+| "Coverage requires it." | Coverage counts executed lines, not evidence. A test that can't fail raises the number and nothing else. |
+| "It documents the shape of the object." | The type does that, and the compiler enforces it. The test only repeats it. |
+| "The mapping could change later." | Then the test changes in the same keystroke as the code. It cannot catch that change. |
+| "It's one line, it's cheap." | Paid on every run forever, and it dilutes the signal from tests that would catch something. |
+| "It proves the wiring at least." | Only if the wiring once broke. A construct-and-read-back proves the language works. |
+| "I'll delete it if it gets in the way." | It won't get in the way. It becomes noise nobody feels entitled to delete. |
+
+**Red flags:** the expected value appears verbatim in the code under test; the assertion equals a stub's
+configured return; the test would still pass if the function body were replaced with `return input`.
 
 ## Litmus test before writing one
 

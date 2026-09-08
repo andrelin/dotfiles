@@ -1,6 +1,6 @@
 ---
 name: writing-follow-ups
-description: How to maintain a personal cross-cutting follow-up tracker - a markdown file at the root of a project or customer tree holding items that outlive any single MR. Covers what belongs in it, the review-run workflow, structure, badges and numbering conventions. Read before a review or reorganise run on such a tracker (renumber, delete-resolved, merge/split items).
+description: Read before a review or reorganise run on a personal follow-up tracker - conventionally follow-ups.md at the root of a project or customer tree - and before renumbering, deleting resolved items, merging or splitting them, or reconciling open MRs against it. Not for plan files.
 ---
 
 # Writing follow-ups
@@ -69,6 +69,17 @@ and note the mapping in the top HTML comment so the next run can reconcile.
 - **Themed sections** (`## N · Title`), each with items (`### N.M · Title <badge> <branch?>`).
 - **Every item leads with a `→` line** stating the single concrete next step (merge / ask X / add dep / decide).
   Rich detail goes in bullets below it — skim the `→`, dive when acting.
+
+## Common mistakes
+
+- **Checking an item off instead of deleting it.** The list is what's still open; a done item is noise in it.
+- **Trusting the branch name.** Content lands via squashes and renames — grep the files on `main` (step 2).
+- **Treating a green feature branch as done.** Only the default branch counts, however finished the branch looks.
+- **Putting review bookkeeping in the visible body.** SHAs, dates and merge provenance go in the HTML comments.
+- **Treating item numbers as stable IDs.** They're reassigned every run — cross-reference within the tracker,
+  never from outside it.
+- **Letting an item bundle several changes.** One item = one MR or one conversation, or the `→` next step can't
+  be a single action.
 
 ## Conventions
 

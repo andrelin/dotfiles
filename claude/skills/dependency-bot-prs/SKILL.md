@@ -1,6 +1,6 @@
 ---
 name: dependency-bot-prs
-description: Let Dependabot and Renovate close their own PRs - never close one by hand, and never use a closing keyword (closes/fixes/resolves) targeting one in a commit or PR description. Read before closing, bundling, superseding or referencing a dependency-bot PR, or before touching the Renovate dependency dashboard issue.
+description: Read before closing, bundling, superseding or referencing a Dependabot or Renovate PR, before writing a commit or PR description that mentions one, and before touching the Renovate dependency dashboard issue.
 ---
 
 # Dependabot and Renovate PRs — let the bots close their own
@@ -11,6 +11,11 @@ targeting one in a commit or PR description — those auto-close the bot PR on m
 **Why:** the bots run their own state machine. When a bumped dependency lands on the default branch by any path,
 they detect it and close the obsolete PR themselves, updating the dependency dashboard at the same time.
 Closing by hand short-circuits that bookkeeping, and the dashboard then disagrees with reality.
+
+**The excuses:** "the PR is obsolete anyway" — the bot works that out itself, and closing first is what breaks
+the bookkeeping. "A closing keyword is just documentation" — it isn't, it fires on merge.
+"I'll close it and let the bot reopen if it matters" — it won't; a hand-closed PR reads as a human decision to
+decline the bump, and the bot respects that.
 
 **How to apply:**
 

@@ -1,6 +1,6 @@
 ---
 name: cutting-comments
-description: The cut-down pass for comments a change adds - measure added comment lines against the change itself, work through the ordered list of what to cut first, and check the file's existing convention before filing one as a review finding. Read after drafting any edit that adds comments, and when reviewing a diff that adds them.
+description: Read after drafting any edit that adds comments, and before filing a comment as a finding in someone else's diff. Covers the cut-down pass over one specific diff; the standing rule it applies lives in CLAUDE.md.
 ---
 
 # Cutting comments
@@ -40,6 +40,23 @@ suspicious of a block that dwarfs its change. The case that prompted this rule w
 
 Keep the *non-obvious why* — typically one or two lines, e.g. why a guard covers a state transition rather than
 an echo of it.
+
+## The excuses, and what's actually true
+
+Every comment feels justified at the moment of writing it — that's why it got written.
+The cut-down pass exists because that feeling is not evidence.
+
+| Excuse | Reality |
+| --- | --- |
+| "This one explains a real subtlety." | Then put it in the code. Try the rename or the extracted function; keep the comment only if neither works. |
+| "The next reader won't have the context I have." | They'll have the code, the tests and the history. They won't have a comment that stayed true. |
+| "It's only two lines." | Two lines that no test covers and no compiler checks. Cost is paid at every future read. |
+| "The author asked for it in review." | A separate conversation. It doesn't make the comment true a year from now. |
+| "I'll leave it — removing it isn't my change." | Expanding a wildcard import isn't your change either, and that one you do. Same reasoning. |
+
+**Red flags:** a roadmap tense ("for now", "until we", "eventually"); a comment naming another layer, a ticket,
+or a file that gets deleted; a comment block longer than the hunk it sits on; the same rationale appearing in
+both the code and its test.
 
 ## On review: check the file's existing convention first
 

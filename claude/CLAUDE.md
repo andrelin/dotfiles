@@ -95,11 +95,13 @@ personal project, but **the history and the remote** are part of the material an
 So it takes the personal rules for editing and the customer rules for publishing — that middle position is the
 whole category, not an exception to it.
 
-Everything an audience sees is composed by the user:
+Every commit an audience sees is written by the user:
 
-- **Forbidden:** `git commit`, `commit --amend`, `cherry-pick`, `merge`, `revert`, any conflicted rebase, `git push` (any form), opening/merging PRs.
+- **Forbidden:** `git commit`, `commit --amend`, `cherry-pick`, `revert`, any conflicted rebase or merge,
+  `git push` (any form), opening/merging PRs.
 - **Allowed:** `git add`, `restore`, `checkout`/`switch`, `stash`, `branch` (ref only), `fetch`, all inspection,
-  and a clean zero-conflict `git rebase origin/main`.
+  and a clean zero-conflict `git rebase origin/main` or `git merge`.
+  A clean merge authors nothing — it's integration, not a commit the user would have to stand behind.
 - **Be helpful:** draft the commit message and PR body; explain the manual steps. The rule forbids *running* the command, not offering the text.
 - **Personal context stays out of the repo**, for the same reason — see § *Durable context lives in the repo*.
 
@@ -115,13 +117,14 @@ An engagement's own `CLAUDE.md` sits closer to the work and overrides anything h
 
 **The same forbidden / allowed / be-helpful lists as *company* above apply here** — including that
 `git add`, `restore`, `checkout`/`switch`, `stash`, `branch` (ref only), `fetch` and all inspection are **safe**,
-and that a clean zero-conflict `git rebase origin/main` is allowed. "Careful" governs history and the remote,
-not ordinary working-tree commands. On top of that:
+and that a clean zero-conflict `git rebase origin/main` or `git merge` is allowed.
+"Careful" governs what the user has to stand behind — the commits and the remote — not ordinary working-tree
+commands. On top of that:
 
 - Claude prepares the working tree; the user composes history and does every remote write.
 - The rule is about *effect on history*, not command names —
-  a rebase that mints new commit content during conflict resolution violates it just as much as `git commit`.
-  On any conflict: `git rebase --abort` and hand back to the user.
+  a rebase or merge that mints new content during conflict resolution violates it just as much as `git commit`.
+  On any conflict: `git rebase --abort` / `git merge --abort` and hand back to the user.
 - Prefer the local clone over the hosting platform's CLI (`gh`, `glab`, `az`, …) for reads and writes.
   Everything needed for the work is in the clone, and the user drives the platform themselves.
 - Review code locally, never through a web UI — see § *Code review* below for the mechanics.
@@ -142,8 +145,9 @@ Never use personal memory as the system of record for these projects.
 
 **This covers *project* context, not *personal* context.** On a company repo the history is walked through in
 front of an audience, so anything tied to the user personally — their role, standing preferences, what the agent
-may do on their behalf — stays out of the commit and goes in `~/.claude/CLAUDE.md` or a `CLAUDE.md` above the
-repo. Details: the `writing-claude-md` skill.
+may do on their behalf — stays out of the commit and goes in a gitignored `CLAUDE.local.md` beside the
+`CLAUDE.md`, in a `CLAUDE.md` above the repo, or in `~/.claude/CLAUDE.md` when it holds everywhere.
+Details, including where to put the local file when the project spans worktrees: the `writing-claude-md` skill.
 
 - When you'd otherwise write a memory file, write to the repo instead.
 - If the user asks you to "remember" something, default to a repo edit; keep it local only if they explicitly say so.
@@ -250,8 +254,38 @@ Two rules that bind whenever a plan file is in play, so they live here rather th
 - **Plan files are temporary.** Never reference one from anything that outlives it — `CLAUDE.md`, READMEs,
   memory, PR/MR descriptions. Inline the load-bearing content into the durable doc instead.
 
-Conventions for writing and maintaining one — status marks, the implementation-status table, spelling out the
-tests — are the `writing-plans` skill.
+Conventions for writing and maintaining one — the structure above the tasks, how big a task should be, what each
+one carries, the self-review, status marks and spelling out the tests — are the `writing-plans` skill.
+
+## Plugin skills — the unscoped skill wins
+
+Installed plugins ship their own skills, listed namespaced as `plugin:skill` (`superpowers:writing-plans`),
+while the user's own skills are unscoped (`writing-plans`).
+Names collide, and the descriptions can read as near-identical.
+
+**When both cover the same ground, invoke the unscoped one.**
+It carries this user's conventions and the permission rules above; a plugin skill knows neither.
+Read a plugin skill for technique, never for what is allowed.
+
+For the `superpowers` plugin specifically:
+
+| Instead of | Use | Why |
+| --- | --- | --- |
+| `superpowers:writing-plans` | `writing-plans` | different plan format, and it commits between steps |
+| `superpowers:requesting-code-review` | `reviewing-locally` | § *Code review* binds however the review was started |
+| `superpowers:finishing-a-development-branch` | care | its push and MR options are out of reach; see below |
+
+`superpowers:test-driven-development`, `systematic-debugging`, `dispatching-parallel-agents` and the rest add
+technique the unscoped skills don't cover — read them for that.
+
+**§ *Work contexts* outranks every skill.**
+On company and customer work the user owns the remote, so no skill's steps may push, or open, merge or close an
+MR — `superpowers:finishing-a-development-branch` offers exactly those as menu options.
+Draft the commands and the message, and hand back.
+What a skill may do to *local* history — the merges in that skill and in
+`superpowers:subagent-driven-development`, the commit step in `superpowers:writing-plans` — is whatever that
+section's own list allows. It governs; the plugin doesn't.
+On personal work all of it is fine.
 
 ## Always run the project's formatters and linters
 

@@ -1,6 +1,6 @@
 ---
 name: proving-causes
-description: Constraints and traps for debugging and root-cause work - a wrong cause is usually plausible, so hold every one as a hypothesis until an experiment confirms it; reproduce before fixing; never mix incompatible measurements; don't mistake a vanished symptom for a fixed cause; strip probes when done. Read before a non-trivial debugging, root-cause or reproduction task such as a flaky test, an intermittent failure or a failing pipeline.
+description: Read before any non-trivial debugging, root-cause or reproduction task - a flaky test, an intermittent failure, a failing pipeline - and before shipping or scoping a fix on a cause you have not proven. Covers the traps, not a prescribed method.
 ---
 
 # Proving causes — constraints and traps
@@ -26,6 +26,31 @@ fall into, because the wrong answer sounds reasonable. Three shapes that keep re
   aren't affected, and a needlessly broad fix costs more than the bug.
 
 Reproduce it, measure it, or force it to happen on demand. Don't conclude, scope, or ship on "probably".
+
+## The excuses, and what's actually true
+
+These are what it sounds like from the inside when the proof step is about to get skipped.
+Under time pressure they all feel like pragmatism.
+
+| Excuse | Reality |
+| --- | --- |
+| "It's flaky, just rerun it." | Unfalsifiable until you look. A rerun buys silence, not information. |
+| "The cause is obvious from the stack trace." | The trace shows where it surfaced, not what put it there. Cheap to confirm; confirm it. |
+| "No time to reproduce — the fix is small." | A small unverified fix costs a second round trip plus the credibility of the first. |
+| "It went green." | See § *A vanished symptom is not a fixed cause*. One green run is one sample. |
+| "Same symptom as that other bug, so same cause." | Symptoms are many-to-one with causes. Resemblance is a hypothesis, not evidence. |
+| "It only happens in CI, so I can't prove it locally." | Then narrow it in CI, one variable per run. "Can't reproduce" is a finding, not a licence. |
+| "I'll ship the fix and watch whether it recurs." | Production is a slow test with no assertion. You won't be able to read the result. |
+
+## Red flags — stop and get proof
+
+- You're about to write "should fix" or "likely caused by" in a summary.
+- You changed more than one thing since the last observation.
+- The fix is drafted and the reproduction still isn't.
+- You're widening the fix to files you haven't measured.
+- You're comparing two numbers you didn't take the same way.
+
+Each means the same thing: you have a hypothesis, and you were about to spend it as a conclusion.
 
 ## Reproduce before you fix
 

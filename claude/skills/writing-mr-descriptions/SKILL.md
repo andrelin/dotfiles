@@ -1,34 +1,44 @@
 ---
 name: writing-mr-descriptions
-description: Shape, calibration and recurring smells for merge/pull request titles and descriptions, with a worked example. Read before writing or revising an MR or PR title or description, including a draft pasted into chat for the user to copy.
+description: Read before writing or revising a merge or pull request title or description, including a draft pasted into chat for the user to copy. Covers what the description has to contain and in what order, and the padding that comes out before posting.
 ---
 
 # Writing MR titles and descriptions
 
-These are guidelines, not a template: they describe what a good description does, so apply judgement rather than filling in slots.
 "MR" throughout means merge request or pull request — the advice is the same on GitLab and GitHub.
 
-Language and title style: English, and match the form dominant in the repo's recent `git log`
+## What to write, in order
+
+Three parts, in this sequence. Everything else in this skill is either mechanics for part 1 or a cut pass over
+what you drafted for parts 2 and 3.
+
+1. **A title** carrying the issue number, in the form the repo already uses.
+2. **The why** — what was wrong, missing or painful in *this* code. Concrete to this diff, not the general principle.
+3. **The what** — the change, framed as how it answers that why.
+
+Then stop. A fourth part exists only where the diff leaves a reviewer reconstructing something: why a second file
+is in the MR, why a structure looks unlike what it replaced, where behaviour or coverage moved to.
+
+**Why the why goes first:** a reviewer who meets the change first has to reconstruct the motivation backwards, and
+after merge it's the motivation, not the diff, that's been lost.
+
+**If the change is one line and its what is self-evident** — a version bump with a CVE reference — the why is the
+whole description. Two parts collapse into one; the order doesn't change.
+
+## Title mechanics
+
+English, matching the title form dominant in the repo's recent `git log`
 (per `~/.claude/CLAUDE.md` § *Norwegian vs English*).
 
-**Always carry the issue number in the title when the work has one.** Read `git log` to see which form the repo
-uses — `<type> #<n>: <subject>` and a trailing `(#<n>)` are both common — and match it.
-Never use a closing keyword (`closes` / `fixes` / `resolves`) — see `~/.claude/CLAUDE.md` § *Dependabot and Renovate PRs*
-for why that matters around bot MRs.
+**Always carry the issue number when the work has one.** Read `git log` to see which form the repo uses —
+`<type> #<n>: <subject>` and a trailing `(#<n>)` are both common — and match it.
+Never use a closing keyword (`closes` / `fixes` / `resolves`) — see `~/.claude/CLAUDE.md`
+§ *Dependabot and Renovate PRs* for why that matters around bot MRs.
 
-**Never write bare angle brackets in a description.** GitLab and GitHub both render raw HTML, so placeholders like
-`<id>`, `<title>` or `<name>` are parsed as tags — `<title>` in particular swallows the following markup and dumps
-the rest of the list out as visible `</li>` text.
+**Never write bare angle brackets anywhere in title or body.** GitLab and GitHub both render raw HTML, so
+placeholders like `<id>`, `<title>` or `<name>` are parsed as tags — `<title>` in particular swallows the
+following markup and dumps the rest of the list out as visible `</li>` text.
 Use a concrete example in backticks (`` `2.1 – Title` ``) instead of a bracketed placeholder.
-
-## Shape: why first, then what
-
-Open with the **why** — what was wrong, missing or painful in *this* code. Then the **what**, framed as how it answers that why.
-
-A reviewer who reads the change first has to reconstruct the motivation backwards, and after merge it's the motivation,
-not the diff, that's been lost. So the why earns its place even when the what is obvious.
-
-Not a mandate. A one-line fix ("bump X to 2.1, CVE") doesn't need two paragraphs, and some MRs are all why with a trivial what.
 
 ## Calibration
 
@@ -40,7 +50,9 @@ Not a mandate. A one-line fix ("bump X to 2.1, CVE") doesn't need two paragraphs
   file is in the MR, why a structure looks unlike what it replaced, where behaviour or coverage moved to. Skip what reading
   the diff answers immediately.
 
-## Smells — these have all had to be cut from real drafts
+## The cut pass — these have all had to come out of real drafts
+
+Draft to the shape above first, then cut. Each of these is something that felt like context while writing it.
 
 - **Shared knowledge as motivation** — "database tests are slow", "duplication is bad". Everyone here knows; it buries the
   part specific to this change. State what's true of *this* code and let the principle be assumed.

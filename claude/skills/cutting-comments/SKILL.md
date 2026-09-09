@@ -1,28 +1,41 @@
 ---
 name: cutting-comments
-description: Read after drafting any edit that adds comments, and before filing a comment as a finding in someone else's diff. Covers the cut-down pass over one specific diff; the standing rule it applies lives in CLAUDE.md.
+description: Read after drafting any edit that adds comments, and before filing a comment as a finding in someone else's diff. Carries the standing rule - comments are a last resort, only a non-obvious why survives - and the cut-down pass that applies it to one specific diff.
 ---
 
 # Cutting comments
 
-The base rule is in `~/.claude/CLAUDE.md` (§ *Self-documenting code*): reading the code explains the code, and a
-comment survives only for a *non-obvious why*. This is the pass that applies it to a specific diff.
+`~/.claude/CLAUDE.md` § *Working on code* carries the one-line rule: a comment is a last resort, and only a
+*non-obvious why* survives. This file is the standing rule in full, and the pass that applies it to a diff.
 
-**Check the local convention first.** Some codebases deliberately run a more explanatory comment style — a
-frontend next to a terse backend, a teaching repo, a library with a documented public surface. Applying this bar
-there is wrong. `git grep -c` the pattern before assuming the codebase wants it cut, and honour any project rule
-that carves out a directory.
+## The standing rule
+
+Write code so that **reading the code explains the code** — intent carried by naming and structure, not prose.
+Before writing a comment, try a rename, an extracted well-named function or local, or a restructure; if any of
+those would carry the meaning, do that instead and drop the comment.
+**Why:** comments drift from the code and restate what good names already say.
+
+- Don't comment *what* the code does, or restate a function's name, signature, or type.
+- Don't state domain knowledge the team already has.
+- Keep a comment only for a *non-obvious why* a reader couldn't infer — a legal constraint, a workaround for
+  external-library behaviour, a deliberate choice that looks wrong at first glance. One or two lines.
+- No file or class header comments that merely narrate; no commented-out code.
+- Never reference things outside the repo — local file paths, source documents, plan files, ticket numbers.
+  They rot and mean nothing to the next reader.
+- Test bodies follow the same bar: prefer self-evident Given/When/Then *structure* over `// Given` / `// When` /
+  `// Then` scaffolding.
+
+**Check the local convention first.** Some codebases deliberately run a more explanatory style — a teaching repo,
+a library with a documented public surface. `git grep -c` the pattern before assuming the codebase wants it cut,
+and honour any project rule that carves out a directory.
 
 ## The standing check
 
-**Whenever a change adds comments, re-read them and cut.**
-Applies to **writing** them as much as reviewing them: after drafting any edit that adds a comment, go back over
-each one and ask what survives. Treat the first draft of a comment as too long by default.
-The same pass runs on review, over someone else's diff.
+**Whenever a change adds comments, re-read them and cut** — after drafting your own edit as much as on review.
+Treat the first draft of a comment as too long by default.
 
-**Measure rather than eyeball:** count added comment lines against added lines of code from the diff, and be
-suspicious of a block that dwarfs its change. The case that prompted this rule was 13 comment lines over a
-1-line fix.
+**Measure rather than eyeball:** count added comment lines against added lines of code, and be suspicious of a
+block that dwarfs its change. The case that prompted this rule was 13 comment lines over a 1-line fix.
 
 ## What to cut, in the order these actually show up
 
@@ -41,22 +54,15 @@ suspicious of a block that dwarfs its change. The case that prompted this rule w
 Keep the *non-obvious why* — typically one or two lines, e.g. why a guard covers a state transition rather than
 an echo of it.
 
-## The excuses, and what's actually true
-
-Every comment feels justified at the moment of writing it — that's why it got written.
-The cut-down pass exists because that feeling is not evidence.
-
-| Excuse | Reality |
-| --- | --- |
-| "This one explains a real subtlety." | Then put it in the code. Try the rename or the extracted function; keep the comment only if neither works. |
-| "The next reader won't have the context I have." | They'll have the code, the tests and the history. They won't have a comment that stayed true. |
-| "It's only two lines." | Two lines that no test covers and no compiler checks. Cost is paid at every future read. |
-| "The author asked for it in review." | A separate conversation. It doesn't make the comment true a year from now. |
-| "I'll leave it — removing it isn't my change." | Expanding a wildcard import isn't your change either, and that one you do. Same reasoning. |
+## Rebuttals and red flags
 
 **Red flags:** a roadmap tense ("for now", "until we", "eventually"); a comment naming another layer, a ticket,
 or a file that gets deleted; a comment block longer than the hunk it sits on; the same rationale appearing in
 both the code and its test.
+
+Every comment feels justified at the moment of writing it — that's why it got written, and that feeling is not
+evidence. If you find yourself arguing to keep one, the answer to the argument is in
+`~/.claude/docs/comment-excuses.md`.
 
 ## On review: check the file's existing convention first
 

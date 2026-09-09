@@ -28,12 +28,12 @@ whole description. Two parts collapse into one; the order doesn't change.
 ## Title mechanics
 
 English, matching the title form dominant in the repo's recent `git log`
-(per `~/.claude/CLAUDE.md` § *Norwegian vs English*).
+(per `~/.claude/CLAUDE.md` § *Language*).
 
 **Always carry the issue number when the work has one.** Read `git log` to see which form the repo uses —
 `<type> #<n>: <subject>` and a trailing `(#<n>)` are both common — and match it.
-Never use a closing keyword (`closes` / `fixes` / `resolves`) — see `~/.claude/CLAUDE.md`
-§ *Dependabot and Renovate PRs* for why that matters around bot MRs.
+Never use a closing keyword (`closes` / `fixes` / `resolves`) — the `dependency-bot-prs` skill has why that
+matters around bot MRs.
 
 **Never write bare angle brackets anywhere in title or body.** GitLab and GitHub both render raw HTML, so
 placeholders like `<id>`, `<title>` or `<name>` are parsed as tags — `<title>` in particular swallows the
@@ -70,24 +70,4 @@ Draft to the shape above first, then cut. Each of these is something that felt l
 Delete any sentence that wouldn't change where a reviewer looks or what they'd push back on. If removing it loses nothing, it was padding.
 Then check it still reads for someone who wasn't in the conversation.
 
-## Worked example
-
-> **test: run order transition tests without a database**
->
-> The transition tests start a database container for logic that is only a
-> status check plus a repository call, so the suite pays for a database it
-> doesn't use.
->
-> OrderServiceTransitionTest now builds the service from mockk repositories:
->
-> - the shared rules are parameterized over every transition and status, with
->   the terminal split derived from Status.isTerminal, so a new status or
->   transition is covered without touching a test body
-> - assertions check what the service decides — target status, updatedBy, and
->   that a terminal order is rejected before anything is written — instead of
->   reading the row back
-> - updateStatus and findStatusForUpdate move down to OrderRepositoryTest, the
->   only place left exercising that SQL
-
-The why names the concrete waste in this test, not the general principle. Each bullet covers something the diff doesn't
-explain on its own: why so few test methods cover so many cases, why the assertions changed shape, why a second file is here.
+A full worked example, with notes on why each line survived: `~/.claude/docs/mr-description-example.md`.

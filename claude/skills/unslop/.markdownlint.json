@@ -1,0 +1,4 @@
+{
+  "comment": "Vendored verbatim — see VENDORED.md. Linting it would rewrite upstream's text.",
+  "default": false
+}

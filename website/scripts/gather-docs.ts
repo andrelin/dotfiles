@@ -79,9 +79,10 @@ function rewriteRepoLinks(content: string): string {
     `$1: https://github.com/${REPO}/blob/main/$2`,
   );
 
-  // Root-level files (.gitignore, LICENSE, etc.).
+  // Root-level files (.gitignore, LICENSE, etc.), reached as ../LICENSE from a
+  // page in a subdirectory — the same optional prefix the source-dir rule allows.
   out = out.replace(
-    new RegExp(`\\]\\((${rootFilesAlt})\\)`, 'g'),
+    new RegExp(`\\]\\((?:\\.\\.?\\/)?(${rootFilesAlt})\\)`, 'g'),
     `](https://github.com/${REPO}/blob/main/$1)`,
   );
 
@@ -125,7 +126,8 @@ ensureDir(OUT);
   body = body
     .replace(/\]\(TIPS\.md\)/g, '](./tips/index.md)')
     .replace(/\]\(tips\/\)/g, '](./tips/index.md)')
-    .replace(/\]\(tips\/([^)]+)\)/g, '](./tips/$1)');
+    .replace(/\]\(tips\/([^)]+)\)/g, '](./tips/$1)')
+    .replace(/\]\(docs\/([^)]+)\)/g, '](./guide/$1)');
   body = rewriteAutolinks(rewriteRepoLinks(body));
   write(
     'overview.md',
@@ -170,6 +172,36 @@ fs.writeFileSync(
     null,
     2,
   ) + '\n',
+);
+
+// ---- guide pages (docs/) ----
+// Long-form README sections that outgrew it, ordered by filename like tips/.
+// rewriteRepoLinks already accepts the ../ these pages use to reach the repo root.
+const guideDir = path.join(REPO_ROOT, 'docs');
+fs.readdirSync(guideDir)
+  .filter((f) => f.endsWith('.md'))
+  .sort()
+  .forEach((f, i) => {
+    const cleaned = stripDoctoc(fs.readFileSync(path.join(guideDir, f), 'utf8'));
+    const h1 = cleaned.match(/^# ([^\n]+)/);
+    const title = h1 ? h1[1].replace(/`/g, '') : f.replace(/\.md$/, '');
+    const body = rewriteAutolinks(rewriteRepoLinks(stripH1(cleaned)));
+    write(
+      `guide/${f}`,
+      frontMatter(
+        {
+          title,
+          sidebar_label: title,
+          sidebar_position: i + 1,
+        },
+        body,
+      ),
+    );
+  });
+
+fs.writeFileSync(
+  path.join(OUT, 'guide', '_category_.json'),
+  JSON.stringify({label: 'Guide', position: 3}, null, 2) + '\n',
 );
 
 // ---- individual tip files ----
@@ -234,7 +266,7 @@ fs.writeFileSync(
   JSON.stringify(
     {
       label: 'Reference',
-      position: 3,
+      position: 4,
     },
     null,
     2,

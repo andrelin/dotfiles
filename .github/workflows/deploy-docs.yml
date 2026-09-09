@@ -7,6 +7,7 @@ on:
       - 'README.md'
       - 'TIPS.md'
       - 'tips/**'
+      - 'docs/**'
       - 'init/README.md'
       - 'source/README.md'
       - 'website/**'

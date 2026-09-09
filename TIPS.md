@@ -2,7 +2,8 @@
 
 A curated, growing index of terminal tricks, repo features, and bundled-tool basics. Read on GitHub, or run `tips` in a shell to print them.
 
-> **Start here:** [Tip 20.1 — Working with the dotfiles repo](tips/20_shell_and_meta.md#tip-201-working-with-the-dotfiles-repo) — edit, reload, re-apply. The single most useful tip if you've cloned this repo and don't know where to begin.
+> **Start here:** [Tip 20.1 — Working with the dotfiles repo](tips/20_shell_and_meta.md#tip-201-working-with-the-dotfiles-repo) —
+> edit, reload, re-apply. The single most useful tip if you've cloned this repo and don't know where to begin.
 
 Tips are split into category files under `tips/`. The leading two-digit prefix puts them in a meaningful "decade":
 
@@ -49,7 +50,8 @@ tips -h               Help
 - [21. Git](tips/21_git.md) — workflow helpers, repo diagnostics
 - [22. Local dev infra](tips/22_dev_infra.md) — docker, kubernetes (`kdel*`), kafka, throwaway Postgres
 - [23. JVM](tips/23_jvm.md) — `jdk` switching, Maven OpenRewrite recipes
-- [24. Claude Code integration](tips/24_claude_code.md) — `sync-claude-deny`, `sort-claude-settings`, pre-commit automation, shared `~/.claude` config and skills
+- [24. Claude Code integration](tips/24_claude_code.md) — `sync-claude-deny`, `sort-claude-settings`,
+  pre-commit automation, shared `~/.claude` config and skills
 
 ## 3x — Zsh ecosystem
 

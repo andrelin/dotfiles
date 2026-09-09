@@ -16,7 +16,8 @@ reload        # re-source ~/.zshrc / ~/.bashrc after editing source/*.sh
 dotfiles      # re-run init scripts (apply new copy/link entries, install new homebrew/cask/flatpak entries)
 ```
 
-Typical loop: edit a file in `source/`, run `reload`, the new alias/function is live. For changes to `copy/`, `link/`, or `init/`, run `dotfiles` to apply them. From `source/30_aliases.sh`, `source/22_editor.sh`, `bin/dotfiles`.
+Typical loop: edit a file in `source/`, run `reload`, the new alias/function is live.
+For changes to `copy/`, `link/`, or `init/`, run `dotfiles` to apply them. From `source/30_aliases.sh`, `source/22_editor.sh`, `bin/dotfiles`.
 
 ## Tip 20.2: File and Directory Helpers
 
@@ -66,7 +67,8 @@ Handy for scripts that need to wait for a VPN or detect a particular network. Fr
 
 ## Tip 20.6: Documentation Site
 
-`README.md`, `TIPS.md`, `tips/*.md`, `init/README.md`, and `source/README.md` are also rendered to `https://dotfiles.lindjo.no` via Docusaurus on every push to `main`. Source files stay in their canonical locations; `website/scripts/gather-docs.ts` copies them into `website/docs-generated/` (gitignored) at build time.
+`README.md`, `TIPS.md`, `tips/*.md`, `docs/*.md` and the `init/` and `source/` READMEs render to
+`https://dotfiles.lindjo.no` on every push to `main`; `website/scripts/gather-docs.ts` gathers them at build time.
 
 ```sh
 cd ~/.dotfiles/website
@@ -75,4 +77,5 @@ npm start                    # local dev server with live reload
 npm run build                # production build (catches broken links)
 ```
 
-CI is `.github/workflows/deploy-docs.yml`. If you add a new top-level dir or root-level file referenced from a gathered doc, extend `SOURCE_DIRS` / `ROOT_FILES` in `gather-docs.ts` so links rewrite correctly.
+CI is `.github/workflows/deploy-docs.yml`. A new top-level dir or root file referenced from a gathered doc goes
+in `SOURCE_DIRS` / `ROOT_FILES` in `gather-docs.ts`, or its links won't rewrite.

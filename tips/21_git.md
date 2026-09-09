@@ -15,7 +15,8 @@ gpc                             # git push -u origin <current-branch>
 gpfc                            # gpc but with --force-with-lease (safe force-push)
 ```
 
-Use `gpc` for first-push of a new branch, `gpfc` after rebases. `merge-from-branch` is the "I want main's latest changes in my feature branch" shortcut.
+Use `gpc` for first-push of a new branch, `gpfc` after rebases.
+`merge-from-branch` is the "I want main's latest changes in my feature branch" shortcut.
 
 ## Tip 21.2: Repo Diagnostics
 
@@ -29,4 +30,5 @@ git_momentum                    # commits per week trend
 git_firefighting                # ratio of bug-fix commits to total
 ```
 
-Treat them as a bundle: when joining a new repo or auditing one, run them in sequence to get a feel for hotspots, ownership, pace, and quality patterns.
+Treat them as a bundle: when joining a new repo or auditing one, run them in sequence to get a feel for hotspots, ownership, pace,
+and quality patterns.

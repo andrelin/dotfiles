@@ -32,4 +32,5 @@ mvn-rewrite-asserts          # migrate Hamcrest/JUnit asserts → AssertJ
 mvn-rewrite-runwith          # migrate @RunWith → @ExtendWith (JUnit 5)
 ```
 
-These are thin wrappers around the corresponding `mvn org.openrewrite.maven:rewrite-maven-plugin:run` invocations, so the Maven project must have OpenRewrite available. From `source/45_maven.sh`.
+These are thin wrappers around the corresponding `mvn org.openrewrite.maven:rewrite-maven-plugin:run` invocations,
+so the Maven project must have OpenRewrite available. From `source/45_maven.sh`.

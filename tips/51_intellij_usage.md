@@ -71,7 +71,8 @@ Alt + Space              Quick definition popup        (Linux/WSL: Ctrl + Shift 
 F1                       Quick documentation (Javadoc) (Linux/WSL: Ctrl + Q)
 ```
 
-Quick Definition is the one — peek at a function's body without losing your place. Note: `Ctrl` (not `Cmd`) on macOS for the hierarchy actions; `Cmd+H` would hide the IDE.
+Quick Definition is the one — peek at a function's body without losing your place.
+Note: `Ctrl` (not `Cmd`) on macOS for the hierarchy actions; `Cmd+H` would hide the IDE.
 
 ## Editing & refactoring
 
@@ -107,7 +108,8 @@ Paste a stack trace from anywhere (k8s logs, Jenkins, terminal) and IntelliJ for
 
 > Analyze → Analyze Stack Trace → paste → OK.
 
-To make it automatic on copy, tick **Automatically detect and analyze thread dumps copied to the clipboard outside the IDE** in the same dialog. After that, copying a stack trace anywhere and switching to IntelliJ pops up the formatted view.
+To make it automatic on copy, tick **Automatically detect and analyze thread dumps copied to the clipboard outside the IDE** in the same dialog.
+After that, copying a stack trace anywhere and switching to IntelliJ pops up the formatted view.
 
 ### Tip 51.8: Add Dependencies from Build Files
 
@@ -118,8 +120,10 @@ Cmd + N (Alt + Insert on Linux/WSL)    Cursor inside <dependencies> in pom.xml, 
                                        inside dependencies { } in build.gradle / build.gradle.kts
 ```
 
-Type a name → fuzzy-search Maven Central → pick a version. For Gradle, IntelliJ inserts the right `implementation "group:artifact:version"` line; for Maven, the full `<dependency>` block.
+Type a name → fuzzy-search Maven Central → pick a version.
+For Gradle, IntelliJ inserts the right `implementation "group:artifact:version"` line; for Maven, the full `<dependency>` block.
 
-If your cursor isn't inside `dependencies { }` (or the popup doesn't show "Add Maven artifact dependency"), use **File → Project Structure → Modules → Dependencies → + → Library → From Maven** — works for either build system.
+If your cursor isn't inside `dependencies { }` (or the popup doesn't show "Add Maven artifact dependency"),
+use **File → Project Structure → Modules → Dependencies → + → Library → From Maven** — works for either build system.
 
 Same `Cmd + N` / `Alt + Insert` shortcut also generates getters/setters/constructors/`toString` inside Java classes.

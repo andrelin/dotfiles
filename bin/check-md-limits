@@ -1,0 +1,249 @@
+#!/usr/bin/env bash
+#
+# Enforce the repo's markdown size limits.
+#
+# Uses mapfile (bash 4+). Re-execs under brew bash on macOS where /usr/bin/bash
+# is still 3.2 — the pre-commit hook and the PostToolUse hook both invoke this as
+# a separate process, so it cannot rely on their interpreter.
+#
+# Two independent checks:
+#   * Line length — 150 characters, hard, every markdown file.
+#   * File length — per type <advisory/hard>: a rule or project CLAUDE.md 30/50,
+#     the global CLAUDE.md 60/75, a skill 80/100, anything else 80/150. The aim
+#     is 30 for a rule or project CLAUDE.md, 60 for the global one and 50 for the
+#     rest; see limits_for() for why the advisory lines differ from the aims.
+#     What counts depends on who reads the file:
+#       - Claude-loaded (CLAUDE.md, SKILL.md, claude/, .claude/): every line,
+#         because every line is tokens on every task that loads it.
+#       - Human-facing (README, TIPS, tips/, docs/, the READMEs under init/ and
+#         source/): the content a reader gets through, not the scaffolding. An
+#         HTML comment never renders, a run of badge lines is the one row it
+#         draws, and a doctoc ToC does render but is navigation — charging for
+#         it would penalise what makes a long page readable.
+#
+# A file already over its warn line when the limits landed can be pinned in
+# .md-baseline, and then warns only if it grows past the size recorded there.
+# The pin is a ratchet, not an exemption: the hard cap still applies, and
+# --update-baseline only ever lowers a recorded size.
+#
+# Usage: check-md-limits [--no-warn] [file ...]
+#        check-md-limits --update-baseline [file ...]
+#   No files          check every tracked markdown file.
+#   --no-warn         errors only, for CI, where an advisory nobody can fail is noise.
+#   --update-baseline re-pin: with no files, tighten existing pins to current
+#                     sizes; with files, pin those (refusing to loosen a pin).
+
+if ((BASH_VERSINFO[0] < 4)); then
+  for candidate in /opt/homebrew/bin/bash /usr/local/bin/bash; do
+    [[ -x "$candidate" ]] && exec "$candidate" "$0" "$@"
+  done
+  echo "ERROR: check-md-limits needs bash 4+; current: $BASH_VERSION" >&2
+  echo "Install brew bash: brew install bash" >&2
+  exit 1
+fi
+
+set -euo pipefail
+
+readonly MAX_LINE_CHARS=150
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO_ROOT
+readonly BASELINE_FILE="$REPO_ROOT/.md-baseline"
+
+# Every path here is repo-relative: git ls-files reports relative to the cwd, and
+# the per-type limits and the baseline are both keyed on the repo-relative form.
+# Without this, running the tool from a subdirectory misfiles every path.
+cd "$REPO_ROOT"
+
+# Pins are recorded repo-relative, but the PostToolUse hook passes absolute paths.
+repo_relative() {
+  echo "${1#"$REPO_ROOT"/}"
+}
+
+# Recorded size for a pinned file, or nothing when it isn't pinned.
+baseline_for() {
+  [[ -f "$BASELINE_FILE" ]] || return 0
+  awk -F'\t' -v want="$(repo_relative "$1")" '$1 !~ /^#/ && $2 == want { print $1 }' "$BASELINE_FILE"
+}
+
+# Per-type <warn> <hard>. The stricter a file's trigger, the tighter the bar — a
+# rule loads on a path match, a skill on a task, a CLAUDE.md on everything.
+#
+# For the strict types the warn line is the aim itself — few enough files sit
+# between aim and cap that each warning is worth acting on. Skills and everything
+# else aim at 50 but warn at 80: warning at their aim would fire on most of the
+# repo, and a warning that common is one nobody reads.
+limits_for() {
+  case "$1" in
+    */claude/CLAUDE.md | claude/CLAUDE.md)                   echo "60 75" ;;
+    CLAUDE.md | CLAUDE.local.md | */CLAUDE.md | */CLAUDE.local.md) echo "30 50" ;;
+    claude/rules/*.md | .claude/rules/*.md | */rules/*.md)   echo "30 50" ;;
+    SKILL.md | */SKILL.md)                                   echo "80 100" ;;
+    *)                                                       echo "80 150" ;;
+  esac
+}
+
+# A directory holding a VENDORED.md is kept byte-for-byte in step with upstream and
+# re-synced by diffing, so our conventions don't apply to it. The marker sits beside
+# the vendored file rather than inside it: a copy that claims its own exemption is
+# only as trustworthy as the claim, and editing it would break the claim silently.
+readonly VENDORED_MARKER=VENDORED.md
+
+no_warn=0
+update_baseline=0
+requested=()
+for arg in "$@"; do
+  case "$arg" in
+    --no-warn) no_warn=1 ;;
+    --update-baseline) update_baseline=1 ;;
+    -*) echo "ERROR: unknown option $arg" >&2; exit 2 ;;
+    *) requested+=("$arg") ;;
+  esac
+done
+
+files=(${requested+"${requested[@]}"})
+# A baseline rewrite always walks every file, so pins outside the argument list survive.
+if (( ${#files[@]} == 0 || update_baseline )); then
+  mapfile -t files < <(git ls-files -- '*.md' ':(exclude)vendor/' ':(exclude)node_modules/')
+fi
+
+was_requested() {
+  local candidate
+  for candidate in ${requested+"${requested[@]}"}; do
+    [[ "$candidate" == "$1" ]] && return 0
+  done
+  return 1
+}
+
+# Claude loads these whole, so every line in them is paid for on every task.
+is_claude_file() {
+  case "$1" in
+    CLAUDE.md | CLAUDE.local.md | */CLAUDE.md | */CLAUDE.local.md) return 0 ;;
+    *"/SKILL.md" | SKILL.md) return 0 ;;
+    claude/* | .claude/* | */claude/* | */.claude/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# On a human-facing page, count what renders: no HTML comments, no generated
+# doctoc block, no badge rows.
+rendered_lines() {
+  perl -ne '
+    BEGIN { our $count = 0; our $in_comment = 0; our $in_toc = 0; our $in_badges = 0 }
+    if (/<!-- START doctoc/) { $in_toc = 1; next }
+    if (/<!-- END doctoc/)   { $in_toc = 0; next }
+    next if $in_toc;
+    if ($in_comment) { $in_comment = 0 if /-->/; next }
+    if (/<!--/ && !/-->/) { $in_comment = 1; next }
+    next if /^\s*<!--.*-->\s*$/;
+    # A run of badge-only lines renders as the single row it draws, so it costs one.
+    if (/^\s*(?:\[?!\[[^\]]*\]\([^)]*\)\]?(?:\([^)]*\))?\s*)+$/) {
+      $count++ unless $in_badges;
+      $in_badges = 1;
+      next;
+    }
+    $in_badges = 0;
+    $count++;
+    END { print "$count\n" }
+  ' "$1"
+}
+
+is_vendored() {
+  [[ -f "$(dirname "$1")/$VENDORED_MARKER" ]]
+}
+
+# Skips YAML front matter, fenced code and table rows — places the line-break rule
+# forbids wrapping. A URL is unwrappable but the prose around it isn't, so URLs are
+# subtracted from the length rather than exempting the whole line.
+long_lines() {
+  perl -CSD -e '
+    my ($max, $file) = @ARGV;
+    open my $fh, "<", $file or die "$file: $!\n";
+    my ($in_front_matter, $in_fence) = (0, 0);
+    while (my $line = <$fh>) {
+      chomp $line;
+      if ($. == 1 && $line eq "---") { $in_front_matter = 1; next }
+      if ($in_front_matter) { $in_front_matter = 0 if $line eq "---"; next }
+      if ($line =~ /^\s*(?:```|~~~)/) { $in_fence = !$in_fence; next }
+      next if $in_fence;
+      next if $line =~ /^\s*\|/;
+      (my $measured = $line) =~ s{https?://[^\s)>\]]+}{}g;
+      printf "%d (%d chars)\n", $., length($line) if length($measured) > $max;
+    }
+  ' "$MAX_LINE_CHARS" "$1"
+}
+
+errors=0
+new_pins=()
+for f in "${files[@]}"; do
+  [[ -f "$f" ]] || continue
+  is_vendored "$f" && continue
+
+  mapfile -t offenders < <(long_lines "$f")
+  if (( ${#offenders[@]} > 0 )); then
+    echo "ERROR: $f exceeds $MAX_LINE_CHARS characters on these lines:" >&2
+    printf '  line %s\n' "${offenders[@]}" >&2
+    echo "       Break at a sentence or clause boundary (see ~/.claude/rules/markdown-limits.md)." >&2
+    errors=1
+  fi
+
+  if is_claude_file "$f"; then
+    lines=$(wc -l < "$f" | tr -d "[:space:]")
+  else
+    lines=$(rendered_lines "$f")
+  fi
+  read -r warn hard < <(limits_for "$f")
+
+  pinned=$(baseline_for "$f")
+
+  if (( update_baseline )); then
+    # Pin a file only when it is over its warn line, and never above an existing
+    # pin — the ratchet may tighten, never loosen.
+    if [[ -z "$pinned" ]] && ! was_requested "$f"; then
+      continue
+    fi
+    if (( lines > hard )); then
+      echo "SKIP: $f is $lines lines, over its hard cap of $hard — split it, don't pin it." >&2
+    elif (( lines > warn )); then
+      if [[ -n "$pinned" ]] && (( lines > pinned )); then
+        echo "SKIP: $f is $lines lines, above its pin of $pinned — shrink it rather than re-pinning." >&2
+        new_pins+=("$pinned	$(repo_relative "$f")")
+      else
+        new_pins+=("$lines	$(repo_relative "$f")")
+      fi
+    elif [[ -n "$pinned" ]]; then
+      echo "DROP: $f is $lines lines, back under its warn line of $warn — pin removed." >&2
+    fi
+    continue
+  fi
+
+  if (( lines > hard )); then
+    echo "ERROR: $f is $lines lines, over the hard cap of $hard for its type." >&2
+    echo "       Split it along a seam in the subject, or move part of it into a file of its own." >&2
+    errors=1
+  elif [[ -n "$pinned" ]]; then
+    if (( lines > pinned && no_warn == 0 )); then
+      echo "NOTE: $f is $lines lines, up from its pinned $pinned; it may not grow." >&2
+      echo "      Bring it back under $pinned, or shorten it and re-pin with --update-baseline." >&2
+    fi
+  elif (( lines > warn && no_warn == 0 )); then
+    echo "NOTE: $f is $lines lines; stay under $warn (hard cap $hard)." >&2
+    echo "      Advisory — see ~/.claude/rules/markdown-limits.md." >&2
+  fi
+done
+
+if (( update_baseline )); then
+  for want in ${requested+"${requested[@]}"}; do
+    printf '%s\n' ${new_pins+"${new_pins[@]}"} | grep -qF "	$(repo_relative "$want")" && continue
+    echo "ERROR: $want matched no tracked markdown file, so nothing was pinned for it." >&2
+    errors=1
+  done
+  {
+    echo "# Files that were already long when the markdown size limits landed."
+    echo "# Each may not grow past the size recorded here; the hard cap still applies."
+    echo "# Regenerate with: bin/check-md-limits --update-baseline"
+    (( ${#new_pins[@]} > 0 )) && printf '%s\n' "${new_pins[@]}" | sort -k2
+  } > "$BASELINE_FILE"
+  echo "Wrote ${#new_pins[@]} pins to $BASELINE_FILE" >&2
+fi
+
+exit "$errors"

@@ -14,6 +14,10 @@
           {
             "type": "command",
             "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | grep -qE \"(^|/)(source|bin)/[^/]+$\" && jq -nc --arg m \"This edit touched source/ or bin/. If it added, removed, renamed, or changed the signature of a user-facing alias, function, or script, add or update its tip under tips/ as part of this same change — see the writing-tips skill. Internal helpers with no user-facing surface need no tip.\" '{hookSpecificOutput:{hookEventName:\"PostToolUse\",additionalContext:$m}}' || true"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *.md) ;; *) exit 0 ;; esac; out=$(\"${CLAUDE_PROJECT_DIR:-.}\"/bin/check-md-limits \"$f\" 2>&1) || true; [ -n \"$out\" ] && jq -nc --arg m \"$out\" '{hookSpecificOutput:{hookEventName:\"PostToolUse\",additionalContext:$m}}'; } || true"
           }
         ]
       }

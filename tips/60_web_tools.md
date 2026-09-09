@@ -18,6 +18,7 @@ Clean, minimal typing trainer with WPM/accuracy stats and configurable test leng
 
 ## Tip 60.3: Kafka Streams Topology Visualiser
 
-Paste the `Topology#describe()` output from a Kafka Streams app and get a graph of sources, processors, state stores, and sinks. Indispensable when reasoning about a non-trivial topology.
+Paste the `Topology#describe()` output from a Kafka Streams app and get a graph of sources, processors, state stores, and sinks.
+Indispensable when reasoning about a non-trivial topology.
 
 <https://zz85.github.io/kafka-streams-viz/>

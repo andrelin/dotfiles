@@ -36,7 +36,8 @@ From `source/43_kubernetes.sh`. Cross-link: see `40_kubernetes_cli.md` for the u
 
 ## Tip 22.3: Kafka Topic Helpers
 
-Higher-level wrappers around `kafka-topics` and friends. Configured via `KAFKA_BOOTSTRAP` and `SCHEMA_REGISTRY` env vars (default to `localhost`); set them in your shell or a `.envrc` per project.
+Higher-level wrappers around `kafka-topics` and friends.
+Configured via `KAFKA_BOOTSTRAP` and `SCHEMA_REGISTRY` env vars (default to `localhost`); set them in your shell or a `.envrc` per project.
 
 ```sh
 kafka-grep <pattern>                      # list topics matching a pattern
@@ -56,4 +57,5 @@ mkpg <name>     # docker run a postgres named <name>; user=db=password=<name>
 repg            # stop+remove+recreate a container named "postgres"
 ```
 
-`mkpg foo` gives you a Postgres running on `localhost:5432` with credentials `foo/foo` and a `foo` database — convenient for quick local testing. `repg` resets the default-named one. From `source/44_postgres.sh`.
+`mkpg foo` gives you a Postgres running on `localhost:5432` with credentials `foo/foo` and a `foo` database — convenient for quick local testing.
+`repg` resets the default-named one. From `source/44_postgres.sh`.

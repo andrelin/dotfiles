@@ -5,6 +5,7 @@ on:
       # Docs and site content: none of it affects whether dotfiles installs or lints.
       - 'website/**'
       - 'tips/**'
+      - 'docs/**'
       - 'claude/**'
       - '.claude/**'
       - '*.md'
@@ -24,7 +25,7 @@ jobs:
         run: |
           shellcheck --version
           failed=0
-          for f in bin/dotfiles bin/eachdir bin/isip \
+          for f in bin/dotfiles bin/eachdir bin/isip bin/check-md-limits \
                    init/*.sh source/*.sh test/*.sh \
                    link/.bashrc link/.bash_profile; do
             echo "--- $f ---"

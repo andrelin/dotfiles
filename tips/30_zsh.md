@@ -84,7 +84,8 @@ Sourced from `vendor/zsh-autosuggestions/`. Repo: <https://github.com/zsh-users/
 
 ## Tip 30.3: zsh-syntax-highlighting
 
-Real-time colouring of commands as you type. Valid commands turn green, invalid red, strings get their own colour. No commands to learn — it just works.
+Real-time colouring of commands as you type. Valid commands turn green, invalid red, strings get their own colour.
+No commands to learn — it just works.
 
 Repo: <https://github.com/zsh-users/zsh-syntax-highlighting>
 
@@ -96,12 +97,14 @@ Repo: <https://github.com/zsh-users/zsh-completions>
 
 ## Tip 30.5: zsh-history-substring-search
 
-Type a partial command, hit `↑` to walk through every history entry containing that substring (and `↓` to walk back). Faster than `Ctrl+R` for "I ran something with `kubectl logs` last week" recall.
+Type a partial command, hit `↑` to walk through every history entry containing that substring (and `↓` to walk back).
+Faster than `Ctrl+R` for "I ran something with `kubectl logs` last week" recall.
 
 ```
 kubectl logs█       # ← type prefix, then ↑ to cycle through matching history
 ```
 
-Vendored separately (not via omz) because it must load **after** `zsh-syntax-highlighting`, while omz plugins all load earlier in `source/90_oh-my-zsh.zsh`. See the load order in `source/99_zsh-modules.zsh`.
+Vendored separately (not via omz) because it must load **after** `zsh-syntax-highlighting`,
+while omz plugins all load earlier in `source/90_oh-my-zsh.zsh`. See the load order in `source/99_zsh-modules.zsh`.
 
 Repo: <https://github.com/zsh-users/zsh-history-substring-search>

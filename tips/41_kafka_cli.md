@@ -2,7 +2,8 @@
 
 # Kafka CLI
 
-Apache Kafka command-line tools. **Optional install** (`brew install kafka`). Repo's higher-level helpers (`kafka-grep`, `kafka-delete-matching`, etc.) live in `22_dev_infra.md` (Tip 22.3).
+Apache Kafka command-line tools. **Optional install** (`brew install kafka`).
+Repo's higher-level helpers (`kafka-grep`, `kafka-delete-matching`, etc.) live in `22_dev_infra.md` (Tip 22.3).
 
 ## Tip 41.1: Topics
 

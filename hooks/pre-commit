@@ -57,6 +57,13 @@ if (( ${#md_files[@]} > 0 )) && command -v markdownlint-cli2 >/dev/null 2>&1; th
   git add "${md_files[@]}"
 fi
 
+# Markdown size limits: 150 characters per line everywhere, and a per-type line cap
+# (50 for a rule, 75 for the global CLAUDE.md, 100 for a skill, 150 otherwise).
+# Nearing a cap is advisory and never blocks.
+if (( ${#md_files[@]} > 0 )); then
+  bin/check-md-limits "${md_files[@]}"
+fi
+
 # Warn when a commit adds or removes a user-facing alias, function or bin/ script without
 # touching tips/. Narrow on purpose: matching *any* source/ edit fires on refactors that
 # have no user-facing surface, and a warning nobody reads is worse than none.

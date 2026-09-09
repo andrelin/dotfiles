@@ -1,0 +1,8 @@
+# Files that were already long when the markdown size limits landed.
+# Each may not grow past the size recorded here; the hard cap still applies.
+# Regenerate with: bin/check-md-limits --update-baseline
+67	claude/CLAUDE.md
+90	tips/10_terminal.md
+97	tips/30_zsh.md
+82	tips/50_intellij_config.md
+112	tips/51_intellij_usage.md

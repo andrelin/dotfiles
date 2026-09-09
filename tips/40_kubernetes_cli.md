@@ -2,7 +2,8 @@
 
 # Kubernetes CLI
 
-Upstream Kubernetes tooling. **All optional installs** — this machine doesn't have a cluster wired up by default. Each tip leads with the install command. Repo helpers like `kdel*` live in `22_dev_infra.md` (Tip 22.2).
+Upstream Kubernetes tooling. **All optional installs** — this machine doesn't have a cluster wired up by default.
+Each tip leads with the install command. Repo helpers like `kdel*` live in `22_dev_infra.md` (Tip 22.2).
 
 ## Tip 40.1: kubectl
 
@@ -47,7 +48,8 @@ Docs: <https://github.com/jonmosco/kube-ps1>
 
 ## Tip 40.4: k9s
 
-Terminal UI for Kubernetes. Massively faster than chained `kubectl` for live debugging — see pods, logs, events, descriptions, all with single-key navigation.
+Terminal UI for Kubernetes.
+Massively faster than chained `kubectl` for live debugging — see pods, logs, events, descriptions, all with single-key navigation.
 
 ```sh
 brew install k9s

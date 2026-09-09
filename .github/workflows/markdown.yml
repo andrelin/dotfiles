@@ -22,6 +22,11 @@ jobs:
       - name: markdownlint-cli2
         run: markdownlint-cli2 '**/*.md' '#node_modules' '#vendor'
 
+      # Errors only: the nearing-the-cap advisory belongs in the pre-commit hook, where
+      # the author can act on it. A CI step that cannot fail is exactly what this repo bans.
+      - name: Line and file length limits
+        run: bin/check-md-limits --no-warn
+
       # claude/ and .claude/ are exempt: a ToC is a navigation aid for humans browsing on
       # GitHub, and nothing under either is read that way — both are agent-loaded context.
       - name: Enforce doctoc opt-in/opt-out on every markdown file outside claude/

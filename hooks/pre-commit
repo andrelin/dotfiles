@@ -48,15 +48,42 @@ fi
 # Update ToCs and lint markdown in staged *.md files.
 # -z throughout: git C-quotes any path with a non-ASCII or control character, and
 # the quoted form matches nothing on disk, so the file would be skipped in silence.
-mapfile -d '' -t md_files < <(git diff --cached -z --name-only --diff-filter=ACMR -- '*.md')
-mapfile -d '' -t toc_files < <(git diff --cached -z --name-only --diff-filter=ACMR -- '*.md' ':(exclude)claude/' ':(exclude).claude/')
+mapfile -d '' -t staged_md < <(git diff --cached -z --name-only --diff-filter=ACMR -- '*.md')
+
+# These tools rewrite the working tree, and `git add` would then stage the whole
+# file — including hunks deliberately left out of this commit. So they only touch
+# a file whose working tree already matches the index; a partially staged file is
+# left alone and named, with CI as the backstop.
+md_files=()
+partial_md=()
+for f in ${staged_md+"${staged_md[@]}"}; do
+  if git diff --quiet -- "$f"; then
+    md_files+=("$f")
+  else
+    partial_md+=("$f")
+  fi
+done
+
+if (( ${#partial_md[@]} > 0 )); then
+  echo "NOTE: these staged markdown files have unstaged changes too, so the hook left them" >&2
+  echo "      untouched rather than staging the rest of the file:" >&2
+  printf '  %s\n' "${partial_md[@]}" >&2
+  echo "      Formatting and the size limits were not applied to them; CI still checks them." >&2
+fi
+
+toc_files=()
+for f in ${md_files+"${md_files[@]}"}; do
+  case "$f" in claude/* | .claude/*) continue ;; esac
+  toc_files+=("$f")
+done
+
 if (( ${#toc_files[@]} > 0 )) && command -v doctoc >/dev/null 2>&1; then
   doctoc --github --notitle "${toc_files[@]}" >/dev/null
-  git add "${toc_files[@]}"
+  git add -- "${toc_files[@]}"
 fi
 if (( ${#md_files[@]} > 0 )) && command -v markdownlint-cli2 >/dev/null 2>&1; then
   markdownlint-cli2 --fix "${md_files[@]}" >/dev/null
-  git add "${md_files[@]}"
+  git add -- "${md_files[@]}"
 fi
 
 # Markdown size limits. The caps, what counts toward them and which breaches are

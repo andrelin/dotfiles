@@ -37,7 +37,8 @@ From `bin/sort-claude-settings`.
   reminder that never blocks.
 
 So no commit carries stale deny rules or shuffled settings arrays. It does more besides — doctoc, markdownlint
-and the size limits on staged markdown — and `init/12_git_hooks.sh` symlinks it into `.git/hooks/`.
+and the size limits on staged markdown, though only for files with no unstaged changes, since re-staging a
+partially staged file would commit hunks you left out — and `init/12_git_hooks.sh` symlinks it into `.git/hooks/`.
 
 ## Tip 24.4: Shared config and skills in `~/.claude`
 

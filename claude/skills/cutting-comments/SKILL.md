@@ -5,7 +5,7 @@ description: Read after drafting any edit that adds comments, and before filing 
 
 # Cutting comments
 
-`~/.claude/CLAUDE.md` § *Working on code* carries the one-line rule: a comment is a last resort, and only a
+`~/.claude/rules/writing-code.md` carries the one-line rule: a comment is a last resort, and only a
 *non-obvious why* survives. This file is the standing rule in full, and the pass that applies it to a diff.
 
 ## The standing rule

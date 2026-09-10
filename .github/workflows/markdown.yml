@@ -1,6 +1,14 @@
 name: Markdown
 
-on: [push]
+on:
+  push:
+    paths:
+      - '**.md'
+      - 'bin/check-md-limits'
+      - '.md-baseline'
+      - '**/.markdownlint.json'
+      - '.markdownlint.json'
+      - '.github/workflows/markdown.yml'
 
 permissions:
   contents: read
@@ -20,12 +28,34 @@ jobs:
         run: npm install -g doctoc markdownlint-cli2
 
       - name: markdownlint-cli2
-        run: markdownlint-cli2 '**/*.md' '#node_modules' '#vendor'
+        run: markdownlint-cli2 '**/*.md' '#node_modules' '#website/node_modules' '#website/docs-generated' '#vendor'
 
       # Errors only: the nearing-the-cap advisory belongs in the pre-commit hook, where
       # the author can act on it. A CI step that cannot fail is exactly what this repo bans.
       - name: Line and file length limits
         run: bin/check-md-limits --no-warn
+
+      # Catches a hand-edited baseline the tool would not have written — a raised
+      # number, a stale one, a malformed line — and, separately, a pin deleted
+      # outright, which regeneration cannot restore. What remains uncaught is a
+      # pin raised in the same commit that grows the file into it; that shows up
+      # in the .md-baseline diff, which is why this file is small and committed.
+      - name: .md-baseline matches what the tool would write
+        run: |
+          # A pin can only be removed by the file shrinking under its warn line,
+          # which regeneration would have done for us.
+          git show HEAD:.md-baseline 2>/dev/null | awk -F'\t' '!/^#/ && NF == 2 { print $2 }' > /tmp/pins-before || true
+          bin/check-md-limits --update-baseline >/dev/null
+          while read -r pin; do
+            grep -qF "	$pin" .md-baseline && continue
+            echo "::error::pin for $pin disappeared from .md-baseline without the file shrinking."
+            exit 1
+          done < /tmp/pins-before
+          git diff --exit-code -- .md-baseline || {
+            echo "::error::.md-baseline does not match what the tool would write."
+            echo "Run 'bin/check-md-limits --update-baseline' locally and commit the result."
+            exit 1
+          }
 
       # claude/ and .claude/ are exempt: a ToC is a navigation aid for humans browsing on
       # GitHub, and nothing under either is read that way — both are agent-loaded context.

@@ -18,7 +18,7 @@ const earlyPaletteScript = transformSync(
 
 // Map gathered file paths back to their source-of-truth locations on GitHub,
 // so the "Edit this page" link points at the original file rather than the
-// generated copy. Anything not in this map (or not under tips/) gets no link.
+// generated copy. Anything not in this map (or not under tips/ or guide/) gets no link.
 const sourcePathMap: Record<string, string> = {
   'overview.md': 'README.md',
   'tips/index.md': 'TIPS.md',
@@ -37,6 +37,7 @@ const config: Config = {
   favicon: 'img/logo-dot-files.svg',
 
   onBrokenLinks: 'throw',
+  onBrokenAnchors: 'throw',
 
   clientModules: ['./src/randomLogo.ts'],
 
@@ -70,7 +71,8 @@ const config: Config = {
           editUrl: ({docPath}) => {
             const src =
               sourcePathMap[docPath] ??
-              (docPath.startsWith('tips/') ? docPath : null);
+              (docPath.startsWith('tips/') ? docPath : null) ??
+              (docPath.startsWith('guide/') ? docPath.replace(/^guide\//, 'docs/') : null);
             return src ? `${EDIT_BASE}/${src}` : undefined;
           },
         },

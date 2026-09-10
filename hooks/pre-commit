@@ -32,7 +32,7 @@ fi
 # Catches violations in unrelated files too — fix-first, never silent-default.
 # claude/ and .claude/ are exempt: a ToC is a navigation aid for humans browsing on GitHub,
 # and nothing under either is read that way — both are context loaded by an agent.
-mapfile -t all_md < <(git ls-files -- '*.md' ':(exclude)claude/' ':(exclude).claude/')
+mapfile -d '' -t all_md < <(git ls-files -z -- '*.md' ':(exclude)claude/' ':(exclude).claude/')
 missing=()
 for f in "${all_md[@]}"; do
   [[ -f "$f" ]] || continue
@@ -46,8 +46,10 @@ if (( ${#missing[@]} > 0 )); then
 fi
 
 # Update ToCs and lint markdown in staged *.md files.
-mapfile -t md_files < <(git diff --cached --name-only --diff-filter=ACMR -- '*.md')
-mapfile -t toc_files < <(git diff --cached --name-only --diff-filter=ACMR -- '*.md' ':(exclude)claude/' ':(exclude).claude/')
+# -z throughout: git C-quotes any path with a non-ASCII or control character, and
+# the quoted form matches nothing on disk, so the file would be skipped in silence.
+mapfile -d '' -t md_files < <(git diff --cached -z --name-only --diff-filter=ACMR -- '*.md')
+mapfile -d '' -t toc_files < <(git diff --cached -z --name-only --diff-filter=ACMR -- '*.md' ':(exclude)claude/' ':(exclude).claude/')
 if (( ${#toc_files[@]} > 0 )) && command -v doctoc >/dev/null 2>&1; then
   doctoc --github --notitle "${toc_files[@]}" >/dev/null
   git add "${toc_files[@]}"
@@ -57,11 +59,11 @@ if (( ${#md_files[@]} > 0 )) && command -v markdownlint-cli2 >/dev/null 2>&1; th
   git add "${md_files[@]}"
 fi
 
-# Markdown size limits: 150 characters per line everywhere, and a per-type line cap
-# (50 for a rule, 75 for the global CLAUDE.md, 100 for a skill, 150 otherwise).
-# Nearing a cap is advisory and never blocks.
+# Markdown size limits. The caps, what counts toward them and which breaches are
+# advisory rather than fatal all live in bin/check-md-limits and the rule it cites;
+# restating them here only gives them somewhere to drift apart.
 if (( ${#md_files[@]} > 0 )); then
-  bin/check-md-limits "${md_files[@]}"
+  bin/check-md-limits -- "${md_files[@]}"
 fi
 
 # Warn when a commit adds or removes a user-facing alias, function or bin/ script without

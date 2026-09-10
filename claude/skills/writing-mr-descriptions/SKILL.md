@@ -65,6 +65,9 @@ Draft to the shape above first, then cut. Each of these is something that felt l
   objected. If a reviewer asks, answer in the thread.
 - **File-by-file narration**, and boilerplate headers with nothing under them.
 
+**Never link a plan file.** It is deleted when the work ships, leaving a dangling reference in something
+permanent — inline whatever the reader needs instead (`~/.claude/rules/plan-files.md`).
+
 ## Before posting
 
 Delete any sentence that wouldn't change where a reviewer looks or what they'd push back on. If removing it loses nothing, it was padding.

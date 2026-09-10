@@ -60,6 +60,8 @@ At handover, and not before, run the placeholder patterns and three-pass self-re
 ## Keeping it in sync
 
 A plan records intent before work starts *and* state after it lands, so a stale plan is worse than no plan.
+The two rules that bind whenever a plan file is open are in `~/.claude/rules/plan-files.md`, which loads on the
+file itself; the rest is here.
 
 - **Update the plan in the same turn as the code change** — never let it drift behind the working tree, and never
   batch it for the end, by which point the user has lost track of which section covers what.

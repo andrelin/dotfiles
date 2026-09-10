@@ -45,13 +45,16 @@ warning at the aim there would fire on most of the repo, and a warning that comm
   The cap holds on what's left: past 150 lines of content a reader stops finding things in it.
 
 **A skill may set a stricter bar for what it governs; none may set a looser one.**
-`writing-claude-md` holds `CLAUDE.md` to tighter numbers, and `writing-tips` does the same for tips files.
+`writing-claude-md` restates the two `CLAUDE.md` rows above rather than tightening them.
+A project may tighten further in its own `.claude/` tree — the dotfiles repo asks tips files to stay near 50
+lines, below the 80 the checker warns at, so nothing signals between the two and you watch that range by eye.
 
 ## Files that were already long
 
 A file over its warn line can be pinned at its current size, in a baseline the checker reads.
-It then warns only if it **grows**, so a file whose length is accepted stops nagging without being exempted: the
-hard cap still applies, and re-pinning can only lower the recorded size.
+It then says nothing until it **grows**, and growing past a pin is an error rather than an advisory — a pin is a
+commitment, so CI enforces it like any other cap. Re-pinning can only lower a recorded size, and the hard cap
+still applies on top.
 
 **Pin anything you have decided not to shorten.** A warning nobody intends to act on trains everyone to skim past
 the warnings that matter, so the choice is fix it or pin it — never leave it standing.

@@ -6,9 +6,9 @@ on:
       - 'website/**'
       - 'tips/**'
       - 'docs/**'
-      - 'claude/**'
       - '.claude/**'
-      - '*.md'
+      - '**.md'
+      - '.md-baseline'
       - 'LICENSE'
 
 permissions:
@@ -26,6 +26,8 @@ jobs:
           shellcheck --version
           failed=0
           for f in bin/dotfiles bin/eachdir bin/isip bin/check-md-limits \
+                   bin/sync-claude-deny bin/sort-claude-settings hooks/pre-commit \
+                   claude/statusline-command.sh \
                    init/*.sh source/*.sh test/*.sh \
                    link/.bashrc link/.bash_profile; do
             echo "--- $f ---"

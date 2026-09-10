@@ -26,5 +26,5 @@ The presence of this file tells `bin/check-md-limits` to skip every markdown fil
 `.markdownlint.json` beside it disables every lint rule, so neither the pre-commit hook nor CI can rewrite
 upstream's text. Reformatting `SKILL.md` to match `~/.claude/rules/markdown-limits.md` would be the bug.
 
-Upstream's rule numbers are stable ids that its own text cites, and its gaps at 4, 6 and 21 are upstream's —
-not something removed here.
+Upstream's rule numbers are stable ids that its own text cites, and its gaps — 1, 2, 4, 6 and 21 — are
+upstream's, not something removed here.

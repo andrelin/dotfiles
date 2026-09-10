@@ -7,7 +7,8 @@
 # a separate process, so it cannot rely on their interpreter.
 #
 # Two independent checks:
-#   * Line length — 150 characters, hard, every markdown file.
+#   * Line length — 150 characters, excluding front matter, closed fences, table
+#     rows and the URLs inside a line.
 #   * File length — per type <advisory/hard>: a rule or project CLAUDE.md 30/50,
 #     the global CLAUDE.md 60/75, a skill 80/100, anything else 80/150. The aim
 #     is 30 for a rule or project CLAUDE.md, 60 for the global one and 50 for the
@@ -21,13 +22,14 @@
 #         draws, and a doctoc ToC does render but is navigation — charging for
 #         it would penalise what makes a long page readable.
 #
-# A file already over its warn line when the limits landed can be pinned in
-# .md-baseline, and then warns only if it grows past the size recorded there.
+# A file over its warn line can be pinned in .md-baseline, and then fails only if
+# it grows past the size recorded there. Pinning is a deliberate act — it records
+# a length you have decided not to shorten, rather than one you intend to reach.
 # The pin is a ratchet, not an exemption: the hard cap still applies, and
 # --update-baseline only ever lowers a recorded size.
 #
-# Usage: check-md-limits [--no-warn] [file ...]
-#        check-md-limits --update-baseline [file ...]
+# Usage: check-md-limits [--no-warn] [--] [file ...]
+#        check-md-limits --update-baseline [--] [file ...]
 #   No files          check every tracked markdown file.
 #   --no-warn         errors only, for CI, where an advisory nobody can fail is noise.
 #   --update-baseline re-pin: with no files, tighten existing pins to current
@@ -45,24 +47,95 @@ fi
 set -euo pipefail
 
 readonly MAX_LINE_CHARS=150
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+INVOCATION_DIR="$PWD"
+readonly INVOCATION_DIR
+# readlink -f is not portable to older macOS, so walk the links by hand.
+resolve_symlink() {
+  local target="$1" link
+  while [[ -L "$target" ]]; do
+    link="$(readlink "$target")"
+    [[ "$link" == /* ]] && target="$link" || target="$(dirname "$target")/$link"
+  done
+  echo "$target"
+}
+
+REPO_ROOT="$(cd "$(dirname "$(resolve_symlink "${BASH_SOURCE[0]}")")/.." && pwd -P)"
 readonly REPO_ROOT
 readonly BASELINE_FILE="$REPO_ROOT/.md-baseline"
 
-# Every path here is repo-relative: git ls-files reports relative to the cwd, and
-# the per-type limits and the baseline are both keyed on the repo-relative form.
-# Without this, running the tool from a subdirectory misfiles every path.
-cd "$REPO_ROOT"
-
-# Pins are recorded repo-relative, but the PostToolUse hook passes absolute paths.
-repo_relative() {
-  echo "${1#"$REPO_ROOT"/}"
+validate_baseline() {
+  [[ -f "$BASELINE_FILE" ]] || return 0
+  local bad
+  bad="$(awk -F'\t' '
+    /^#/ || !NF { next }
+    NF != 2 { print NR; exit }
+    $1 !~ /^[0-9]+$/ { print NR; exit }
+    seen[$2]++ { print NR; exit }' "$BASELINE_FILE")"
+  [[ -z "$bad" ]] && return 0
+  echo "ERROR: $BASELINE_FILE line $bad is malformed, non-numeric or a duplicate pin." >&2
+  echo "       Every pin is unreadable while it is malformed, so nothing is checked" >&2
+  echo "       against one and --update-baseline will not rewrite it. Fix the line." >&2
+  return 1
 }
 
-# Recorded size for a pinned file, or nothing when it isn't pinned.
+no_warn=0
+update_baseline=0
+end_of_options=0
+requested=()
+for arg in "$@"; do
+  if (( end_of_options )); then
+    requested+=("$arg")
+    continue
+  fi
+  case "$arg" in
+    --) end_of_options=1 ;;
+    --no-warn) no_warn=1 ;;
+    --update-baseline) update_baseline=1 ;;
+    -*) echo "ERROR: unknown option $arg (use -- before a filename starting with a dash)" >&2; exit 2 ;;
+    *) requested+=("$arg") ;;
+  esac
+done
+
+# Resolve arguments against the directory the user ran this from, before moving to
+# the repo root. Every path below is then absolute or repo-relative, and
+# repo_relative() normalises both.
+for i in ${requested+"${!requested[@]}"}; do
+  [[ ${requested[i]} == /* ]] || requested[i]="$INVOCATION_DIR/${requested[i]}"
+done
+
+# git ls-files reports paths relative to the cwd, and the per-type limits and the
+# baseline are both keyed on the repo-relative form.
+cd "$REPO_ROOT"
+
+# Textual prefix-stripping alone would let ./x.md and a/../x.md key differently
+# from x.md, and so silently miss that file's pin.
+repo_relative() {
+  local target dir base resolved
+  target="$(resolve_symlink "$1")"
+  dir="$(dirname "$target")"
+  base="$(basename "$target")"
+  if resolved="$(cd "$dir" 2>/dev/null && pwd -P)"; then
+    echo "${resolved}/${base}" | sed "s|^${REPO_ROOT}/||"
+  else
+    echo "${target#"$REPO_ROOT"/}"
+  fi
+}
+
+# Requested paths arrive absolute; the loop works in repo-relative form.
+was_requested() {
+  local candidate
+  for candidate in ${requested+"${requested[@]}"}; do
+    [[ "$(repo_relative "$candidate")" == "$1" ]] && return 0
+  done
+  return 1
+}
+
+# Recorded size for a pinned file, or nothing when it isn't pinned. First match
+# only, so a duplicated entry can't produce a two-line "number".
 baseline_for() {
   [[ -f "$BASELINE_FILE" ]] || return 0
-  awk -F'\t' -v want="$(repo_relative "$1")" '$1 !~ /^#/ && $2 == want { print $1 }' "$BASELINE_FILE"
+  awk -F'\t' -v want="$(repo_relative "$1")" \
+    '!/^#/ && $2 == want { print $1; exit }' "$BASELINE_FILE"
 }
 
 # Per-type <warn> <hard>. The stricter a file's trigger, the tighter the bar — a
@@ -74,7 +147,8 @@ baseline_for() {
 # repo, and a warning that common is one nobody reads.
 limits_for() {
   case "$1" in
-    */claude/CLAUDE.md | claude/CLAUDE.md)                   echo "60 75" ;;
+    .claude/CLAUDE.md | */.claude/CLAUDE.md)                 echo "30 50" ;;
+    claude/CLAUDE.md | */claude/CLAUDE.md)                   echo "60 75" ;;
     CLAUDE.md | CLAUDE.local.md | */CLAUDE.md | */CLAUDE.local.md) echo "30 50" ;;
     claude/rules/*.md | .claude/rules/*.md | */rules/*.md)   echo "30 50" ;;
     SKILL.md | */SKILL.md)                                   echo "80 100" ;;
@@ -88,30 +162,8 @@ limits_for() {
 # only as trustworthy as the claim, and editing it would break the claim silently.
 readonly VENDORED_MARKER=VENDORED.md
 
-no_warn=0
-update_baseline=0
-requested=()
-for arg in "$@"; do
-  case "$arg" in
-    --no-warn) no_warn=1 ;;
-    --update-baseline) update_baseline=1 ;;
-    -*) echo "ERROR: unknown option $arg" >&2; exit 2 ;;
-    *) requested+=("$arg") ;;
-  esac
-done
-
-files=(${requested+"${requested[@]}"})
-# A baseline rewrite always walks every file, so pins outside the argument list survive.
-if (( ${#files[@]} == 0 || update_baseline )); then
-  mapfile -t files < <(git ls-files -- '*.md' ':(exclude)vendor/' ':(exclude)node_modules/')
-fi
-
-was_requested() {
-  local candidate
-  for candidate in ${requested+"${requested[@]}"}; do
-    [[ "$candidate" == "$1" ]] && return 0
-  done
-  return 1
+is_vendored() {
+  [[ -f "$(dirname "$1")/$VENDORED_MARKER" ]]
 }
 
 # Claude loads these whole, so every line in them is paid for on every task.
@@ -124,31 +176,87 @@ is_claude_file() {
   esac
 }
 
-# On a human-facing page, count what renders: no HTML comments, no generated
-# doctoc block, no badge rows.
-rendered_lines() {
-  perl -ne '
-    BEGIN { our $count = 0; our $in_comment = 0; our $in_toc = 0; our $in_badges = 0 }
-    if (/<!-- START doctoc/) { $in_toc = 1; next }
-    if (/<!-- END doctoc/)   { $in_toc = 0; next }
-    next if $in_toc;
-    if ($in_comment) { $in_comment = 0 if /-->/; next }
-    if (/<!--/ && !/-->/) { $in_comment = 1; next }
-    next if /^\s*<!--.*-->\s*$/;
-    # A run of badge-only lines renders as the single row it draws, so it costs one.
-    if (/^\s*(?:\[?!\[[^\]]*\]\([^)]*\)\]?(?:\([^)]*\))?\s*)+$/) {
-      $count++ unless $in_badges;
-      $in_badges = 1;
-      next;
-    }
-    $in_badges = 0;
-    $count++;
-    END { print "$count\n" }
-  ' "$1"
-}
+# raw: every line, including a last one with no trailing newline.
+# rendered: what a reader gets through — no HTML comments, no generated doctoc
+# block, and a run of badge lines counted as the one row it draws.
+count_lines() {
+  perl -e '
+    my ($mode, $file) = @ARGV;
+    # A real HTML comment is a few lines; a pairing that runs longer than this is
+    # two unrelated markers, and masking between them would hide a whole file.
+    my $MAX_COMMENT_LINES = 20;
+    open my $fh, "<", $file or die "$file: $!\n";
+    my @lines = map { my $l = $_; $l =~ s/\r?\n\z//; $l } <$fh>;
+    if ($mode eq "raw") { print scalar(@lines), "\n"; exit }
 
-is_vendored() {
-  [[ -f "$(dirname "$1")/$VENDORED_MARKER" ]]
+    # Only elide a doctoc block that is actually closed; an unterminated START
+    # marker is a broken file, not licence to stop counting.
+    # Fenced code holds example markup, not real markers or badges. Computed
+    # first because every region scan below has to consult it.
+    my %fenced;
+    my ($fence_open, $fence_char, $fence_len);
+    for my $i (0 .. $#lines) {
+      next unless $lines[$i] =~ /^\s*((`{3,})|(~{3,}))/;
+      my $run = $2 // $3;
+      my ($char, $len) = (substr($run, 0, 1), length $run);
+      if (defined $fence_open) {
+        # A fence closes only on the same character, at least as long — so a ~~~
+        # inside a ``` block, or ``` inside ````, is content rather than a close.
+        next unless $char eq $fence_char && $len >= $fence_len;
+        $fenced{$_} = 1 for $fence_open .. $i;
+        $fence_open = undef;
+      } else {
+        ($fence_open, $fence_char, $fence_len) = ($i, $char, $len);
+      }
+    }
+
+    my %skip;
+    for my $i (0 .. $#lines) {
+      next if $fenced{$i};
+      next unless $lines[$i] =~ /^\s*<!-- START doctoc.*-->\s*$/;
+      for my $j ($i + 1 .. $#lines) {
+        next if $fenced{$j};
+        next unless $lines[$j] =~ /^\s*<!-- END doctoc.*-->\s*$/;
+        $skip{$_} = 1 for $i .. $j;
+        last;
+      }
+    }
+
+    # Blank out every comment that actually closes, keeping newlines so line
+    # numbers hold. An unclosed <!-- matches nothing and stays literal text, and
+    # a comment mentioned mid-sentence takes only its own span, not the rest of
+    # the file. A line counts as a comment only if nothing else survives on it.
+    my $body = join "\n", map { $fenced{$_} ? "x" : $lines[$_] } 0 .. $#lines;
+    (my $probe = $body) =~ s{`[^`\n]*`}{ " " x length($&) }ge;
+    while ($probe =~ /<!--.*?-->/gs) {
+      my ($from, $to) = ($-[0], $+[0]);
+      my $span = substr($body, $from, $to - $from);
+      # A real comment is a few lines; a pairing that runs longer is two
+      # unrelated markers, and blanking between them would hide a whole file.
+      next if (() = $span =~ /\n/g) > $MAX_COMMENT_LINES;
+      substr($body, $from, $to - $from) = ($span =~ s/[^\n]/ /gr);
+    }
+    my @stripped = split /\n/, $body, -1;
+
+    my ($count, $in_badges, $badge_run) = (0, 0, 0);
+    for my $i (0 .. $#lines) {
+      next if $skip{$i};
+      my $line = $lines[$i];
+      next if $line =~ /\S/ && $stripped[$i] !~ /\S/;
+      if ($line =~ /^\s*(?:\[?!\[[^\]]*\]\([^)]*\)\]?(?:\([^)]*\))?\s*)+$/) {
+        $badge_run = $in_badges ? $badge_run + 1 : 1;
+        # One row is a handful of images; past that it is a gallery, and every
+        # further line is content a reader scrolls through.
+        $count++ if !$in_badges || $badge_run > 8;
+        $in_badges = 1;
+        next;
+      }
+      $in_badges = 0;
+      $badge_run = 0;
+      $count++;
+    }
+    print "$count\n";
+  ' "$1" "$2"
 }
 
 # Skips YAML front matter, fenced code and table rows — places the line-break rule
@@ -158,90 +266,199 @@ long_lines() {
   perl -CSD -e '
     my ($max, $file) = @ARGV;
     open my $fh, "<", $file or die "$file: $!\n";
-    my ($in_front_matter, $in_fence) = (0, 0);
-    while (my $line = <$fh>) {
-      chomp $line;
-      if ($. == 1 && $line eq "---") { $in_front_matter = 1; next }
-      if ($in_front_matter) { $in_front_matter = 0 if $line eq "---"; next }
-      if ($line =~ /^\s*(?:```|~~~)/) { $in_fence = !$in_fence; next }
-      next if $in_fence;
+    my @lines = map { my $l = $_; $l =~ s/\r?\n\z//; $l } <$fh>;
+
+    # Only skip a fence that is actually closed; an unterminated one is a broken
+    # file, not licence to stop checking the rest of it.
+    my %fenced;
+    my ($open, $fence_char, $fence_len);
+    for my $i (0 .. $#lines) {
+      next unless $lines[$i] =~ /^\s*((`{3,})|(~{3,}))/;
+      my $run = $2 // $3;
+      my ($char, $len) = (substr($run, 0, 1), length $run);
+      if (defined $open) {
+        next unless $char eq $fence_char && $len >= $fence_len;
+        $fenced{$_} = 1 for $open .. $i;
+        $open = undef;
+      } else {
+        ($open, $fence_char, $fence_len) = ($i, $char, $len);
+      }
+    }
+
+    # A doctoc ToC line is generated: the author cannot wrap it, and the workflow
+    # reverts any hand edit, so reporting one would be an error nobody can fix.
+    my %generated;
+    for my $i (0 .. $#lines) {
+      next if $fenced{$i};
+      next unless $lines[$i] =~ /^\s*<!-- START doctoc.*-->\s*$/;
+      for my $j ($i + 1 .. $#lines) {
+        next if $fenced{$j};
+        next unless $lines[$j] =~ /^\s*<!-- END doctoc.*-->\s*$/;
+        $generated{$_} = 1 for $i .. $j;
+        last;
+      }
+    }
+
+    # A leading --- only opens front matter if something closes it; otherwise it
+    # is a thematic break, and skipping to EOF would exempt the whole file.
+    my $front_matter_end = -1;
+    if (@lines && $lines[0] eq "---") {
+      for my $i (1 .. $#lines) {
+        next unless $lines[$i] eq "---";
+        # Every line between has to read as YAML — a key, a list item or a
+        # continuation. Otherwise this is a thematic break and a later separator.
+        my $looks_like_yaml = 1;
+        for my $j (1 .. $i - 1) {
+          # "Note: something" is valid YAML syntax, so shape alone cannot tell
+          # prose from front matter. Real front matter is an unbroken block.
+          if ($lines[$j] =~ /^\s*$/) { $looks_like_yaml = 0; last }
+          next if $lines[$j] =~ /^\s*#/;
+          next if $lines[$j] =~ /^\s*[\w.-]+\s*:/;
+          next if $lines[$j] =~ /^\s*(["\x27])[^"\x27]*\1\s*:/;
+          next if $lines[$j] =~ /^\s*-\s+\S/;
+          next if $lines[$j] =~ /^\s+[\w.-]+\s*:/;
+          next if $lines[$j] =~ /^\s+\S/;
+          $looks_like_yaml = 0;
+          last;
+        }
+        $front_matter_end = $i if $looks_like_yaml;
+        last;
+      }
+    }
+
+    for my $i (0 .. $#lines) {
+      next if $i <= $front_matter_end;
+      my $line = $lines[$i];
+      next if $fenced{$i} || $generated{$i};
       next if $line =~ /^\s*\|/;
       (my $measured = $line) =~ s{https?://[^\s)>\]]+}{}g;
-      printf "%d (%d chars)\n", $., length($line) if length($measured) > $max;
+      next unless length($measured) > $max;
+      printf "%d (%d chars%s)\n", $i + 1, length($measured),
+        length($measured) == length($line) ? "" : ", URLs excluded";
     }
   ' "$MAX_LINE_CHARS" "$1"
 }
 
+files=(${requested+"${requested[@]}"})
+# A baseline rewrite always walks every file, so pins outside the argument list survive.
+if (( ${#files[@]} == 0 || update_baseline )); then
+  # -z, because git C-quotes any path with a non-ASCII or control character, and
+  # the quoted form matches nothing on disk — the file would be skipped in silence.
+  listing="$(mktemp)"
+  if ! git ls-files -z -- '*.md' ':(exclude)vendor/' ':(exclude)node_modules/' > "$listing" 2>/dev/null; then
+    rm -f "$listing"
+    echo "ERROR: could not list tracked files — is $REPO_ROOT a git repository?" >&2
+    exit 2
+  fi
+  mapfile -d '' -t tracked < "$listing"
+  rm -f "$listing"
+  # Union of the two, keyed on the repo-relative path, so a file named both ways
+  # is checked once and pinned once, and an untracked request is still honoured.
+  declare -A seen=()
+  merged=()
+  for f in ${requested+"${requested[@]}"} ${tracked+"${tracked[@]}"}; do
+    key="$(repo_relative "$f")"
+    [[ -n "${seen[$key]-}" ]] && continue
+    seen[$key]=1
+    merged+=("$f")
+  done
+  files=(${merged+"${merged[@]}"})
+fi
+
 errors=0
+validate_baseline || exit 2
+
+# A path that resolves to nothing is a typo or a bad invocation, not a pass.
+for f in ${requested+"${requested[@]}"}; do
+  [[ -f "$f" ]] && continue
+  echo "ERROR: $(repo_relative "$f") does not exist." >&2
+  errors=1
+done
+
 new_pins=()
 for f in "${files[@]}"; do
   [[ -f "$f" ]] || continue
-  is_vendored "$f" && continue
+  rel="$(repo_relative "$f")"
+  if is_vendored "$f"; then
+    # Keep any pin the file had before it became vendored, so dropping a
+    # VENDORED.md into a directory can't quietly erase its entries.
+    if (( update_baseline )); then
+      existing="$(baseline_for "$f")"
+      [[ -n "$existing" && "$existing" =~ ^[0-9]+$ ]] && new_pins+=("$existing	$rel")
+    fi
+    continue
+  fi
 
   mapfile -t offenders < <(long_lines "$f")
   if (( ${#offenders[@]} > 0 )); then
-    echo "ERROR: $f exceeds $MAX_LINE_CHARS characters on these lines:" >&2
+    echo "ERROR: $rel exceeds $MAX_LINE_CHARS characters on these lines:" >&2
     printf '  line %s\n' "${offenders[@]}" >&2
     echo "       Break at a sentence or clause boundary (see ~/.claude/rules/markdown-limits.md)." >&2
     errors=1
   fi
 
-  if is_claude_file "$f"; then
-    lines=$(wc -l < "$f" | tr -d "[:space:]")
+  if is_claude_file "$rel"; then
+    lines=$(count_lines raw "$f")
   else
-    lines=$(rendered_lines "$f")
+    lines=$(count_lines rendered "$f")
   fi
-  read -r warn hard < <(limits_for "$f")
+  read -r warn hard < <(limits_for "$rel")
 
+  # validate_baseline has already rejected a non-numeric or duplicated size, so
+  # this is a number or empty.
   pinned=$(baseline_for "$f")
 
   if (( update_baseline )); then
-    # Pin a file only when it is over its warn line, and never above an existing
-    # pin — the ratchet may tighten, never loosen.
-    if [[ -z "$pinned" ]] && ! was_requested "$f"; then
+    # Pin only a file over its warn line, and never above an existing pin or its
+    # own hard cap — the ratchet may tighten, never loosen.
+    if [[ -z "$pinned" ]] && ! was_requested "$rel"; then
       continue
     fi
     if (( lines > hard )); then
-      echo "SKIP: $f is $lines lines, over its hard cap of $hard — split it, don't pin it." >&2
+      echo "SKIP: $rel is $lines lines, over its hard cap of $hard — split it, don't pin it." >&2
+      # Keep any existing pin: dropping it here would raise the file's effective
+      # ceiling to the hard cap, which is the one thing the ratchet must not do.
+      [[ -n "$pinned" ]] && new_pins+=("$pinned	$rel")
     elif (( lines > warn )); then
       if [[ -n "$pinned" ]] && (( lines > pinned )); then
-        echo "SKIP: $f is $lines lines, above its pin of $pinned — shrink it rather than re-pinning." >&2
-        new_pins+=("$pinned	$(repo_relative "$f")")
+        echo "SKIP: $rel is $lines lines, above its pin of $pinned — shrink it rather than re-pinning." >&2
+        new_pins+=("$pinned	$rel")
       else
-        new_pins+=("$lines	$(repo_relative "$f")")
+        new_pins+=("$lines	$rel")
       fi
     elif [[ -n "$pinned" ]]; then
-      echo "DROP: $f is $lines lines, back under its warn line of $warn — pin removed." >&2
+      echo "DROP: $rel is $lines lines, back under its warn line of $warn — pin removed." >&2
     fi
     continue
   fi
 
   if (( lines > hard )); then
-    echo "ERROR: $f is $lines lines, over the hard cap of $hard for its type." >&2
+    echo "ERROR: $rel is $lines lines, over the hard cap of $hard for its type." >&2
     echo "       Split it along a seam in the subject, or move part of it into a file of its own." >&2
     errors=1
-  elif [[ -n "$pinned" ]]; then
-    if (( lines > pinned && no_warn == 0 )); then
-      echo "NOTE: $f is $lines lines, up from its pinned $pinned; it may not grow." >&2
-      echo "      Bring it back under $pinned, or shorten it and re-pin with --update-baseline." >&2
-    fi
-  elif (( lines > warn && no_warn == 0 )); then
-    echo "NOTE: $f is $lines lines; stay under $warn (hard cap $hard)." >&2
+  elif [[ -n "$pinned" ]] && (( lines > pinned )); then
+    # Growing past a pin breaks an explicit commitment, so it fails rather than
+    # warns — otherwise the ratchet would bind nowhere but the local hook.
+    echo "ERROR: $rel is $lines lines, up from its pinned $pinned; a pinned file may not grow." >&2
+    echo "       Bring it back to $pinned or fewer, or shorten it and re-pin with --update-baseline." >&2
+    errors=1
+  elif [[ -n "$pinned" ]] && (( lines < pinned && no_warn == 0 )); then
+    # Shrinking a pinned file is the improvement the ratchet exists to bank, but
+    # it leaves the baseline stale, which CI notices and the author would not.
+    echo "NOTE: $rel is $lines lines, under its pinned $pinned — re-pin it:" >&2
+    echo "      bin/check-md-limits --update-baseline, then commit .md-baseline." >&2
+  elif [[ -z "$pinned" ]] && (( lines > warn && no_warn == 0 )); then
+    echo "NOTE: $rel is $lines lines; keep it to $warn or fewer (hard cap $hard)." >&2
     echo "      Advisory — see ~/.claude/rules/markdown-limits.md." >&2
   fi
 done
 
 if (( update_baseline )); then
-  for want in ${requested+"${requested[@]}"}; do
-    printf '%s\n' ${new_pins+"${new_pins[@]}"} | grep -qF "	$(repo_relative "$want")" && continue
-    echo "ERROR: $want matched no tracked markdown file, so nothing was pinned for it." >&2
-    errors=1
-  done
   {
     echo "# Files that were already long when the markdown size limits landed."
     echo "# Each may not grow past the size recorded here; the hard cap still applies."
     echo "# Regenerate with: bin/check-md-limits --update-baseline"
-    (( ${#new_pins[@]} > 0 )) && printf '%s\n' "${new_pins[@]}" | sort -k2
+    (( ${#new_pins[@]} > 0 )) && printf '%s\n' "${new_pins[@]}" | LC_ALL=C sort -k2
   } > "$BASELINE_FILE"
   echo "Wrote ${#new_pins[@]} pins to $BASELINE_FILE" >&2
 fi

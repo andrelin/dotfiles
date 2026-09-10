@@ -5,9 +5,11 @@ on:
       # Docs and site content: none of it affects whether dotfiles installs or lints.
       - 'website/**'
       - 'tips/**'
+      - 'docs/**'
       - 'claude/**'
       - '.claude/**'
-      - '*.md'
+      - '**.md'
+      - '.md-baseline'
       - 'LICENSE'
 
 permissions:

@@ -76,8 +76,8 @@ The `/bin` directory is added to `$PATH` and contains:
 - [sort-claude-settings](bin/sort-claude-settings) - sort arrays in Claude Code settings files for deterministic output.
 - [check-md-limits](bin/check-md-limits) - enforce the markdown line-length and file-length limits. Run by the pre-commit hook and CI.
 
-The `src` function (defined in [.zshrc](link/.zshrc) and [.bashrc](link/.bashrc)) re-sources all files in
-`/source`, useful after making changes without opening a new shell.
+The `src` function (defined in [.zshrc](link/.zshrc) and [.bashrc](link/.bashrc)) re-sources the files in
+`/source` — every `*sh` under zsh, `*.sh` only under bash — useful after a change without opening a new shell.
 
 ## Tips
 

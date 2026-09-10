@@ -29,38 +29,21 @@ From `bin/sort-claude-settings`.
 
 ## Tip 24.3: Pre-Commit Automation for Claude Code
 
-### `check-md-limits` — size limits on agent-loaded markdown
+`hooks/pre-commit` runs both helpers above when a commit could affect Claude Code's settings:
 
-```bash
-bin/check-md-limits                        # every tracked markdown file
-bin/check-md-limits --no-warn              # errors only, as CI runs it
-bin/check-md-limits --update-baseline F... # pin a long file at its current size
-```
-
-Fails on any line over 150 characters (front matter, code fences, table rows and URLs excepted) and any file over
-its type's cap — 50 lines for a rule or project `CLAUDE.md`, 75 for the global one, 100 for a skill, 150
-otherwise, each with a lower line to aim under. It notes a file nearing its cap without blocking, and skips any directory holding a `VENDORED.md`.
-`.md-baseline` pins files that were already long when the limits landed: a pinned file warns only if it grows
-past its recorded size, and `--update-baseline` lowers a pin but never raises one.
-Claude-loaded files (`CLAUDE.md`, `SKILL.md`, `claude/`, `.claude/`) count line for line — every one costs tokens;
-human-facing pages count content, so comments, badge blocks and the doctoc ToC are free.
-A `PostToolUse` hook runs it on any markdown you edit, so a violation surfaces while the change is in hand.
-The pre-commit hook runs it over staged markdown; CI runs the error-only form over the whole repo.
-
-`hooks/pre-commit` runs both helpers above automatically when you commit changes that could affect Claude Code's settings:
-
-- Touching `.gitsecret/paths/mapping.cfg` → runs `sync-claude-deny` and re-stages the resulting `.claude/settings.json`.
+- Touching `.gitsecret/paths/mapping.cfg` → runs `sync-claude-deny`, re-staging `.claude/settings.json`.
 - Touching `.claude/settings.json` → runs `sort-claude-settings` and re-stages it.
-- Adding or removing an alias, function or `bin/` script without staging anything under `tips/` → prints an advisory reminder (never blocks).
+- Adding or removing an alias, function or `bin/` script without staging anything under `tips/` → an advisory
+  reminder that never blocks.
 
-So you never end up with stale deny rules or shuffled settings arrays in commits.
-The hook does other things too (e.g. doctoc + markdownlint on staged markdown) — see `hooks/pre-commit` for the whole picture.
-Symlinked into `.git/hooks/pre-commit` by `init/12_git_hooks.sh`.
+So no commit carries stale deny rules or shuffled settings arrays. It does more besides — doctoc, markdownlint
+and the size limits on staged markdown — and `init/12_git_hooks.sh` symlinks it into `.git/hooks/`.
 
 ## Tip 24.4: Shared config and skills in `~/.claude`
 
 Everything under `claude/` is symlinked into `~/.claude/` by [init/52_macos_claude.sh](../init/52_macos_claude.sh),
-so every machine gets the same Claude Code context from one place:
+so every machine that runs it gets the same Claude Code context from one place.
+The `_macos_` marker means it is not selected by default on Linux or WSL, where you tick it by hand:
 
 - `claude/CLAUDE.md` → `~/.claude/CLAUDE.md` — global instructions loaded into every session.
 - `claude/skills/` → `~/.claude/skills/` — reusable skills, one directory per skill with a `SKILL.md`.
@@ -68,13 +51,30 @@ so every machine gets the same Claude Code context from one place:
   `paths:` glob is read, rather than on every session like `CLAUDE.md`.
 - `claude/docs/` → `~/.claude/docs/` — reference material a skill, rule or `CLAUDE.md` line points at,
   loaded only when something sends you there.
-- `claude/statusline-command.sh` → `~/.claude/statusline-command.sh` — the status line.
-  Row 1 is the working directory and git branch, styled like the zsh prompt
-  ([link/.omz-custom/andrelin.zsh-theme](../link/.omz-custom/andrelin.zsh-theme)), then the model;
-  row 2 is the context and rate-limit bars.
+- `claude/statusline-command.sh` → `~/.claude/statusline-command.sh` — the status line: working directory, git
+  branch and model on row 1, styled like the zsh prompt
+  ([link/.omz-custom/andrelin.zsh-theme](../link/.omz-custom/andrelin.zsh-theme)); context and rate-limit bars
+  on row 2.
 
-Only these entries are linked; machine-local state (`projects/`, `sessions/`, `history.jsonl`) stays untouched.
-Anything already at one of those paths is moved into `backups/` first, and the run tells you so.
+Only these entries are linked; machine-local state (`projects/`, `sessions/`, `history.jsonl`) stays untouched,
+and anything already at one of those paths is moved into `backups/` first.
 
-Add a skill by creating `claude/skills/<name>/SKILL.md` with `name` and `description` front-matter.
-Because `skills/` is linked as a directory, it shows up in `~/.claude` immediately — no need to re-run `dotfiles`.
+Add a skill by creating `claude/skills/<name>/SKILL.md` with `name` and `description` front matter; because
+`skills/` is linked as a directory, it appears in `~/.claude` immediately, with no need to re-run `dotfiles`.
+
+## Tip 24.5: `check-md-limits` — markdown size limits
+
+```bash
+bin/check-md-limits                        # every tracked markdown file
+bin/check-md-limits --no-warn              # errors only, as CI runs it
+bin/check-md-limits --update-baseline F... # pin a long file at its current size
+```
+
+Fails on a line over 150 characters (front matter, code fences, table rows and URLs excepted) or a file over its
+type's cap: 50 lines for a rule or project `CLAUDE.md`, 75 for the global one, 100 for a skill, 150 otherwise.
+Nearing a cap is a note, not a failure, and a directory holding a `VENDORED.md` is skipped entirely.
+Claude-loaded files count line for line, since every line costs tokens on every task; human-facing pages count
+content, so comments, badge blocks and a doctoc ToC are free.
+`.md-baseline` pins a file at a length you have decided not to shorten — it fails only if it grows past that.
+A `PostToolUse` hook runs it on any markdown you edit, the pre-commit hook covers staged files, and CI runs the
+error-only form over the whole repo.

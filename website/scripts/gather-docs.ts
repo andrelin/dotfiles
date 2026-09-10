@@ -199,9 +199,10 @@ fs.readdirSync(guideDir)
     );
   });
 
+ensureDir(path.join(OUT, 'guide'));
 fs.writeFileSync(
   path.join(OUT, 'guide', '_category_.json'),
-  JSON.stringify({label: 'Guide', position: 3}, null, 2) + '\n',
+  JSON.stringify({label: 'Guide', position: 3, link: {type: 'generated-index'}}, null, 2) + '\n',
 );
 
 // ---- individual tip files ----

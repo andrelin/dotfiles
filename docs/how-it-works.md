@@ -18,11 +18,12 @@ When [dotfiles][dotfiles] is run for the first time, it does a few things:
 
 1. Git is installed if necessary (via APT on Ubuntu, already present on macOS).
 1. This repo is cloned into your user directory, under `~/.dotfiles`.
-1. Files in `/copy` are copied into `~/`. ([read more](#the-copy-step))
+1. Files in `/copy` are copied into `~/`, except on RHEL, which runs only the link and init steps.
+   ([read more](#the-copy-step))
 1. Files in `/link` are symlinked into `~/`. ([read more](#the-link-step))
-1. You are prompted to choose scripts in `/init` to be executed. The installer auto-selects by OS (`_macos_`
-   scripts only on macOS); `_personal_` scripts are default unchecked.
-1. Your chosen init scripts are executed (in alphanumeric order, hence the funky names). ([read more](#the-init-step))
+1. You are prompted to choose scripts in `/init`. The installer auto-selects by OS (`_macos_` scripts only on
+   macOS); `_personal_` scripts are default unchecked, and your choice is remembered in `caches/init/selected`.
+1. Your chosen init scripts are sourced, in alphanumeric order. ([read more](#the-init-step))
 
 On subsequent runs step 1 is skipped, step 2 updates the existing repo, and step 5 remembers your last selection.
 
@@ -54,7 +55,7 @@ into your public dotfiles repo.
 
 ## The "link" step
 
-Any file in the `/link` subdirectory gets symlinked into `~/` with `ln -s`.
+Any file in the `/link` subdirectory gets symlinked into `~/` with `ln -sf`.
 Edit one or the other, and you change the file in both places.
 Don't link files containing sensitive data, or you might accidentally commit that data!
 If you're linking a directory that might contain sensitive data (like `~/.ssh`) add the sensitive files to your

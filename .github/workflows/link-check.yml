@@ -2,6 +2,9 @@ name: Link check
 
 on:
   push:
+    paths:
+      - '**.md'
+      - '.github/workflows/link-check.yml'
   schedule:
     - cron: "0 9 * * 1"  # Mondays 09:00 UTC
   workflow_dispatch:

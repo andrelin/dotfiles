@@ -3,8 +3,9 @@
 # Dotfiles
 
 Personal dotfiles for macOS, Ubuntu, WSL 2 and RHEL, installed by `bin/dotfiles`.
-It copies `copy/` into `$HOME`, symlinks each top-level item of `link/` into `$HOME` (`link/.ssh` → `~/.ssh`),
-then runs the `init/` scripts you select, once each.
+It copies `copy/` into `$HOME` (not on RHEL, which gets `link` and `init` only), symlinks each top-level item of
+`link/` into `$HOME` (`link/.ssh` → `~/.ssh`),
+then runs the `init/` scripts you select. It re-runs them on every invocation, pre-ticking your last choice.
 `.zshrc` sources every `*.sh`/`*.zsh` in `source/` in filename order; `vendor/` holds the zsh plugin submodules.
 The walkthrough is `docs/how-it-works.md`.
 
@@ -14,9 +15,9 @@ The walkthrough is `docs/how-it-works.md`.
 
 ## This repo also holds the global Claude config
 
-`claude/` is symlinked to `~/.claude/`, so "write it to the repo" and "write it to the global instructions" can
-be the same edit. Pick by scope: a rule about *dotfiles* goes here, one about *how Claude works everywhere* goes
-in `claude/CLAUDE.md`.
+Each entry under `claude/` is symlinked into `~/.claude/`, so "write it to the repo" and "write it to the global
+instructions" can be the same edit. Pick by scope: a rule about *dotfiles* goes here, one about *how Claude works
+everywhere* goes in `claude/CLAUDE.md`.
 This is a **personal public** repo — everything committed is published, per the global § *Work contexts*.
 
 ## Conventions

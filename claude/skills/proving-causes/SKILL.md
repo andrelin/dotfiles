@@ -6,7 +6,7 @@ description: Read before any non-trivial debugging, root-cause or reproduction t
 # Proving causes — constraints and traps
 
 **Deliberately not a prescribed method** — how to investigate depends on the problem. This is what holds whatever
-the bug, on top of the base rule in `~/.claude/CLAUDE.md` § *Working on code*: hold every candidate cause as a
+the bug, on top of the base rule in `~/.claude/rules/writing-code.md`: hold every candidate cause as a
 hypothesis until an experiment or measurement confirms it, and ship only on proven cause and effect.
 
 ## The trap is that a wrong cause is *plausible*

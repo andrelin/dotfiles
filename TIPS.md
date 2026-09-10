@@ -51,7 +51,7 @@ tips -h               Help
 - [22. Local dev infra](tips/22_dev_infra.md) — docker, kubernetes (`kdel*`), kafka, throwaway Postgres
 - [23. JVM](tips/23_jvm.md) — `jdk` switching, Maven OpenRewrite recipes
 - [24. Claude Code integration](tips/24_claude_code.md) — `sync-claude-deny`, `sort-claude-settings`,
-  pre-commit automation, shared `~/.claude` config and skills
+  `check-md-limits`, pre-commit automation, shared `~/.claude` config and skills
 
 ## 3x — Zsh ecosystem
 

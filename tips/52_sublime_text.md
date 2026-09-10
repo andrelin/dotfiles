@@ -3,8 +3,8 @@
 # Sublime Text
 
 Editor tips for Sublime Text.
-The shipped settings (preferences, key bindings, GitGutter config,
-snippets) live in `conf/sublime-text/` and are linked into Sublime's `Packages/User/` by `init/51_sublime_text.sh`.
+The shipped settings — preferences, key bindings, GitGutter config, snippets — live in `conf/sublime-text/`,
+linked into Sublime's `Packages/User/` by `init/51_sublime_text.sh`.
 
 ## Tip 52.1: Package Control
 

@@ -8,7 +8,7 @@ description: Read before a review or reorganise run on a personal follow-up trac
 How to maintain a **follow-up tracker** — conventionally `follow-ups.md` at the root of a project or customer
 tree, holding cross-cutting items that belong to no single MR.
 It is **not** a plan file: it outlives MRs and is never deleted, making it a standing exception to
-*Plan files are temporary* in the `writing-plans` skill.
+*Plans are temporary* in the `writing-plans` skill.
 
 **The tracker is the user's, not Claude's.** Its visible body is their own list of things not to forget, so keep
 it clean and human-readable. Everything Claude needs in order to *maintain* it — last-reviewed date and SHA,

@@ -56,6 +56,9 @@ Fold setup, configuration, scaffolding and doc updates into the task whose deliv
 
 At handover, and not before, run the placeholder patterns and three-pass self-review in
 `~/.claude/docs/plan-handover-checklist.md` — each is a decision the plan should have made, left for a guess.
+**Then have an independent agent review it** — one round at minimum, more for large or uncertain work: the author
+cannot see the ambiguity they already know the answer to, where a fresh reviewer meets the plan as its executor
+will. Feed findings back and re-review; **ready to implement means a round came back with nothing load-bearing left**.
 
 ## Keeping it in sync
 
@@ -74,4 +77,4 @@ file itself; the rest is here.
 Deleted once the work ships. **Never reference one from anything that outlives it** — `CLAUDE.md`, READMEs,
 memory, PR/MR descriptions — inline the load-bearing content into the durable doc instead.
 Cross-references *between* plans are fine (shared lifecycle); links *from* durable docs *into* plans are not.
-A long-lived personal tracker is **not** a plan file — that is `writing-follow-ups`.
+A long-lived personal tracker is **not** a plan file — that is `writing-follow-up-items` and `maintaining-follow-up-trackers`.

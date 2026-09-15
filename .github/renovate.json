@@ -26,5 +26,13 @@
       "matchPackageNames": ["typescript"],
       "allowedVersions": "<7"
     }
-  ]
+  ],
+  "vulnerabilityAlerts": {
+    "description": "Security fixes skip the weekly window and the release-age hold and merge themselves, so an advisory is remediated in hours rather than waiting for Monday.",
+    "enabled": true,
+    "schedule": ["at any time"],
+    "minimumReleaseAge": null,
+    "automerge": true
+  },
+  "osvVulnerabilityAlerts": true
 }

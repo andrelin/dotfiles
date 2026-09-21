@@ -27,7 +27,7 @@
     "@docusaurus/module-type-aliases": "^3.10.2",
     "@docusaurus/tsconfig": "^3.10.2",
     "@docusaurus/types": "^3.10.2",
-    "@types/node": "^24.13.4",
+    "@types/node": "^24.13.5",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.13",
     "typescript": "~6.0.3"

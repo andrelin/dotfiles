@@ -100,11 +100,11 @@ fi
 defs=$(git diff --cached --unified=0 -- source bin \
   | grep -cE '^[+-][[:space:]]*(alias [A-Za-z0-9_.-]+=|function [A-Za-z0-9_-]+|[A-Za-z0-9_-]+\(\))' || true)
 bin_files=$(git diff --cached --name-status -- bin | grep -cE '^[AD]' || true)
-tips_staged=$(git diff --cached --name-only -- tips TIPS.md | grep -c . || true)
+tips_staged=$(git diff --cached --name-only -- tips tips.md | grep -c . || true)
 
 if (( defs > 0 || bin_files > 0 )) && (( tips_staged == 0 )); then
   echo "NOTE: this commit changes $defs alias/function definition line(s) and $bin_files bin/ script(s)," >&2
-  echo "      but stages nothing under tips/ or TIPS.md." >&2
+  echo "      but stages nothing under tips/ or tips.md." >&2
   echo "      If any of it is user-facing, add or update its tip in this commit (see the writing-tips skill)." >&2
   echo "      Internal helpers need no tip — this is advisory and does not block the commit." >&2
 fi

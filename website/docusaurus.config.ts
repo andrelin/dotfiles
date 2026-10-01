@@ -21,7 +21,7 @@ const earlyPaletteScript = transformSync(
 // generated copy. Anything not in this map (or not under tips/ or guide/) gets no link.
 const sourcePathMap: Record<string, string> = {
   'overview.md': 'README.md',
-  'tips/index.md': 'TIPS.md',
+  'tips/index.md': 'tips.md',
   'scripts/init.md': 'init/README.md',
   'scripts/source.md': 'source/README.md',
 };

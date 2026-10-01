@@ -81,7 +81,7 @@ The `src` function (defined in [.zshrc](link/.zshrc) and [.bashrc](link/.bashrc)
 
 ## Tips
 
-A growing index of terminal tricks, repo features and bundled-tool basics lives in [TIPS.md](TIPS.md), with one
+A growing index of terminal tricks, repo features and bundled-tool basics lives in [tips.md](tips.md), with one
 file per category under [tips/](tips/).
 Run `tips` in a shell to print them all, `tips <FILE>` (e.g. `tips 22`) for one section, `tips <FILE>.<N>`
 (e.g. `tips 22.3`) for a single tip, `tips <D>x` for a whole decade, `tips -l` to list titles, or `tips -h` for usage.

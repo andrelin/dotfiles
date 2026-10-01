@@ -18,6 +18,7 @@ casks=(
   intellij-idea
   iterm2
   microsoft-teams
+  obsidian
   pocket-casts
   rectangle
   slack

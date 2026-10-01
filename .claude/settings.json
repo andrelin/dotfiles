@@ -3,7 +3,8 @@
     "deny": [
       "Bash(git secret*)",
       "Read(./copy/.gitconfig_credentials)",
-      "Read(./link/.ssh/allowed_signers)"
+      "Read(./link/.ssh/allowed_signers)",
+      "Read(./link/.ssh/config_private)"
     ]
   },
   "hooks": {

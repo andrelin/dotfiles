@@ -16,7 +16,7 @@
 #     What counts depends on who reads the file:
 #       - Claude-loaded (CLAUDE.md, SKILL.md, claude/, .claude/): every line,
 #         because every line is tokens on every task that loads it.
-#       - Human-facing (README, TIPS, tips/, docs/, the READMEs under init/ and
+#       - Human-facing (README, tips.md, tips/, docs/, the READMEs under init/ and
 #         source/): the content a reader gets through, not the scaffolding. An
 #         HTML comment never renders, a run of badge lines is the one row it
 #         draws, and a doctoc ToC does render but is navigation — charging for

@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'README.md'
-      - 'TIPS.md'
+      - 'tips.md'
       - 'tips/**'
       - 'docs/**'
       - 'init/README.md'

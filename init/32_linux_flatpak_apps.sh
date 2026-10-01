@@ -15,6 +15,7 @@ apps=(
   com.spotify.Client
   com.sublimetext.three
   com.jetbrains.IntelliJ-IDEA-Ultimate
+  md.obsidian.Obsidian
 )
 
 apps_optional=(

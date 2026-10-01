@@ -122,9 +122,9 @@ ensureDir(OUT);
   // Drop the README's own pointer to the rendered site — circular on the site itself.
   body = body.replace(/^Browseable docs:.*\n+/m, '');
   // Internal docs links: point at the gathered tree, not the source-tree
-  // paths (TIPS.md / tips/) which won't exist on the site.
+  // paths (tips.md / tips/) which won't exist on the site.
   body = body
-    .replace(/\]\(TIPS\.md\)/g, '](./tips/index.md)')
+    .replace(/\]\(tips\.md\)/g, '](./tips/index.md)')
     .replace(/\]\(tips\/\)/g, '](./tips/index.md)')
     .replace(/\]\(tips\/([^)]+)\)/g, '](./tips/$1)')
     .replace(/\]\(docs\/([^)]+)\)/g, '](./guide/$1)');
@@ -143,9 +143,9 @@ ensureDir(OUT);
   );
 }
 
-// ---- tips index (TIPS.md) ----
+// ---- tips index (tips.md) ----
 {
-  const raw = stripH1(stripDoctoc(read('TIPS.md')));
+  const raw = stripH1(stripDoctoc(read('tips.md')));
   // tips/foo.md -> ./foo.md (we're already inside docs-generated/tips/)
   const rewritten = raw.replace(/\]\(tips\/([^)]+)\)/g, '](./$1)');
   write(

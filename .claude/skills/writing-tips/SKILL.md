@@ -5,7 +5,7 @@ description: Read before adding, renumbering, restyling or removing a tip, befor
 
 # Writing tips
 
-`TIPS.md` at the repo root is a GitHub landing index.
+`tips.md` at the repo root is a GitHub landing index.
 The content lives in `tips/<NN>_<name>.md`, one file per category, read by the `tips` shell function
 (`source/46_tips.sh`).
 
@@ -42,7 +42,7 @@ This holds even when a split makes renumbering unavoidable — confirming the sp
 numbers become, so put both in front of them. Once agreed:
 
 - Renumber the **whole file** so the result is contiguous, rather than patching individual numbers.
-- Update `TIPS.md` and every cross-reference in the same commit. After a renumber the old numbers point at
+- Update `tips.md` and every cross-reference in the same commit. After a renumber the old numbers point at
   different tips, which is the genuinely harmful outcome.
 
 A tip not yet pushed to `origin/main` is "first version" and can be renumbered without asking — nobody has seen it.
@@ -68,7 +68,7 @@ Any change to a user-facing alias, function or script updates its tip **in the s
 - **Renaming or changing the signature** → update every reference in `tips/`.
 - **Removing** one → remove or rewrite the tip; don't leave dangling commands.
 - **Adding external tooling** under `init/` → slot it into the most-similar 1x/3x/4x/5x file.
-- **Adding or renaming a tips file** → update its line in `TIPS.md`.
+- **Adding or renaming a tips file** → update its line in `tips.md`.
 
 Two backstops exist, because this is the easiest rule to forget: a `PostToolUse` hook in `.claude/settings.json`
 reminds at edit time, and `hooks/pre-commit` warns when a commit changes a definition and stages nothing under

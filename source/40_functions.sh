@@ -36,3 +36,13 @@ extract() {
 dict() {
     ag "$@" /usr/share/dict/words
 }
+
+# List processes matching a pattern
+psgrep() {
+    if [ -n "$1" ]; then
+        ps aux | grep -i -- "$1" | grep -v grep
+    else
+        echo "Usage: psgrep <pattern>"
+        return 1
+    fi
+}

@@ -11,7 +11,7 @@ It is build-time tooling, not part of the `dotfiles` install flow.
 
 ## Source of truth stays put
 
-`README.md`, `TIPS.md`, `tips/*.md`, `docs/*.md`, `init/README.md` and `source/README.md` are edited in their
+`README.md`, `tips.md`, `tips/*.md`, `docs/*.md`, `init/README.md` and `source/README.md` are edited in their
 canonical locations — never in `website/`.
 `docs/` renders as the site's **Guide** section: `docs/x.md` becomes `guide/x.md`, ordered by filename, and links
 to it from the README are rewritten to `./guide/x.md`. `docs/**` is in the deploy workflow's path filter.

@@ -21,6 +21,9 @@
 [push]
   default = tracking
 
+[pull]
+  rebase = true
+
 [gpg]
   format = ssh
 
@@ -37,6 +40,3 @@
 
 [include]
   path = ~/.gitconfig_credentials
-
-[includeIf "gitdir:~/src/politiet/"]
-  path = ~/.gitconfig_politiet

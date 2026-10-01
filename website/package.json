@@ -2,7 +2,7 @@
   "name": "dotfiles-website",
   "version": "0.0.0",
   "private": true,
-  "description": "Docusaurus site for the dotfiles repo. Source docs (README.md, TIPS.md, tips/*, init/README.md, source/README.md) are gathered into docs-generated/ at build time.",
+  "description": "Docusaurus site for the dotfiles repo. Source docs (README.md, tips.md, tips/*, init/README.md, source/README.md) are gathered into docs-generated/ at build time.",
   "scripts": {
     "gather": "tsx scripts/gather-docs.ts",
     "prestart": "npm run gather",

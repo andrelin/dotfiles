@@ -18,6 +18,9 @@
 !.claude/rules/
 !.claude/docs/
 
+# Machine-local Claude rules — loaded via the ~/.claude/rules symlink, never committed
+/claude/rules/*.local.md
+
 # Git Secret
 .gitsecret/keys/random_seed
 !*.secret
@@ -25,6 +28,7 @@
 # Git Secret — decrypted files (encrypted .secret versions are tracked)
 copy/.gitconfig_credentials
 link/.ssh/allowed_signers
+link/.ssh/config_private
 
 # Docusaurus website
 website/node_modules/

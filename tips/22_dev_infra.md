@@ -26,9 +26,13 @@ Bulk-delete pods/resources by pattern. Operates against the current `kubectl` co
 ```sh
 kdel <namespace> <name-substring>         # delete pods matching substring in <namespace>
 kdelpg <name-substring>                   # delete pods matching substring in current namespace
+kdelpgf <name-substring>                  # same, forced — for pods stuck in Terminating
+kdelpall                                  # delete all pods in current namespace
+kdelpallf                                 # same, forced
 kdelg <kind> <name-substring>             # delete resources of <kind> matching substring
 kdelgf <kind> <name-substring>            # same, but with --force --grace-period=0
 kdelall <kind>                            # delete all resources of <kind> in current namespace
+kdelallf <kind>                           # same, forced
 kdelallpvc                                # delete all PVCs in current namespace
 ```
 

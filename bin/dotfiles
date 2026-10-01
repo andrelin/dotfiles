@@ -390,6 +390,8 @@ function do_stuff() {
     base="$(basename $file)"
     # Skip .DS_Store (but not dotfiles like .bashrc).
     [[ "$base" == .DS_Store ]] && continue
+    # Skip git-secret's encrypted files; only their decrypted versions belong in ~/.
+    [[ "$1" != init && "$base" == *.secret ]] && continue
     # Get dest path.
     if [[ $(declare -f "$1_dest") ]]; then
       dest="$("$1_dest" "$base")"

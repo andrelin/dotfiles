@@ -15,6 +15,7 @@ apps=(
   "Google.Chrome"
   "JetBrains.IntelliJ-IDEA.Ultimate"
   "Microsoft.Teams"
+  "Obsidian.Obsidian"
   "SlackTechnologies.Slack"
   "Spotify.Spotify"
   "SublimeHQ.SublimeText.4"

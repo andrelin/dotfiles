@@ -36,6 +36,11 @@ Thumbs.db
 Desktop.ini
 *~
 
+# Python
+__pycache__/
+*.pyc
+*.ipython.py
+
 # Editors
 .idea/
 *.sublime-workspace

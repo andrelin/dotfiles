@@ -26,10 +26,32 @@ function kdelall() {
     kubectl get $1 | cut -f 1 -d " " | xargs -n1 kubectl delete $1
 }
 
+# Force-delete all resources of a type.
+#   kdelallf deployment
+function kdelallf() {
+    kubectl get $1 | cut -f 1 -d " " | xargs -n1 kubectl delete $1 --grace-period 0 --force
+}
+
 # Delete all pods matching a pattern.
 #   kdelpg my-app
 function kdelpg() {
     kubectl get pod | grep $1 | cut -f 1 -d " " | xargs -n1 kubectl delete pod
+}
+
+# Force-delete all pods matching a pattern — for pods stuck in Terminating.
+#   kdelpgf my-app
+function kdelpgf() {
+    kubectl get pod | grep $1 | cut -f 1 -d " " | xargs -n1 kubectl delete pod --grace-period 0 --force
+}
+
+# Delete all pods.
+function kdelpall() {
+    kubectl get pod | cut -f 1 -d " " | xargs -n1 kubectl delete pod
+}
+
+# Force-delete all pods.
+function kdelpallf() {
+    kubectl get pod | cut -f 1 -d " " | xargs -n1 kubectl delete pod --grace-period 0 --force
 }
 
 # Delete all PVCs.

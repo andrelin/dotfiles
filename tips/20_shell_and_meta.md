@@ -67,7 +67,7 @@ Handy for scripts that need to wait for a VPN or detect a particular network. Fr
 
 ## Tip 20.6: Documentation Site
 
-`README.md`, `TIPS.md`, `tips/*.md`, `docs/*.md` and the `init/` and `source/` READMEs render to
+`README.md`, `tips.md`, `tips/*.md`, `docs/*.md` and the `init/` and `source/` READMEs render to
 `https://dotfiles.lindjo.no` on every push to `main`; `website/scripts/gather-docs.ts` gathers them at build time.
 
 ```sh
@@ -79,3 +79,11 @@ npm run build                # production build (catches broken links)
 
 CI is `.github/workflows/deploy-docs.yml`. A new top-level dir or root file referenced from a gathered doc goes
 in `SOURCE_DIRS` / `ROOT_FILES` in `gather-docs.ts`, or its links won't rewrite.
+
+## Tip 20.7: `psgrep` — Find Running Processes
+
+```sh
+psgrep java            # full `ps aux` lines matching a pattern, case-insensitive
+```
+
+From `source/40_functions.sh`. Shows the whole command line, unlike `pgrep`; `pgrep -fl` is the built-in near-equivalent.

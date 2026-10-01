@@ -36,7 +36,7 @@ warning at the aim there would fire on most of the repo, and a warning that comm
 
 - **Claude-loaded** — `CLAUDE.md`, any `SKILL.md`, anything under `claude/` or `.claude/`: **every line counts**,
   because the file is loaded whole and every line of it is tokens on every task that trips its trigger.
-- **Human-facing** — `README.md`, `TIPS.md`, `tips/`, `docs/`, the `README.md` files beside code: **count the
+- **Human-facing** — `README.md`, `tips.md`, `tips/`, `docs/`, the `README.md` files beside code: **count the
   content a reader has to get through**, not the scaffolding around it.
   An HTML comment never renders, and four lines of badge definitions are the one row they draw.
   A doctoc table of contents does render, but it exists to help a person navigate a long page — charging for it

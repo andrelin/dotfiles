@@ -34,7 +34,8 @@ On subsequent runs step 1 is skipped, step 2 updates the existing repo, and step
 - The `/caches` directory contains cached files used by some scripts or functions.
 - The `/claude` directory holds shared Claude Code config — `CLAUDE.md`, `skills/`, `rules/`, `docs/` and the
   statusline script — symlinked into `~/.claude/` by [init/52_macos_claude.sh](../init/52_macos_claude.sh),
-  leaving machine-local state (sessions, history) alone.
+  leaving machine-local state (sessions, history) alone. `settings.json` stays machine-local too; the script only
+  points its `statusLine` at the linked script.
 - The `/conf` directory stores app configuration (Sublime Text, IntelliJ), linked into place by dedicated init scripts.
 - The `/docs` directory holds the guide pages split out of the README — this one and the [installation guide](installation.md).
 - The `/hooks` directory contains git hooks that are symlinked into `.git/hooks/` by [init/12_git_hooks.sh](../init/12_git_hooks.sh).

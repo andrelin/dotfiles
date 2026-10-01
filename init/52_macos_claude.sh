@@ -30,3 +30,25 @@ for src in "$DOTFILES"/claude/*; do
   ln -sfn "$src" "$dest"
   e_success "Linking ~/.claude/$base."
 done
+
+# settings.json stays machine-local (plugins, permissions and hooks differ per machine),
+# so only the statusLine entry is set here, pointing at the linked script.
+settings="$HOME/.claude/settings.json"
+status_line='{"type":"command","command":"bash ~/.claude/statusline-command.sh"}'
+
+if [[ ! "$(type -P jq)" ]]; then
+  e_error "jq not found — skipping the Claude Code status line."
+elif [[ "$(jq -c '.statusLine' "$settings" 2>/dev/null)" == "$status_line" ]]; then
+  e_success "Claude Code status line already set."
+else
+  [[ -s "$settings" ]] || echo '{}' > "$settings"
+  if jq --argjson sl "$status_line" '.statusLine = $sl' "$settings" > "$settings.tmp"; then
+    mv "$settings.tmp" "$settings"
+    e_success "Setting the Claude Code status line."
+  else
+    rm -f "$settings.tmp"
+    e_error "Couldn't update $settings — is it valid JSON?"
+  fi
+fi
+
+unset settings status_line

@@ -17,6 +17,7 @@ fi
 
 # Load NVM and its tab completions.
 if [[ -n "$_nvm_prefix" ]]; then
+  [[ -d "$NVM_DIR" ]] || mkdir -p "$NVM_DIR"
   [ -s "$_nvm_prefix/nvm.sh" ] && \. "$_nvm_prefix/nvm.sh"
   [ -s "$_nvm_prefix/etc/bash_completion.d/nvm" ] && \. "$_nvm_prefix/etc/bash_completion.d/nvm"
 fi

@@ -92,7 +92,7 @@ function cask_app_name() {
   case "$1" in
     1password)          echo "1Password.app" ;;
     bettertouchtool)    echo "BetterTouchTool.app" ;;
-    claude-code)        echo "Claude.app" ;;
+    claude)             echo "Claude.app" ;;
     fantastical)        echo "Fantastical.app" ;;
     google-chrome)      echo "Google Chrome.app" ;;
     guitar-pro)         echo "Guitar Pro 8.app" ;;

@@ -9,8 +9,8 @@ JVM-related helpers shipped by this repo — JDK switching and Maven OpenRewrite
 `jdk` flips `JAVA_HOME` (and `PATH`) between Homebrew-installed OpenJDKs.
 
 ```sh
-jdk 17           # switch to OpenJDK 17
 jdk 21           # switch to OpenJDK 21
+jdk 25           # switch to OpenJDK 25
 jdk              # show currently active JDK and available versions
 echo $JAVA_HOME  # see where it pointed JAVA_HOME
 ```
@@ -19,7 +19,7 @@ On macOS `JAVA_HOME` lands on the nested `libexec/openjdk.jdk/Contents/Home`, no
 The keg root carries only `bin/` symlinks, so anything that validates a real JDK layout — IntelliJ's Gradle JVM —
 rejects it even though `java` runs fine from it. Linux has no such nesting and gets the prefix as-is.
 
-Requires the matching `openjdk@17` / `openjdk@21` Homebrew formulae installed (already in `init/31_homebrew_recipes.sh`). From `source/10_java.sh`.
+Requires the matching `openjdk@21` / `openjdk@25` Homebrew formulae installed (already in `init/31_homebrew_recipes.sh`). From `source/10_java.sh`.
 
 ## Tip 23.2: Maven OpenRewrite Recipes
 

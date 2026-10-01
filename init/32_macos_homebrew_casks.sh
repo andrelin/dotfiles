@@ -13,6 +13,12 @@ fi
 
 casks=(
   1password
+  1password-cli
+  bazecor
+  claude
+  claude-code
+  docker-desktop
+  firefox
   font-jetbrains-mono
   google-chrome
   intellij-idea
@@ -27,9 +33,14 @@ casks=(
 )
 
 casks_optional=(
+  android-commandlinetools
+  android-studio
+  bartender
   bettertouchtool
-  claude-code
+  brave-browser
   fantastical
+  font-fontawesome
+  google-drive
   postman
 )
 

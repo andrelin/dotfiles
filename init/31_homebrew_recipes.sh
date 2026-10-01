@@ -20,10 +20,13 @@ recipes=(
   gradle
   jq          # command-line JSON processor
   maven
-  n           # Node version management
-  openjdk@17
+  nvm         # Node version management
+  # The two latest LTS JDKs plus the latest release. When a new LTS ships, it is
+  # also the latest, so keep three LTS versions until the next non-LTS release.
   openjdk@21
+  openjdk@25
   openjdk
+  shellcheck
   the_silver_searcher
   tree
   watch
@@ -33,12 +36,19 @@ recipes=(
 )
 
 recipes_optional=(
+  actionlint
+  bats-core
   gh
   k9s         # Kubernetes terminal UI
   kafka
   kube-ps1    # Kubernetes prompt info for bash and zsh
   kubectx
   kubernetes-cli
+  pipx
+  poppler
+  ruby
+  xcbeautify
+  xcode-build-server
 )
 
 # Prompt for optional recipes and append selections

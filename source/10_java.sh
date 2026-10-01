@@ -10,7 +10,7 @@ _java_home_for_prefix() {
 }
 
 # Switch JDK version using Homebrew paths (all platforms).
-# Usage: jdk 17, jdk 21, jdk 25
+# Usage: jdk 21, jdk 25
 jdk() {
 	local prefix
 	prefix="$(brew --prefix "openjdk@$1" 2>/dev/null)"

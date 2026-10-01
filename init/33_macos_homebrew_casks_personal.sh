@@ -8,9 +8,19 @@ is_macos || return 1
 [[ "$CI" ]] && return 0
 
 casks_personal=(
+  battle-net
+  discord
   guitar-pro
   musescore
+  plex
+  plex-media-server
+  reaper
+  signal
   steam
+  synology-drive
+  teamviewer
+  vlc
+  whatsapp
 )
 
 # Prompt per-cask and install selected ones

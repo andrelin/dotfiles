@@ -2,6 +2,12 @@
 
 The rule itself is `~/.claude/rules/markdown-limits.md`; this is why each number is what it is.
 
+## Scope
+
+**Why required only for permanent, checked-in files:** the caps pay off over a file's lifetime — every load, every reader, every diff.
+A plan file or scratch note is deleted once the work ships, so restructuring it to fit a cap is effort with nothing to amortise it against.
+The cheap habits still carry over: one sentence per line keeps a plan's diffs readable while it changes, and a shorter plan is easier to review.
+
 ## Line breaks
 
 **Why one sentence per line:** long lines force horizontal scrolling in editors and terminals, but mid-sentence

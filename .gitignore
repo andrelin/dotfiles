@@ -21,6 +21,13 @@
 # Machine-local Claude rules — loaded via the ~/.claude/rules symlink, never committed
 /claude/rules/*.local.md
 
+# Personal follow-up tracker — names customers and machine-local paths, never committed
+/00-follow-ups-*.md
+
+# Claude Code syncs Anthropic's own skills into ~/.claude/skills/synced, which is this
+# repo's claude/skills/ once linked — machine-local, never ours to commit
+/claude/skills/synced/
+
 # Git Secret
 .gitsecret/keys/random_seed
 !*.secret

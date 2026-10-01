@@ -6,6 +6,7 @@ paths:
 
 # Markdown limits
 
+- **Required for permanent, checked-in files.** In temporary, scratch and plan files the caps don't apply, but the habits below still help.
 - **One sentence per line**, wrapping mid-sentence only past the 150-character cap, at a comma or em-dash.
   Never wrap inside a code fence, a URL or a table cell, and never anywhere in YAML front matter, where a break
   changes what the YAML parses to.
@@ -26,5 +27,4 @@ paths:
 **A file over its warn line can be pinned** at a length you decided not to shorten; growing past a pin is then
 an error, and the hard cap still applies. **A directory holding a `VENDORED.md` is exempt from all of it**, its
 files being kept byte-for-byte in step with upstream.
-
 Only if a file is near a cap, or you need the reasoning: `~/.claude/docs/markdown-limits.md`.

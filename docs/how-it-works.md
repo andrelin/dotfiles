@@ -87,5 +87,7 @@ Scripts in the `/init` subdirectory will be executed. A whole bunch of things wi
 - SSH config and private keys via [init/10_ssh_private_keys.sh](../init/10_ssh_private_keys.sh)
 - Git hooks (symlinked from `/hooks`) via [init/12_git_hooks.sh](../init/12_git_hooks.sh)
 - Sublime Text settings via [init/51_sublime_text.sh](../init/51_sublime_text.sh)
+- Strict line breaks in every registered Obsidian vault (macOS and Linux) via
+  [init/54_obsidian.sh](../init/54_obsidian.sh)
 
 [dotfiles]: ../bin/dotfiles

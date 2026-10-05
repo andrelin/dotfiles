@@ -26,5 +26,5 @@ paths:
 
 **A file over its warn line can be pinned** at a length you decided not to shorten; growing past a pin is then
 an error, and the hard cap still applies. **A directory holding a `VENDORED.md` is exempt from all of it**, its
-files being kept byte-for-byte in step with upstream.
+files being kept byte-for-byte in step with upstream. **A follow-up tracker has no length cap**, only the line one.
 Only if a file is near a cap, or you need the reasoning: `~/.claude/docs/markdown-limits.md`.

@@ -50,10 +50,12 @@ __pycache__/
 .*.swp
 .*.swo
 
-# Claude Code — ignore most local agent state, but skills/ is project
-# content (custom slash-commands checked into the repo).
+# Claude Code — ignore most local agent state, but skills/, rules/ and docs/ are project
+# content (custom slash-commands, path-scoped rules and the docs they point at, checked into the repo).
 # `**/` keeps it matching at any depth, and excluding the *contents* rather than the
 # directory is what lets the negation work — git cannot re-include a path whose parent
-# directory is itself excluded, so a bare `.claude/` would silently defeat `!…/skills/`.
+# directory is itself excluded, so a bare `.claude/` would silently defeat the negations.
 **/.claude/*
 !**/.claude/skills/
+!**/.claude/rules/
+!**/.claude/docs/

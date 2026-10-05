@@ -364,6 +364,41 @@ $(repeat_lines 200)
 \`\`\`
 ")" "ERROR/1" "a closed fence is exempt from the line cap but still counts as length"
 
+e_header "follow-up trackers"
+
+# The comment every tracker opens with, naming the skill that maintains it.
+TRACKER_TOP="<!--
+Maintain with the \`maintaining-follow-up-trackers\` skill.
+-->
+"
+
+assert "$(check_file tracker.md "${TRACKER_TOP}# Follow-ups
+
+$(repeat_lines 400)")" "clean/0" "a follow-up tracker has no length cap"
+
+assert "$(check_file tracker-long-line.md "${TRACKER_TOP}# Follow-ups
+
+$LONG_LINE
+")" "ERROR/1" "a follow-up tracker's lines are still capped"
+
+assert "$(check_file late-comment.md "# Notes
+${TRACKER_TOP}
+$(repeat_lines 400)")" "ERROR/1" "naming the skill in a comment below line 1 does not make a tracker"
+
+assert "$(check_file open-comment.md "<!--
+Maintain with the \`maintaining-follow-up-trackers\` skill.
+$(repeat_lines 400)")" "ERROR/1" "an opening comment that never closes does not make a tracker"
+
+# Becoming a tracker must not erase a pin the file already had.
+printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/tracker-pin.md"
+git -C "$workdir" add -A >/dev/null 2>&1
+(cd "$workdir" && bin/check-md-limits --update-baseline tracker-pin.md >/dev/null 2>&1)
+printf '%s# T\n\n%s' "$TRACKER_TOP" "$(repeat_lines 100)" > "$workdir/tracker-pin.md"
+(cd "$workdir" && bin/check-md-limits --update-baseline >/dev/null 2>&1)
+assert "$(grep -c 'tracker-pin.md' "$workdir/.md-baseline")" "1" \
+  "a pin survives its file becoming a tracker"
+rm -f "$workdir/tracker-pin.md"
+
 e_header "the baseline ratchet"
 
 # Carries the exit status, like check_file: the pin-growth branch sets errors=1,

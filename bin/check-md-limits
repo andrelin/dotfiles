@@ -21,6 +21,10 @@
 #         HTML comment never renders, a run of badge lines is the one row it
 #         draws, and a doctoc ToC does render but is navigation — charging for
 #         it would penalise what makes a long page readable.
+#     A follow-up tracker gets the line-length check only: it is as long as what
+#     is still open, and its review runs already delete what is done. It is the
+#     file whose opening HTML comment names the maintaining-follow-up-trackers
+#     skill, as every tracker's top comment does.
 #
 # A file over its warn line can be pinned in .md-baseline, and then fails only if
 # it grows past the size recorded there. Pinning is a deliberate act — it records
@@ -164,6 +168,20 @@ readonly VENDORED_MARKER=VENDORED.md
 
 is_vendored() {
   [[ -f "$(dirname "$1")/$VENDORED_MARKER" ]]
+}
+
+# The tracker skills put the pointer to themselves in the comment that opens every
+# tracker, whatever the file is called, so that is what recognises one. Only a
+# comment starting on line 1 and closed counts, so an unterminated one can't.
+readonly TRACKER_SKILL=maintaining-follow-up-trackers
+
+is_follow_up_tracker() {
+  awk -v skill="$TRACKER_SKILL" '
+    NR == 1 && !/^<!--/ { exit }
+    index($0, skill) { named = 1 }
+    /-->/ { closed = 1; exit }
+    END { exit !(closed && named) }
+  ' "$1"
 }
 
 # Claude loads these whole, so every line in them is paid for on every task.
@@ -395,6 +413,16 @@ for f in "${files[@]}"; do
     printf '  line %s\n' "${offenders[@]}" >&2
     echo "       Break at a sentence or clause boundary (see ~/.claude/rules/markdown-limits.md)." >&2
     errors=1
+  fi
+
+  # A tracker's length is what is still open, so only its lines are checked. Any pin
+  # it had is kept, as for a vendored file, in case it stops being one.
+  if is_follow_up_tracker "$f"; then
+    if (( update_baseline )); then
+      existing="$(baseline_for "$f")"
+      [[ -n "$existing" && "$existing" =~ ^[0-9]+$ ]] && new_pins+=("$existing	$rel")
+    fi
+    continue
   fi
 
   if is_claude_file "$rel"; then

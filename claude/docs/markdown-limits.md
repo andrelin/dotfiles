@@ -4,8 +4,12 @@ The rule itself is `~/.claude/rules/markdown-limits.md`; this is why each number
 
 ## Scope
 
+**Why plan files and follow-up trackers never have a length cap:** a plan is deleted once the work ships, and a
+tracker is as long as what is still open, its review runs already deleting what is done.
+Both keep the line cap, which costs nothing to meet and keeps their diffs readable.
+
 **Why required only for permanent, checked-in files:** the caps pay off over a file's lifetime — every load, every reader, every diff.
-A plan file or scratch note is deleted once the work ships, so restructuring it to fit a cap is effort with nothing to amortise it against.
+A scratch note is deleted once the work ships, so restructuring it to fit a cap is effort with nothing to amortise it against.
 The cheap habits still carry over: one sentence per line keeps a plan's diffs readable while it changes, and a shorter plan is easier to review.
 
 ## Line breaks
@@ -31,12 +35,10 @@ Both numbers tighten with how easily the file loads.
 | --- | --- | --- | --- |
 | A rule, or a project `CLAUDE.md` | 30 | 50 | a rule loads on a bare path match, a `CLAUDE.md` on nothing at all |
 | The global `~/.claude/CLAUDE.md` | 60 | 75 | same, plus permission rules that cannot live anywhere else |
-| A skill | 50 | 100 | loads only when its task matches, and carries a procedure end to end |
-| Anything else | 50 | 150 | read on purpose, so length costs a reader rather than every task |
+| A skill | 100 | 150 | loads only when its task matches, and carries a procedure end to end |
+| Anything else | 100 | 200 | read on purpose, so length costs a reader rather than every task |
 
-`bin/check-md-limits` warns at the aim for the three strict types, where few enough files sit between aim and cap
-that each warning is worth acting on. Skills and everything else warn at 80 instead of their 50-line aim:
-warning at the aim there would fire on most of the repo, and a warning that common is one nobody reads.
+`bin/check-md-limits` warns at the aim for every type.
 
 **What counts depends on who reads the file.**
 
@@ -48,12 +50,12 @@ warning at the aim there would fire on most of the repo, and a warning that comm
   A doctoc table of contents does render, but it exists to help a person navigate a long page — charging for it
   would penalise the thing that keeps the page readable. Agent-loaded files carry no ToC for the same reason:
   navigation aids are for humans, and for a file loaded whole they are only noise.
-  The cap holds on what's left: past 150 lines of content a reader stops finding things in it.
+  The cap holds on what's left: past 200 lines of content a reader stops finding things in it.
 
 **A skill may set a stricter bar for what it governs; none may set a looser one.**
 `writing-claude-md` restates the two `CLAUDE.md` rows above rather than tightening them.
 A project may tighten further in its own `.claude/` tree — the dotfiles repo asks tips files to stay near 50
-lines, below the 80 the checker warns at, so nothing signals between the two and you watch that range by eye.
+lines, below the 100 the checker warns at, so nothing signals between the two and you watch that range by eye.
 
 ## Files that were already long
 

@@ -115,14 +115,14 @@ assert "$(check_file table-comment.md "# T
 | a | <!-- |
 $(repeat_lines 30)
 | b | --> |
-$(repeat_lines 130)")" "ERROR/1" "a marker in a table cell does not pair with a far-off closer"
+$(repeat_lines 180)")" "ERROR/1" "a marker in a table cell does not pair with a far-off closer"
 
 assert "$(check_file code-span-comment.md "# T
 
 Wrap the block in \`<!--\` first.
 $(repeat_lines 15)
 Close it with \`-->\`.
-$(repeat_lines 140)")" "ERROR/1" "a comment marker inside an inline code span is text, not a comment"
+$(repeat_lines 190)")" "ERROR/1" "a comment marker inside an inline code span is text, not a comment"
 
 assert "$(check_file fenced-toc.md "# T
 
@@ -181,17 +181,17 @@ $(repeat_lines 400)
 
 assert "$(check_file code-span-lines.md "# T
 
-$(for i in $(seq 1 200); do echo "\`code $i\`"; done)")" "ERROR/1" \
+$(for i in $(seq 1 250); do echo "\`code $i\`"; done)")" "ERROR/1" \
   "lines that are entirely one code span are still content"
 
-# 174 lines: over the cap only because the 30-line span is left counted. Blank
-# it wrongly and the file lands at 143, under the cap, and this assertion fails.
+# 214 lines: over the cap only because the 30-line span is left counted. Blank
+# it wrongly and the file lands at 183, under the cap, and this assertion fails.
 assert "$(check_file long-pairing.md "# T
 
 An <!-- opener with no real closer nearby.
 $(repeat_lines 30)
 A stray --> far below.
-$(repeat_lines 140)")" "ERROR/1" \
+$(repeat_lines 180)")" "ERROR/1" \
   "a pairing spanning more than 20 lines is two markers, not a comment"
 
 assert "$(check_file short-pairing.md "# T
@@ -260,19 +260,19 @@ $(repeat_lines 20)")" "clean/0" "a short file passes"
 
 assert "$(check_file over-cap.md "# T
 
-$(repeat_lines 200)")" "ERROR/1" "a file over its hard cap fails"
+$(repeat_lines 250)")" "ERROR/1" "a file over its hard cap fails"
 
 assert "$(check_file unterminated-comment.md "# T
 <!-- oops
 $(repeat_lines 400)")" "ERROR/1" "an unterminated HTML comment does not exempt the rest of the file"
 
-# 89 lines with the comment counted, 72 without: clean only if it is discounted.
+# 109 lines with the comment counted, 92 without: clean only if it is discounted.
 assert "$(check_file commented.md "# T
 
 <!--
 $(repeat_lines 15)
 -->
-$(repeat_lines 70)")" "clean/0" "a closed HTML comment does not count toward the length"
+$(repeat_lines 90)")" "clean/0" "a closed HTML comment does not count toward the length"
 
 assert "$(check_file unterminated-toc.md "<!-- START doctoc -->
 $(repeat_lines 400)")" "ERROR/1" "an unterminated doctoc marker does not elide the rest of the file"
@@ -284,28 +284,28 @@ $(for _ in {1..400}; do echo '![b](https://example.com/y.svg)'; done)")" "ERROR/
 
 assert "$(check_file near-cap.md "# T
 
-$(repeat_lines 100)")" "NOTE/0" "a file over its warn line but under its cap is advisory"
+$(repeat_lines 150)")" "NOTE/0" "a file over its warn line but under its cap is advisory"
 
-# 92 lines with the ToC counted, 72 without.
+# 112 lines with the ToC counted, 92 without.
 assert "$(check_file real-toc.md "<!-- START doctoc -->
 $(repeat_lines 18)
 <!-- END doctoc -->
 
 # T
 
-$(repeat_lines 70)")" "clean/0" "a real doctoc block is still discounted"
+$(repeat_lines 90)")" "clean/0" "a real doctoc block is still discounted"
 
 # Fenced code is content: it is exempt from the line cap, never from the length.
 assert "$(check_file fenced-count.md "# T
 
 \`\`\`
-$(repeat_lines 200)
+$(repeat_lines 250)
 \`\`\`
 ")" "ERROR/1" "fenced lines still count toward file length"
 
 e_header "per-type limits"
 
-# Same 100-line body, four homes: only the two strict types are over their cap.
+# A 100-line body is over the cap for every strict type; a skill has room for more.
 mkdir -p "$workdir/.claude/rules" "$workdir/claude" "$workdir/skills/x"
 assert "$(check_file .claude/rules/r.md "# T
 
@@ -318,26 +318,26 @@ assert "$(check_file claude/CLAUDE.md "# T
 $(repeat_lines 100)")" "ERROR/1" "the global CLAUDE.md is capped at 75 lines"
 assert "$(check_file skills/x/SKILL.md "# T
 
-$(repeat_lines 90)")" "NOTE/0" "a skill has room to 100 lines, so 92 is only advisory"
+$(repeat_lines 120)")" "NOTE/0" "a skill has room to 150 lines, so 122 is only advisory"
 
 # The rendered/raw split has to work in both directions: what a human-facing page
 # gets for free, a Claude-loaded file still pays for.
 mkdir -p "$workdir/claude"
-# 89 raw lines, 72 once the comment is discounted: advisory as a Claude-loaded
+# 109 raw lines, 92 once the comment is discounted: advisory as a Claude-loaded
 # file, and clean as a human-facing one.
 assert "$(check_file claude/notes.md "# T
 
 <!--
 $(repeat_lines 15)
 -->
-$(repeat_lines 70)")" "NOTE/0" "a comment block still counts in a Claude-loaded file"
+$(repeat_lines 90)")" "NOTE/0" "a comment block still counts in a Claude-loaded file"
 
 assert "$(check_file human.md "# T
 
 <!--
 $(repeat_lines 15)
 -->
-$(repeat_lines 70)")" "clean/0" "the same file is clean when it is human-facing"
+$(repeat_lines 90)")" "clean/0" "the same file is clean when it is human-facing"
 
 e_header "vendored directories"
 
@@ -348,7 +348,7 @@ $LONG_LINE
 $(repeat_lines 400)")" "clean/0" "a directory holding a VENDORED.md is skipped entirely"
 # Dropping a VENDORED.md into a directory must not erase pins it already had.
 rm -f "$workdir/skills/x/VENDORED.md"
-printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/skills/x/long.md"
+printf '# T\n\n%s' "$(repeat_lines 150)" > "$workdir/skills/x/long.md"
 git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline skills/x/long.md >/dev/null 2>&1)
 printf '# vendored\n' > "$workdir/skills/x/VENDORED.md"
@@ -360,7 +360,7 @@ rm -f "$workdir/skills/x/VENDORED.md" "$workdir/skills/x/long.md"
 assert "$(check_file fenced-body.md "# T
 
 \`\`\`
-$(repeat_lines 200)
+$(repeat_lines 250)
 \`\`\`
 ")" "ERROR/1" "a closed fence is exempt from the line cap but still counts as length"
 
@@ -390,14 +390,32 @@ Maintain with the \`maintaining-follow-up-trackers\` skill.
 $(repeat_lines 400)")" "ERROR/1" "an opening comment that never closes does not make a tracker"
 
 # Becoming a tracker must not erase a pin the file already had.
-printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/tracker-pin.md"
+printf '# T\n\n%s' "$(repeat_lines 150)" > "$workdir/tracker-pin.md"
 git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline tracker-pin.md >/dev/null 2>&1)
-printf '%s# T\n\n%s' "$TRACKER_TOP" "$(repeat_lines 100)" > "$workdir/tracker-pin.md"
+printf '%s# T\n\n%s' "$TRACKER_TOP" "$(repeat_lines 150)" > "$workdir/tracker-pin.md"
 (cd "$workdir" && bin/check-md-limits --update-baseline >/dev/null 2>&1)
 assert "$(grep -c 'tracker-pin.md' "$workdir/.md-baseline")" "1" \
   "a pin survives its file becoming a tracker"
 rm -f "$workdir/tracker-pin.md"
+
+e_header "plan files"
+
+# Plans are deleted once the work ships, so only their lines are checked.
+mkdir -p "$workdir/plans"
+assert "$(check_file PLAN-x.md "# Plan
+
+$(repeat_lines 400)")" "clean/0" "a PLAN-*.md file has no length cap"
+assert "$(check_file plans/step.md "# Plan
+
+$(repeat_lines 400)")" "clean/0" "a file under plans/ has no length cap"
+assert "$(check_file PLAN-long-line.md "# Plan
+
+$LONG_LINE
+")" "ERROR/1" "a plan file's lines are still capped"
+assert "$(check_file not-a-plan.md "# Notes
+
+$(repeat_lines 400)")" "ERROR/1" "a file merely mentioning plans is still capped"
 
 e_header "the baseline ratchet"
 
@@ -410,21 +428,21 @@ pinned_state() {
   echo "$(echo "$output" | grep -oE '^(ERROR|NOTE)' | head -1)/$rc"
 }
 
-printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/pinned.md"
+printf '# T\n\n%s' "$(repeat_lines 150)" > "$workdir/pinned.md"
 git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline pinned.md >/dev/null 2>&1)
 
 assert "$(grep -c 'pinned.md' "$workdir/.md-baseline")" "1" "pinning writes exactly one entry"
 assert "$(pinned_state)" "/0" "a file at its pinned size is silent"
 
-printf '# T\n\n%s' "$(repeat_lines 110)" > "$workdir/pinned.md"
+printf '# T\n\n%s' "$(repeat_lines 160)" > "$workdir/pinned.md"
 assert "$(pinned_state)" "ERROR/1" "growing past a pin is an error, not an advisory"
 
 # The ratchet must survive a file that has grown past its hard cap: dropping the
 # pin there would silently raise the file's ceiling to the cap.
-printf '# T\n\n%s' "$(repeat_lines 200)" > "$workdir/pinned.md"
+printf '# T\n\n%s' "$(repeat_lines 250)" > "$workdir/pinned.md"
 (cd "$workdir" && bin/check-md-limits --update-baseline >/dev/null 2>&1)
-assert "$(awk -F'\t' '$2 == "pinned.md" { print $1 }' "$workdir/.md-baseline")" "102" \
+assert "$(awk -F'\t' '$2 == "pinned.md" { print $1 }' "$workdir/.md-baseline")" "152" \
   "a pin survives the file outgrowing its hard cap"
 
 printf '# T\n\n%s' "$(repeat_lines 20)" > "$workdir/pinned.md"
@@ -434,24 +452,24 @@ assert "$(grep -c 'pinned.md' "$workdir/.md-baseline" || true)" "0" \
 
 # Shrinking a pinned file is the improvement the ratchet banks, but it leaves the
 # baseline stale — which CI would catch and the author would not.
-printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/shrunk.md"
+printf '# T\n\n%s' "$(repeat_lines 150)" > "$workdir/shrunk.md"
 git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline shrunk.md >/dev/null 2>&1)
-printf '# T\n\n%s' "$(repeat_lines 90)" > "$workdir/shrunk.md"
+printf '# T\n\n%s' "$(repeat_lines 140)" > "$workdir/shrunk.md"
 assert "$(cd "$workdir" && bin/check-md-limits shrunk.md 2>&1 | grep -oE '^NOTE' | head -1)" "NOTE" \
   "shrinking a pinned file says so locally, rather than only failing CI"
 
-printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/pinned.md"
+printf '# T\n\n%s' "$(repeat_lines 150)" > "$workdir/pinned.md"
 git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline pinned.md >/dev/null 2>&1)
-printf '# T\n\n%s' "$(repeat_lines 120)" > "$workdir/pinned.md"
+printf '# T\n\n%s' "$(repeat_lines 170)" > "$workdir/pinned.md"
 (cd "$workdir" && bin/check-md-limits --update-baseline >/dev/null 2>&1)
-assert "$(awk -F'\t' '$2 == "pinned.md" { print $1 }' "$workdir/.md-baseline")" "102" \
+assert "$(awk -F'\t' '$2 == "pinned.md" { print $1 }' "$workdir/.md-baseline")" "152" \
   "a pin is not raised when the file grows but stays under its hard cap"
 
 # A baseline nobody can parse must not be silently rewritten: the ratchet's own
 # failure mode would otherwise be total release.
-printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/pinned.md"
+printf '# T\n\n%s' "$(repeat_lines 150)" > "$workdir/pinned.md"
 git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline pinned.md >/dev/null 2>&1)
 printf 'garbage line without a tab\n' >> "$workdir/.md-baseline"
@@ -465,14 +483,14 @@ mv "$workdir/.md-baseline.tmp" "$workdir/.md-baseline"
 
 # The ratchet must never widen on its own: a no-arg regen only tightens pins
 # that already exist.
-printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/unpinned.md"
+printf '# T\n\n%s' "$(repeat_lines 150)" > "$workdir/unpinned.md"
 git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline >/dev/null 2>&1)
 assert "$(grep -c 'unpinned.md' "$workdir/.md-baseline" || true)" "0" \
   "a no-arg re-pin never creates a pin for a file that had none"
 
 # A tab-shaped but non-numeric size passed validation, then lost the pin.
-printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/pinned.md"
+printf '# T\n\n%s' "$(repeat_lines 150)" > "$workdir/pinned.md"
 git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline pinned.md >/dev/null 2>&1)
 printf 'abc\tpinned.md\n' > "$workdir/.md-baseline"
@@ -506,7 +524,7 @@ assert "$(cd "$workdir" && bin/check-md-limits --no-warn near-cap.md 2>&1)" "" \
   "--no-warn drops advisories"
 
 # CI runs --no-warn, so a pin breach has to survive it.
-printf '# T\n\n%s' "$(repeat_lines 130)" > "$workdir/pinned.md"
+printf '# T\n\n%s' "$(repeat_lines 180)" > "$workdir/pinned.md"
 assert "$(cd "$workdir" && bin/check-md-limits --no-warn pinned.md >/dev/null 2>&1; echo $?)" "1" \
   "--no-warn still fails on a pin breach"
 
@@ -528,7 +546,7 @@ assert "$(cd "$workdir" && bin/check-md-limits --bogus >/dev/null 2>&1; echo $?)
 
 # A symlinked file kept an absolute key, so it missed its pin and was measured
 # against the wrong type's cap — the shape ~/.claude/CLAUDE.md has every day.
-printf '# T\n\n%s' "$(repeat_lines 100)" > "$workdir/linked.md"
+printf '# T\n\n%s' "$(repeat_lines 150)" > "$workdir/linked.md"
 git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline linked.md >/dev/null 2>&1)
 linkdir="$(mktemp -d)"

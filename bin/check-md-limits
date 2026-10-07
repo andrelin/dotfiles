@@ -9,10 +9,9 @@
 # Two independent checks:
 #   * Line length — 150 characters, excluding front matter, closed fences, table
 #     rows and the URLs inside a line.
-#   * File length — per type <advisory/hard>: a rule or project CLAUDE.md 30/50,
-#     the global CLAUDE.md 60/75, a skill 80/100, anything else 80/150. The aim
-#     is 30 for a rule or project CLAUDE.md, 60 for the global one and 50 for the
-#     rest; see limits_for() for why the advisory lines differ from the aims.
+#   * File length — per type <aim/hard>: a rule or project CLAUDE.md 30/50, the
+#     global CLAUDE.md 60/75, a skill 100/150, anything else 100/200. The aim is
+#     also the advisory line.
 #     What counts depends on who reads the file:
 #       - Claude-loaded (CLAUDE.md, SKILL.md, claude/, .claude/): every line,
 #         because every line is tokens on every task that loads it.
@@ -24,7 +23,8 @@
 #     A follow-up tracker gets the line-length check only: it is as long as what
 #     is still open, and its review runs already delete what is done. It is the
 #     file whose opening HTML comment names the maintaining-follow-up-trackers
-#     skill, as every tracker's top comment does.
+#     skill, as every tracker's top comment does. A plan file gets the same,
+#     being deleted once the work ships.
 #
 # A file over its warn line can be pinned in .md-baseline, and then fails only if
 # it grows past the size recorded there. Pinning is a deliberate act — it records
@@ -142,21 +142,17 @@ baseline_for() {
     '!/^#/ && $2 == want { print $1; exit }' "$BASELINE_FILE"
 }
 
-# Per-type <warn> <hard>. The stricter a file's trigger, the tighter the bar — a
-# rule loads on a path match, a skill on a task, a CLAUDE.md on everything.
-#
-# For the strict types the warn line is the aim itself — few enough files sit
-# between aim and cap that each warning is worth acting on. Skills and everything
-# else aim at 50 but warn at 80: warning at their aim would fire on most of the
-# repo, and a warning that common is one nobody reads.
+# Per-type <warn> <hard>, the warn line being the aim. The stricter a file's
+# trigger, the tighter the bar — a rule loads on a path match, a skill on a task,
+# a CLAUDE.md on everything.
 limits_for() {
   case "$1" in
     .claude/CLAUDE.md | */.claude/CLAUDE.md)                 echo "30 50" ;;
     claude/CLAUDE.md | */claude/CLAUDE.md)                   echo "60 75" ;;
     CLAUDE.md | CLAUDE.local.md | */CLAUDE.md | */CLAUDE.local.md) echo "30 50" ;;
     claude/rules/*.md | .claude/rules/*.md | */rules/*.md)   echo "30 50" ;;
-    SKILL.md | */SKILL.md)                                   echo "80 100" ;;
-    *)                                                       echo "80 150" ;;
+    SKILL.md | */SKILL.md)                                   echo "100 150" ;;
+    *)                                                       echo "100 200" ;;
   esac
 }
 
@@ -182,6 +178,16 @@ is_follow_up_tracker() {
     /-->/ { closed = 1; exit }
     END { exit !(closed && named) }
   ' "$1"
+}
+
+# The plan-files rule's globs, less the durable files it also loads on.
+is_plan_file() {
+  case "$1" in
+    PLAN*.md | */PLAN*.md | plan.md | */plan.md | plans/* | */plans/*) return 0 ;;
+    proposal.md | */proposal.md | roadmap.md | */roadmap.md) return 0 ;;
+    migration.md | */migration.md) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 # Claude loads these whole, so every line in them is paid for on every task.
@@ -415,9 +421,10 @@ for f in "${files[@]}"; do
     errors=1
   fi
 
-  # A tracker's length is what is still open, so only its lines are checked. Any pin
-  # it had is kept, as for a vendored file, in case it stops being one.
-  if is_follow_up_tracker "$f"; then
+  # A tracker's length is what is still open and a plan is deleted once the work
+  # ships, so only their lines are checked. Any pin is kept, as for a vendored
+  # file, in case it stops being one.
+  if is_follow_up_tracker "$f" || is_plan_file "$rel"; then
     if (( update_baseline )); then
       existing="$(baseline_for "$f")"
       [[ -n "$existing" && "$existing" =~ ^[0-9]+$ ]] && new_pins+=("$existing	$rel")

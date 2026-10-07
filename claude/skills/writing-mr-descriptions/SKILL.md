@@ -1,6 +1,6 @@
 ---
 name: writing-mr-descriptions
-description: Read before writing or revising a merge or pull request title or description, including a draft pasted into chat for the user to copy. Covers what the description has to contain and in what order, and the padding that comes out before posting.
+description: Read before writing or revising a merge or pull request title or description, including a draft pasted into chat for the user to copy.
 ---
 
 # Writing MR titles and descriptions

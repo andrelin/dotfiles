@@ -339,6 +339,42 @@ $(repeat_lines 15)
 -->
 $(repeat_lines 90)")" "clean/0" "the same file is clean when it is human-facing"
 
+e_header "skill descriptions"
+
+DESC_300="$(printf 'd%.0s' {1..300})"
+assert "$(check_file skills/x/SKILL.md "---
+name: x
+description: $DESC_300
+---
+
+# T
+")" "clean/0" "a 300-character description is within the cap"
+assert "$(check_file skills/x/SKILL.md "---
+name: x
+description: ${DESC_300}d
+---
+
+# T
+")" "ERROR/1" "a 301-character description is over it"
+assert "$(check_file skills/x/SKILL.md "---
+name: x
+description: $(printf 'é%.0s' {1..300})
+---
+
+# T
+")" "clean/0" "the cap counts characters, not bytes"
+assert "$(check_file skills/x/notes.md "---
+description: ${DESC_300}d
+---
+
+# T
+")" "clean/0" "only a SKILL.md's description is capped"
+# A URL, so the line cap lets the line through and only the description cap could object.
+assert "$(check_file skills/x/SKILL.md "# T
+
+description: https://example.com/$DESC_300
+")" "clean/0" "a description line outside front matter is prose"
+
 e_header "vendored directories"
 
 printf '# vendored\n' > "$workdir/skills/x/VENDORED.md"

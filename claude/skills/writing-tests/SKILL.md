@@ -1,11 +1,12 @@
 ---
 name: writing-tests
-description: Read before writing a test, and before approving one in someone else's diff. Covers which tests can fail for a real reason and which pass forever regardless of behaviour; complements a TDD workflow rather than replacing one.
+description: Read before writing a test, and before approving one in someone else's diff.
 ---
 
 # Test actual logic, not literals
 
 **A test must be able to fail for a real reason.**
+This complements a TDD workflow rather than replacing it: TDD says when to write the test, this says which are worth keeping.
 Don't write tests that restate a hardcoded literal or assert a compile-time-guaranteed fact — they add noise and
 pass forever regardless of behaviour.
 

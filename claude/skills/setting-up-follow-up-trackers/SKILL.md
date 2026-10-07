@@ -1,6 +1,6 @@
 ---
 name: setting-up-follow-up-trackers
-description: Read before creating a follow-up tracker in a project or customer tree, before splitting a single tracker file into the backlog / in-flight pair, and before changing what is fixed once per tree - the file names, the ref letters, the host's PR sigil and the user-facing header. Adding an item is `writing-follow-up-items`; the periodic review run, which owns the top comment and the at-a-glance table, is `maintaining-follow-up-trackers`.
+description: Read before creating a follow-up tracker in a project or customer tree, splitting one into the backlog / in-flight pair, or changing what is fixed once per tree - the file names, ref letters, PR sigil or user-facing header.
 ---
 
 # Setting up a follow-up tracker

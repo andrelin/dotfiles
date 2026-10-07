@@ -34,6 +34,8 @@ Only two carry anything to watch, and only one of those reaches a remote:
 Two personal skills cover the same ground and carry this user's conventions, so on a collision invoke those:
 `writing-plans` rather than `superpowers:writing-plans`, and `reviewing-locally` rather than
 `superpowers:requesting-code-review`, whose findings must not reach the platform on company or customer work.
+A third overlaps only in part: `writing-agent-instructions` decides where an instruction lives, its length budget
+and its front matter, and `superpowers:writing-skills` is still the one for testing a skill and wording its trigger.
 
 **§ *Work contexts* outranks every skill**, whoever wrote it — a step is not permitted by being written down.
 So on **personal work every part of all of this is fine**, push included.

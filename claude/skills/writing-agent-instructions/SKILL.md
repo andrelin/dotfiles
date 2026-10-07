@@ -1,9 +1,9 @@
 ---
-name: writing-claude-md
-description: Read before creating a CLAUDE.md, before adding or reworking a section in one, and when deciding whether a new rule belongs in CLAUDE.md, a skill or a reference doc. Covers audience, the cost of a line that loads every session, and what must stay out of a shared repo.
+name: writing-agent-instructions
+description: Read before creating or reworking a CLAUDE.md, skill, rule or reference doc, and when deciding which of those a new instruction belongs in.
 ---
 
-# Writing CLAUDE.md files
+# Writing agent instructions
 
 Applies to every `CLAUDE.md` — the global one, project-level ones, any a customer engagement carries.
 The audience is Claude on a fresh task, not a human onboarding, and the file loads every session whether or not
@@ -63,6 +63,12 @@ Permission rules, publish bars and destructive-action limits are all in this cat
 
 When you extract a skill, the `description` is the trigger: write it so it names the **task**, not the topic.
 If a skill would need two unrelated triggers to be found, that's a sign it should be two skills.
+
+- **Say when to read it, never what it says.** A description that summarises the skill gets followed in its place,
+  and the body goes unread. No "Covers…", no pointers to sibling skills. A scope boundary ("not a method",
+  "complements TDD") goes in the body; the description gets a "Not for…" only where it would otherwise misfire.
+- **Under 300 characters** — every skill's description sits in every session's skill list, so like a `CLAUDE.md`
+  line it is paid for on every task. `bin/check-md-limits` enforces it.
 
 **One subject per file, named for it.** A file covering two subjects loads both whenever either is wanted, and
 its trigger has to be vague enough to catch both — which makes it fire when neither is.

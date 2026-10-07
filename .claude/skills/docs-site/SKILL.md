@@ -1,6 +1,6 @@
 ---
 name: docs-site
-description: Read before editing anything under website/, before adding a top-level directory or root file that a gathered doc links to, and when a docs deploy reports broken links. Covers how the Docusaurus site renders this repo's docs to GitHub Pages - source-of-truth files stay in their canonical locations and are gathered at build time - which paths must be registered for links to resolve, and the MDX pitfalls that break the build.
+description: Read before editing anything under website/, before adding a top-level directory or root file that a gathered doc links to, and when a docs deploy reports broken links.
 ---
 
 # Documentation site

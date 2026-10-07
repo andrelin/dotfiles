@@ -9,6 +9,8 @@
 # Two independent checks:
 #   * Line length — 150 characters, excluding front matter, closed fences, table
 #     rows and the URLs inside a line.
+#   * Skill description — 300 characters, since every skill's description sits in
+#     the skill list of every session, whether or not the skill is ever used.
 #   * File length — per type <aim/hard>: a rule or project CLAUDE.md 30/50, the
 #     global CLAUDE.md 60/75, a skill 100/150, anything else 100/200. The aim is
 #     also the advisory line.
@@ -51,6 +53,7 @@ fi
 set -euo pipefail
 
 readonly MAX_LINE_CHARS=150
+readonly MAX_DESCRIPTION_CHARS=300
 INVOCATION_DIR="$PWD"
 readonly INVOCATION_DIR
 # readlink -f is not portable to older macOS, so walk the links by hand.
@@ -283,6 +286,16 @@ count_lines() {
   ' "$1" "$2"
 }
 
+# Length in characters of a SKILL.md's one-line description, or nothing when it has
+# none. Only front matter opening on line 1 counts, so prose mentioning the key can't.
+description_length() {
+  perl -CSD -ne '
+    if ($. == 1) { /^---\s*$/ or exit; next }
+    exit if /^---\s*$/;
+    if (/^description:\s*(.*?)\s*$/) { print length($1), "\n"; exit }
+  ' "$1"
+}
+
 # Skips YAML front matter, fenced code and table rows — places the line-break rule
 # forbids wrapping. A URL is unwrappable but the prose around it isn't, so URLs are
 # subtracted from the length rather than exempting the whole line.
@@ -419,6 +432,15 @@ for f in "${files[@]}"; do
     printf '  line %s\n' "${offenders[@]}" >&2
     echo "       Break at a sentence or clause boundary (see ~/.claude/rules/markdown-limits.md)." >&2
     errors=1
+  fi
+
+  if [[ "$rel" == SKILL.md || "$rel" == */SKILL.md ]]; then
+    desc_chars="$(description_length "$f")"
+    if [[ -n "$desc_chars" ]] && (( desc_chars > MAX_DESCRIPTION_CHARS )); then
+      echo "ERROR: $rel has a $desc_chars-character description, over the $MAX_DESCRIPTION_CHARS cap." >&2
+      echo "       Name the trigger and stop: no summary, no pointers to sibling skills." >&2
+      errors=1
+    fi
   fi
 
   # A tracker's length is what is still open and a plan is deleted once the work

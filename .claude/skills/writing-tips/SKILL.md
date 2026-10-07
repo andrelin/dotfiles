@@ -1,6 +1,6 @@
 ---
 name: writing-tips
-description: Read before adding, renumbering, restyling or removing a tip, before adding a tips file, and whenever changing a user-facing alias, function or script under source/ or bin/. Covers which decade file a tip belongs in, the heading shape the `tips` shell function parses, how stable per-file numbering is and that renumbering is confirmed with the user first, the style bar for bundled-tool vs repo-feature tips, and the same-commit sync rule.
+description: Read before adding, renumbering, restyling or removing a tip, before adding a tips file, and whenever changing a user-facing alias, function or script under source/ or bin/.
 ---
 
 # Writing tips

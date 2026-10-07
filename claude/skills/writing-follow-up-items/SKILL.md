@@ -1,6 +1,6 @@
 ---
 name: writing-follow-up-items
-description: Read before adding an item to a personal follow-up tracker or rewording one - capturing something that belongs to no single PR, choosing which half of the backlog / in-flight pair it goes in, and giving it its heading, issue reference, next-step line and badge. The periodic review run over a whole tracker is `maintaining-follow-up-trackers`; creating the files is `setting-up-follow-up-trackers`. Not for plan files.
+description: Read before adding an item to a personal follow-up tracker or rewording one - choosing its half of the backlog / in-flight pair, its heading, issue reference, next-step line or badge. Not for plan files.
 ---
 
 # Writing a follow-up item

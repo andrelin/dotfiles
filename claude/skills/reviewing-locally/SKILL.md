@@ -1,6 +1,6 @@
 ---
 name: reviewing-locally
-description: Read before reviewing a branch, MR or PR on customer or company work, and before running /code-review on one - its target and its findings both depend on the diff being set up first. Covers where a review reads from and what it may post, not how to find bugs.
+description: Read before reviewing a branch, MR or PR on customer or company work, and before running /code-review on one - its target and its findings both depend on the diff being set up first.
 ---
 
 # Reviewing a branch locally, against a freshly fetched default branch

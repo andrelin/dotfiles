@@ -1,6 +1,6 @@
 ---
 name: cutting-comments
-description: Read after drafting any edit that adds comments, and before filing a comment as a finding in someone else's diff. Carries the standing rule - comments are a last resort, only a non-obvious why survives - and the cut-down pass that applies it to one specific diff.
+description: Read after drafting any edit that adds comments, and before filing a comment as a finding in someone else's diff.
 ---
 
 # Cutting comments

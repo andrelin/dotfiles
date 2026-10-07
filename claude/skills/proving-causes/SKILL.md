@@ -1,6 +1,6 @@
 ---
 name: proving-causes
-description: Read before any non-trivial debugging, root-cause or reproduction task - a flaky test, an intermittent failure, a failing pipeline - and before shipping or scoping a fix on a cause you have not proven. Covers the traps, not a prescribed method.
+description: Read before any non-trivial debugging, root-cause or reproduction task - a flaky test, an intermittent failure, a failing pipeline - and before shipping or scoping a fix on a cause you have not proven.
 ---
 
 # Proving causes — constraints and traps

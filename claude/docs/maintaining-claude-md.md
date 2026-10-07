@@ -1,6 +1,6 @@
 # Keeping a `CLAUDE.md` honest over time
 
-The budget and the four homes are the `writing-claude-md` skill.
+The budget and the four homes are the `writing-agent-instructions` skill.
 This is what the file does after it is written: the excuses that grow it, and the upkeep that keeps it true.
 
 ## Cut on sight, not on a schedule

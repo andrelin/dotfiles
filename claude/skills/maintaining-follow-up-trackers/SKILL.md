@@ -1,6 +1,6 @@
 ---
 name: maintaining-follow-up-trackers
-description: Read before a review or reorganise run over a personal follow-up tracker - "review the follow-ups" - and before renumbering, deleting resolved items, merging or splitting them, moving one between the backlog and in-flight halves, or reconciling open PRs against them. Writing or rewording a single item is `writing-follow-up-items`; creating the files is `setting-up-follow-up-trackers`. Not for plan files.
+description: Read before a review or reorganise run over a personal follow-up tracker - "review the follow-ups" - and before renumbering, deleting resolved items, merging or splitting them, moving one between halves, or reconciling open PRs against them. Not for plan files.
 ---
 
 # Maintaining a follow-up tracker

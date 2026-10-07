@@ -40,6 +40,10 @@ Both numbers tighten with how easily the file loads.
 
 `bin/check-md-limits` warns at the aim for every type.
 
+**Why a skill's `description` is capped at 300 characters:** the body loads only when the skill is used, but the
+description sits in the skill list of every session, so it is paid for on every task like a `CLAUDE.md` line.
+It says when to read the skill and stops; a summary of the body gets followed in its place.
+
 **What counts depends on who reads the file.**
 
 - **Claude-loaded** — `CLAUDE.md`, any `SKILL.md`, anything under `claude/` or `.claude/`: **every line counts**,
@@ -53,7 +57,7 @@ Both numbers tighten with how easily the file loads.
   The cap holds on what's left: past 200 lines of content a reader stops finding things in it.
 
 **A skill may set a stricter bar for what it governs; none may set a looser one.**
-`writing-claude-md` restates the two `CLAUDE.md` rows above rather than tightening them.
+`writing-agent-instructions` restates the two `CLAUDE.md` rows above rather than tightening them.
 A project may tighten further in its own `.claude/` tree — the dotfiles repo asks tips files to stay near 50
 lines, below the 100 the checker warns at, so nothing signals between the two and you watch that range by eye.
 

@@ -73,6 +73,7 @@ bin/check-md-limits --update-baseline F... # pin a long file at its current size
 
 Fails on a line over 150 characters (front matter, code fences, table rows and URLs excepted) or a file over its
 type's cap: 50 lines for a rule or project `CLAUDE.md`, 75 for the global one, 150 for a skill, 200 otherwise.
+A skill's `description` is capped at 300 characters, since every session's skill list carries it.
 Nearing a cap is a note, not a failure; a directory holding a `VENDORED.md` is skipped, and a plan file or follow-up tracker has no length cap.
 Claude-loaded files count line for line, since every line costs tokens on every task; human-facing pages count
 content, so comments, badge blocks and a doctoc ToC are free.

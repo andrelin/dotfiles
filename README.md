@@ -9,7 +9,7 @@ My macOS / Ubuntu / WSL 2 / RHEL dotfiles.
 
 Browseable docs: <https://dotfiles.lindjo.no>
 
-Forked from <https://github.com/runesto/dotfiles>
+Forked from the dotfiles of [runesto](https://github.com/runesto).
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->

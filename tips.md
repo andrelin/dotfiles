@@ -70,4 +70,4 @@ tips -h               Help
 
 ## 6x — Web tools
 
-- [60. Web tools](tips/60_web_tools.md) — Debuggex, Monkeytype, Kafka Streams Topology Visualiser
+- [60. Web tools](tips/60_web_tools.md) — regex visualisers, Monkeytype, Kafka Streams Topology Visualiser

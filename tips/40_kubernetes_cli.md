@@ -43,6 +43,8 @@ brew install kube-ps1
 ```
 
 Configure with `KUBE_PS1_*` env vars; toggle on/off with `kubeon` / `kubeoff` after sourcing the plugin.
+The `andrelin` theme shows it only while a context is set, and where kube-ps1 can't be installed it falls back to
+reading the context with `kubectl` whenever the kubeconfig changes.
 
 Docs: <https://github.com/jonmosco/kube-ps1>
 

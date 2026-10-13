@@ -19,6 +19,11 @@ The zsh framework (oh-my-zsh) and the vendored zsh plugins this repo ships with.
 ## Tip 30.1: oh-my-zsh
 
 Loads the `andrelin` theme plus the plugin set in [`source/90_oh-my-zsh.zsh`](../source/90_oh-my-zsh.zsh) — that file is the source of truth.
+The theme needs nothing but oh-my-zsh, so it works on a machine without these dotfiles:
+
+```sh
+cp link/.omz-custom/andrelin.zsh-theme ~/.oh-my-zsh/custom/themes/   # then ZSH_THEME="andrelin" in ~/.zshrc
+```
 
 Highest-leverage shortcuts:
 

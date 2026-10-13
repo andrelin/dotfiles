@@ -83,6 +83,8 @@ jobs:
               *"non-interactive mode"*) prev="$stripped"; continue ;;
               *"write error: Broken pipe"*) prev="$stripped"; continue ;;
               *"is not in your PATH"*) prev="$stripped"; continue ;;
+              # Homebrew's cache cleanup, which names packages such as libgpg-error.
+              "Removing: "*) prev="$stripped"; continue ;;
             esac
 
             if echo "$stripped" | grep -qiE '\berror\b|\bfatal\b'; then

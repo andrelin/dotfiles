@@ -540,13 +540,13 @@ elif [[ "$1" != "restart" ]]; then
   fi
 fi
 
-# Everything below may assume bash 4.4 or newer (RHEL 8's; Ubuntu 22.04 and RHEL 9 ship 5.1). A fresh Mac runs
+# Everything below may assume bash 5.0 or newer (Ubuntu 20.04, Debian 11, RHEL 9; Homebrew has 5.3). A fresh Mac runs
 # this under Apple's /bin/bash 3.2 from 2006, the last GPLv2 release, which Apple never moved past. So install
 # Homebrew and its bash first, then re-run under that. This file down to here and init/20_homebrew.sh still run on
 # 3.2, so they must stay compatible with it.
 # Homebrew's bash is used directly when it is already there; 20_homebrew.sh, run again from the menu, only when not.
 # DOTFILES_BASH_RESTARTED stops a loop should the restarted bash somehow be just as old.
-if (( BASH_VERSINFO[0] * 100 + BASH_VERSINFO[1] < 404 )); then
+if (( BASH_VERSINFO[0] < 5 )); then
   if is_macos && [[ ! "$DOTFILES_BASH_RESTARTED" ]]; then
     for new_bash in /opt/homebrew/bin/bash /usr/local/bin/bash; do [[ -x "$new_bash" ]] && break; done
     if [[ ! -x "$new_bash" ]]; then
@@ -561,7 +561,7 @@ if (( BASH_VERSINFO[0] * 100 + BASH_VERSINFO[1] < 404 )); then
       DOTFILES_BASH_RESTARTED=1 exec "$new_bash" "$DOTFILES/bin/dotfiles" restart
     fi
   fi
-  e_error "These dotfiles need bash 4.4 or newer, and this is $BASH_VERSION. Aborting."
+  e_error "These dotfiles need bash 5.0 or newer, and this is $BASH_VERSION. Aborting."
   exit 1
 fi
 

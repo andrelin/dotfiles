@@ -24,7 +24,7 @@ blocks a script the user ticks by hand, and nothing reads markers in `source/`. 
 Which marker deselects where, and why `_linux_` still fires on WSL: `.claude/docs/script-platform-markers.md`.
 
 **Helpers stay cross-platform:** anything under `source/` or `bin/` runs on macOS, Ubuntu, WSL and RHEL unless its
-filename marker says otherwise. Everything may assume bash 4.4 (RHEL 8's) except `bin/dotfiles` down to its version
+filename marker says otherwise. Everything may assume bash 5.0 except `bin/dotfiles` down to its version
 check and `init/20_homebrew.sh`, which a fresh Mac runs under Apple's 3.2 before restarting under Homebrew's bash.
 **CI runs shellcheck** (`-x -s bash --severity=warning`) over globbed `init/*.sh`, `source/*.sh` and `test/*.sh`, so a
 new script there needs no workflow edit, plus the `bin/` scripts, `hooks/pre-commit`, the linked `.bashrc`/`.bash_profile`

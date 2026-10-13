@@ -1,8 +1,13 @@
 # Small tool hooks that don't warrant their own file.
 
 # direnv: auto-load .envrc when cd'ing into directories.
+# The hook is shell-specific: zsh's code aborts bash part-way through startup, losing every file after this one.
 if [[ "$(command -v direnv)" ]]; then
-  eval "$(direnv hook zsh)"
+  if [[ -n "$ZSH_VERSION" ]]; then
+    eval "$(direnv hook zsh)"
+  elif [[ -n "$BASH_VERSION" ]]; then
+    eval "$(direnv hook bash)"
+  fi
 fi
 
 # kube-ps1: Kubernetes context/namespace in prompt.

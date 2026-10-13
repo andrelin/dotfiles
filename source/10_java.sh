@@ -9,30 +9,79 @@ _java_home_for_prefix() {
 	fi
 }
 
+# Prints the major version of plain openjdk, Homebrew's latest release: 26 from Cellar/openjdk/26.0.1, or 27 from
+# 27_1 after a Homebrew revision. An older Cellar directory can linger after an upgrade, so only the last counts.
+_jdk_plain_major() {
+	local brew="${HOMEBREW_PREFIX:-/usr/local}" dir version=
+	[[ -n "$ZSH_VERSION" ]] && setopt localoptions nullglob
+	[[ -d "$brew/opt/openjdk" ]] || return
+	for dir in "$brew"/Cellar/openjdk/*; do version="${dir##*/}"; done
+	version="${version%%[._]*}"
+	[[ "$version" =~ ^[0-9]+$ ]] && echo "$version"
+}
+
+# Prints the Homebrew prefix of the installed JDK with major version $1, without spawning brew. Homebrew names a
+# superseded release openjdk@N, but the latest release is plain openjdk.
+# /usr/local covers Intel macOS, where 02_path.sh leaves HOMEBREW_PREFIX unset.
+_jdk_prefix() {
+	local brew="${HOMEBREW_PREFIX:-/usr/local}"
+	[[ -n "$1" ]] || return
+	if [[ -d "$brew/opt/openjdk@$1" ]]; then
+		echo "$brew/opt/openjdk@$1"
+	elif [[ "$(_jdk_plain_major)" == "$1" ]]; then
+		echo "$brew/opt/openjdk"
+	fi
+}
+
+# Prints the installed JDK major versions, one per line, in no particular order.
+_jdk_installed() {
+	local brew="${HOMEBREW_PREFIX:-/usr/local}" dir
+	[[ -n "$ZSH_VERSION" ]] && setopt localoptions nullglob
+	# bash has no nullglob here: an unmatched pattern stays literal, so check each entry exists.
+	for dir in "$brew"/opt/openjdk@*; do [[ -d "$dir" ]] && echo "${dir##*@}"; done
+	_jdk_plain_major
+}
+
+# Prints the newest installed LTS major version. Java has had an LTS every fourth release since 17 (a two-year
+# cadence), so it is computed rather than kept in a list that must be edited when the next one ships.
+_jdk_newest_lts() {
+	local major newest=0
+	for major in $(_jdk_installed); do
+		# Arithmetic evaluates a non-number as an expression, so never let anything else reach it.
+		[[ "$major" =~ ^[0-9]+$ ]] || continue
+		(( major >= 17 && (major - 17) % 4 == 0 && major > newest )) && newest=$major
+	done
+	(( newest )) && echo "$newest"
+}
+
 # Switch JDK version using Homebrew paths (all platforms).
-# Usage: jdk 21, jdk 25
+# Usage: jdk 21, jdk 25; plain `jdk` shows the active JDK and the installed versions.
 jdk() {
 	local prefix
-	prefix="$(brew --prefix "openjdk@$1" 2>/dev/null)"
-	if [[ -d "$prefix" ]]; then
+	if [[ -z "$1" ]]; then
+		echo "JAVA_HOME: ${JAVA_HOME:-unset}"
+		echo "Installed: $(_jdk_installed | sort -n | tr '\n' ' ')"
+		return
+	fi
+	prefix="$(_jdk_prefix "$1")"
+	if [[ -n "$prefix" ]]; then
 		JAVA_HOME="$(_java_home_for_prefix "$prefix")"
 		export JAVA_HOME
 		export PATH="$JAVA_HOME/bin:$PATH"
 		java -version
 	else
-		echo "openjdk@$1 not found. Install with: brew install openjdk@$1"
+		echo "JDK $1 not found. Install with: brew install openjdk@$1 (or plain openjdk for the latest release)"
 	fi
 }
 
-# Set default JAVA_HOME to OpenJDK 25. The opt path is what `brew --prefix openjdk@25` prints, without
-# spawning brew at startup; /usr/local covers Intel macOS, where 02_path.sh leaves HOMEBREW_PREFIX unset.
-_jdk25="${HOMEBREW_PREFIX:-/usr/local}/opt/openjdk@25"
-if [[ -d "$_jdk25" ]]; then
-	JAVA_HOME="$(_java_home_for_prefix "$_jdk25")"
+# Default JAVA_HOME: the newest installed LTS, matching the rule in init/31_homebrew_recipes.sh.
+_jdk_default="$(_jdk_prefix "$(_jdk_newest_lts)")"
+if [[ -n "$_jdk_default" ]]; then
+	JAVA_HOME="$(_java_home_for_prefix "$_jdk_default")"
 	export JAVA_HOME
 	export PATH="$JAVA_HOME/bin:$PATH"
 fi
-unset _jdk25
+unset _jdk_default
 
 if is_macos; then
 	# Set up/update Homebrew OpenJDK symlinks so /usr/libexec/java_home can find them.

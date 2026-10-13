@@ -21,11 +21,6 @@ recipes=(
   gradle
   jq          # command-line JSON processor
   maven
-  # The two latest LTS JDKs plus the latest release. When a new LTS ships, it is
-  # also the latest, so keep three LTS versions until the next non-LTS release.
-  openjdk@21
-  openjdk@25
-  openjdk
   shellcheck
   the_silver_searcher
   tree
@@ -34,6 +29,18 @@ recipes=(
   zsh
   zsh-syntax-highlighting
 )
+
+# JDKs by the rule in java_recipes (30_homebrew_helpers.sh), from the version openjdk is about to install rather
+# than a fixed list: openjdk upgrades in place, so when it moves on from an LTS (25 → 26) openjdk@25 must be
+# installed in that same run or the LTS silently disappears. The newest LTS is the default JAVA_HOME (10_java.sh).
+java_latest="$(brew info --json=v2 openjdk | grep -o '"stable": *"[0-9]*' | head -n 1 | grep -o '[0-9]*$')"
+if [[ "$java_latest" =~ ^[0-9]+$ ]]; then
+  # shellcheck disable=SC2207 # Formula names have no spaces; word splitting is safe
+  recipes+=($(java_recipes "$java_latest"))
+else
+  e_error "Couldn't read the openjdk version from Homebrew, so no JDKs will be installed."
+fi
+unset java_latest
 
 recipes_optional=(
   actionlint

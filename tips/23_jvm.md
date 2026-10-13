@@ -19,7 +19,8 @@ On macOS `JAVA_HOME` lands on the nested `libexec/openjdk.jdk/Contents/Home`, no
 The keg root carries only `bin/` symlinks, so anything that validates a real JDK layout — IntelliJ's Gradle JVM —
 rejects it even though `java` runs fine from it. Linux has no such nesting and gets the prefix as-is.
 
-Requires the matching `openjdk@21` / `openjdk@25` Homebrew formulae installed (already in `init/31_homebrew_recipes.sh`). From `source/10_java.sh`.
+Works with any Homebrew OpenJDK: an `openjdk@N` formula, or plain `openjdk` for the latest release.
+New shells start on the newest installed LTS. From `source/10_java.sh`.
 
 ## Tip 23.2: Maven OpenRewrite Recipes
 

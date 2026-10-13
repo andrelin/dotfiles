@@ -63,6 +63,19 @@ function brew_prompt_optional() {
 # Recipe (formulae) installation
 ###############################################
 
+# Prints the JDK formulae the rule wants, given the version plain openjdk is about to install ($1): the two latest
+# LTS releases plus the latest, or three LTS releases while the latest is itself one. Homebrew adds openjdk@N only
+# once N is superseded, so the latest is always plain openjdk. Java has had an LTS every fourth release since 17.
+function java_recipes() {
+  local latest="$1" lts
+  lts=$((latest - (latest - 17) % 4))
+  if ((lts == latest)); then
+    echo "openjdk openjdk@$((lts - 4)) openjdk@$((lts - 8))"
+  else
+    echo "openjdk openjdk@$lts openjdk@$((lts - 4))"
+  fi
+}
+
 # Install Homebrew formulae from the $recipes array, skipping any
 # that are already installed.
 function brew_install_recipes() {

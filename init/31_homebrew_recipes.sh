@@ -12,6 +12,7 @@ recipes=(
   bash
   bash-completion
   direnv
+  fnm         # Node version management
   fzf
   git
   git-secret
@@ -20,7 +21,6 @@ recipes=(
   gradle
   jq          # command-line JSON processor
   maven
-  nvm         # Node version management
   # The two latest LTS JDKs plus the latest release. When a new LTS ships, it is
   # also the latest, so keep three LTS versions until the next non-LTS release.
   openjdk@21

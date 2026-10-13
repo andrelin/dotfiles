@@ -72,6 +72,8 @@ Scripts in the `/init` subdirectory will be executed. A whole bunch of things wi
 - Homebrew via [init/20_homebrew.sh](../init/20_homebrew.sh)
 - Homebrew recipes via [init/31_homebrew_recipes.sh](../init/31_homebrew_recipes.sh)
 - Homebrew casks via [init/32_macos_homebrew_casks.sh](../init/32_macos_homebrew_casks.sh)
+- Node.js versions via [init/33_node_versions.sh](../init/33_node_versions.sh): the two latest LTS lines
+  plus the latest release, the same rule as the JDKs
 
 ### Linux / WSL
 
@@ -81,6 +83,8 @@ Scripts in the `/init` subdirectory will be executed. A whole bunch of things wi
   [init/32_wsl_winget_apps.sh](../init/32_wsl_winget_apps.sh)
 - Homebrew via [init/20_homebrew.sh](../init/20_homebrew.sh)
 - Homebrew recipes via [init/31_homebrew_recipes.sh](../init/31_homebrew_recipes.sh)
+- Node.js versions via [init/33_node_versions.sh](../init/33_node_versions.sh): the two latest LTS lines
+  plus the latest release, the same rule as the JDKs
 
 ### All platforms
 

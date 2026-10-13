@@ -1,27 +1,36 @@
-# NVM (Node Version Manager) — switch Node.js versions with:
-#   nvm install 20    → install Node 20
-#   nvm use 18        → switch to Node 18
-#   nvm ls            → list installed versions
+# fnm (Fast Node Manager) — switch Node.js versions with:
+#   fnm install --lts → install the latest LTS
+#   fnm use 22        → switch to Node 22
+#   fnm list          → list installed versions
+# --use-on-cd switches automatically on entering a directory with a .nvmrc or .node-version,
+# looking up through parent directories (recursive) so it also works from a monorepo subfolder.
+if command -v fnm >/dev/null 2>&1; then
+  if [[ -n "$ZSH_VERSION" ]]; then
+    eval "$(fnm env --use-on-cd --version-file-strategy=recursive --shell zsh)"
+  else
+    eval "$(fnm env --use-on-cd --version-file-strategy=recursive --shell bash)"
+    # zsh picks up Homebrew's completions from site-functions on its own; bash needs them sourced.
+    _fnm_completion="${HOMEBREW_PREFIX:-/usr/local}/etc/bash_completion.d/fnm"
+    [[ -f "$_fnm_completion" ]] && source "$_fnm_completion"
+    unset _fnm_completion
+  fi
 
-# Where NVM stores Node versions.
-export NVM_DIR="$HOME/.nvm"
-
-# Find Homebrew's NVM install (Linux, macOS ARM, macOS x86).
-if [[ -d /home/linuxbrew/.linuxbrew/opt/nvm ]]; then
-  _nvm_prefix="/home/linuxbrew/.linuxbrew/opt/nvm"
-elif [[ -d /opt/homebrew/opt/nvm ]]; then
-  _nvm_prefix="/opt/homebrew/opt/nvm"
-elif [[ -d /usr/local/opt/nvm ]]; then
-  _nvm_prefix="/usr/local/opt/nvm"
+  # --use-on-cd only fires on cd, so a shell opened inside a project (a new tab, an IDE terminal) would start on the
+  # default instead. Walk up for a version file in the shell itself, and only call fnm when one is found.
+  # package.json counts too: fnm reads its engines field, and falls back to the default when there is none, so it
+  # only counts once a default exists (fnm env sets FNM_DIR); before that, fnm would print an error in every shell.
+  _fnm_dir="$PWD"
+  while [[ -n "$_fnm_dir" ]]; do
+    if [[ -f "$_fnm_dir/.nvmrc" || -f "$_fnm_dir/.node-version" ]] ||
+      [[ -f "$_fnm_dir/package.json" && -e "$FNM_DIR/aliases/default" ]]; then
+      # No stdin: a pinned version that isn't installed makes fnm ask to install it, which would hold up the shell.
+      fnm use --silent-if-unchanged < /dev/null
+      break
+    fi
+    _fnm_dir="${_fnm_dir%/*}"
+  done
+  unset _fnm_dir
 fi
-
-# Load NVM and its tab completions.
-if [[ -n "$_nvm_prefix" ]]; then
-  [[ -d "$NVM_DIR" ]] || mkdir -p "$NVM_DIR"
-  [ -s "$_nvm_prefix/nvm.sh" ] && \. "$_nvm_prefix/nvm.sh"
-  [ -s "$_nvm_prefix/etc/bash_completion.d/nvm" ] && \. "$_nvm_prefix/etc/bash_completion.d/nvm"
-fi
-unset _nvm_prefix
 
 # pnpm — where globally-installed pnpm packages land. The location is
 # platform-specific: macOS uses ~/Library, Linux follows the XDG data dir.

@@ -13,7 +13,7 @@ The content lives in `tips/<NN>_<name>.md`, one file per category, read by the `
 
 The file-prefix decade is also a "section" for `tips Nx` queries:
 
-- `1x` — Terminal: general tricks + standalone CLI tools (jq, fzf, ag, gh, direnv, git-secret, nvm, …)
+- `1x` — Terminal: general tricks + standalone CLI tools (jq, fzf, ag, gh, direnv, git-secret, fnm, …)
 - `2x` — Repo features: custom aliases/functions/scripts shipped by this repo
 - `3x` — Zsh ecosystem: oh-my-zsh + vendor plugins
 - `4x` — Infrastructure tooling: kubernetes, kafka. **Optional installs**, never auto-installed — a project may

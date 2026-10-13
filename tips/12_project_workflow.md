@@ -2,7 +2,7 @@
 
 # Project Workflow
 
-CLIs you set up per-project — `gh` for GitHub, `git-secret` for encrypted files, `direnv` for per-dir env, `nvm` for Node versions.
+CLIs you set up per-project — `gh` for GitHub, `git-secret` for encrypted files, `direnv` for per-dir env, `fnm` for Node versions.
 
 ## Tip 12.1: gh — GitHub CLI
 
@@ -57,16 +57,19 @@ This is the preferred path over the omz `dotenv` plugin, which doesn't unload on
 
 Docs: <https://direnv.net/>
 
-## Tip 12.4: nvm — Node Version Manager
+## Tip 12.4: fnm — Fast Node Manager
 
-Install and switch between Node.js versions per project.
+Install and switch between Node.js versions per project. Opening a shell in, or entering, a directory with a
+`.nvmrc`, `.node-version` or `package.json` `engines` field (here or in a parent) switches automatically.
+Any other directory switches back to the default, which also undoes a manual `fnm use`.
+`dotfiles` keeps the two latest LTS lines and the latest release installed, with the newest LTS as the default.
 
 ```sh
-nvm install --lts                     # install latest LTS
-nvm use 20                            # switch to Node 20 in this shell
-nvm ls                                # list installed versions
-echo "20" > .nvmrc                    # pin Node version per project
-nvm use                               # picks up .nvmrc automatically
+fnm install --lts                     # install latest LTS
+fnm use 22                            # switch to Node 22 in this shell
+fnm list                              # list installed versions
+fnm default 22                        # version new shells start with
+echo "22" > .nvmrc                    # pin Node version per project
 ```
 
-Docs: <https://github.com/nvm-sh/nvm>
+Docs: <https://github.com/Schniz/fnm>

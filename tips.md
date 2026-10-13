@@ -42,7 +42,7 @@ tips -h               Help
 
 - [10. Terminal](tips/10_terminal.md) — keyboard shortcuts, history expansion, background jobs, clipboard piping
 - [11. Text tools](tips/11_text_tools.md) — jq, fzf, ag
-- [12. Project workflow CLIs](tips/12_project_workflow.md) — gh, git-secret, direnv, nvm
+- [12. Project workflow CLIs](tips/12_project_workflow.md) — gh, git-secret, direnv, fnm
 
 ## 2x — Repo features
 

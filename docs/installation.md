@@ -64,6 +64,9 @@ Since you'll be using the [dotfiles][dotfiles] command on subsequent runs, you'l
 
 There's a lot of stuff that requires admin access via `sudo`, so be warned that you might need to enter your password here or there.
 
+The scripts need bash 4.4 or newer. A fresh Mac only has Apple's bash 3.2, so on the first run `dotfiles`
+installs Homebrew and its bash before anything else, then restarts itself under that bash.
+
 ## Actual installation (for me)
 
 ### Ubuntu / WSL

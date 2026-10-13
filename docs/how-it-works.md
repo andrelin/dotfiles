@@ -18,6 +18,8 @@ When [dotfiles][dotfiles] is run for the first time, it does a few things:
 
 1. Git is installed if necessary (via APT on Ubuntu, already present on macOS).
 1. This repo is cloned into your user directory, under `~/.dotfiles`.
+1. On a fresh Mac, Homebrew and its bash are installed and the script restarts under that bash: everything after
+   this needs bash 4.4 or newer, and macOS only ships 3.2. ([read more](installation.md))
 1. Files in `/copy` are copied into `~/`, except on RHEL, which runs only the link and init steps.
    ([read more](#the-copy-step))
 1. Files in `/link` are symlinked into `~/`. ([read more](#the-link-step))
@@ -25,7 +27,8 @@ When [dotfiles][dotfiles] is run for the first time, it does a few things:
    macOS); `_personal_` scripts are default unchecked, and your choice is remembered in `caches/init/selected`.
 1. Your chosen init scripts are sourced, in alphanumeric order. ([read more](#the-init-step))
 
-On subsequent runs step 1 is skipped, step 2 updates the existing repo, and step 5 remembers your last selection.
+On subsequent runs step 1 is skipped, step 2 updates the existing repo, step 3 is skipped once Homebrew's bash is
+the one running, and step 6 remembers your last selection.
 
 ## Other subdirectories
 

@@ -31,6 +31,8 @@ jobs:
         include:
           - name: macOS
             runner: macOS-latest
+            # Apple's bash 3.2, as on a fresh Mac, so the restart under Homebrew's bash in bin/dotfiles runs.
+            dotfiles_shell: /bin/bash
           - name: Ubuntu
             runner: ubuntu-latest
           - name: RHEL 9
@@ -49,10 +51,18 @@ jobs:
           set-safe-directory: true
 
       - name: Configure
+        env:
+          DOTFILES_SHELL: ${{ matrix.dotfiles_shell }}
         run: |
           ln -sf "$PWD" ~/.dotfiles
           export DOTFILES=$PWD
-          ./bin/dotfiles 2>&1 | tee /tmp/dotfiles_output.txt || true
+          ${DOTFILES_SHELL:-} ./bin/dotfiles 2>&1 | tee /tmp/dotfiles_output.txt || true
+          # Both lines: the restart was printed, and the restarted run then finished.
+          if [[ "$DOTFILES_SHELL" ]] && ! { grep -q "Restarting under Homebrew's bash" /tmp/dotfiles_output.txt &&
+            grep -q "All done!" /tmp/dotfiles_output.txt; }; then
+            echo "::error title=bin/dotfiles::Started under $DOTFILES_SHELL, but didn't restart under Homebrew's bash and finish"
+            exit 1
+          fi
 
           errors=0
           section="setup"

@@ -24,12 +24,15 @@ jdk() {
 	fi
 }
 
-# Set default JAVA_HOME to OpenJDK 25.
-if [[ -d "$(brew --prefix openjdk@25 2>/dev/null)" ]]; then
-	JAVA_HOME="$(_java_home_for_prefix "$(brew --prefix openjdk@25)")"
+# Set default JAVA_HOME to OpenJDK 25. The opt path is what `brew --prefix openjdk@25` prints, without
+# spawning brew at startup; /usr/local covers Intel macOS, where 02_path.sh leaves HOMEBREW_PREFIX unset.
+_jdk25="${HOMEBREW_PREFIX:-/usr/local}/opt/openjdk@25"
+if [[ -d "$_jdk25" ]]; then
+	JAVA_HOME="$(_java_home_for_prefix "$_jdk25")"
 	export JAVA_HOME
 	export PATH="$JAVA_HOME/bin:$PATH"
 fi
+unset _jdk25
 
 if is_macos; then
 	# Set up/update Homebrew OpenJDK symlinks so /usr/libexec/java_home can find them.
@@ -54,23 +57,22 @@ if is_macos; then
 		/usr/libexec/java_home -V 2>&1
 	}
 
-	# Check for missing/stale symlinks on shell startup (avoids calling brew)
-	(
-		if [[ -d /opt/homebrew ]]; then
-			_bp="/opt/homebrew"
-		else
-			_bp="/usr/local"
-		fi
-		_jvm="/Library/Java/JavaVirtualMachines"
-
-		for _jdk in "${_bp}"/opt/openjdk*/libexec/openjdk.jdk; do
-			[[ -d "$_jdk" ]] || continue
-			_name="$(basename "$(dirname "$(dirname "$_jdk")")")"
-			_link="${_jvm}/${_name/@/-}.jdk"
-			if [[ ! -L "$_link" ]] || [[ "$(readlink "$_link")" != "$_jdk" ]]; then
+	# Check for missing/stale symlinks on shell startup. Runs in the shell itself with string operations and -ef,
+	# since a subshell plus basename/dirname/readlink per JDK cost 30-70 ms.
+	_java_check_links() {
+		local jdk name link
+		[[ -n "$ZSH_VERSION" ]] && setopt localoptions nullglob
+		for jdk in "${HOMEBREW_PREFIX:-/usr/local}"/opt/openjdk*/libexec/openjdk.jdk; do
+			[[ -d "$jdk" ]] || continue
+			name="${jdk%/libexec/openjdk.jdk}"
+			name="${name##*/}"
+			link="/Library/Java/JavaVirtualMachines/${name/@/-}.jdk"
+			if [[ ! -L "$link" || ! "$link" -ef "$jdk" ]]; then
 				echo "Java symlinks need updating. Run 'java_setup' to fix."
-				break
+				return
 			fi
 		done
-	)
+	}
+	_java_check_links
+	unset -f _java_check_links
 fi

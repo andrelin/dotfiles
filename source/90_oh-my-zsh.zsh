@@ -3,7 +3,6 @@ ZSH_THEME="andrelin"
 
 plugins=(
     1password
-    alias-finder
     colored-man-pages
     colorize
     command-not-found
@@ -24,7 +23,6 @@ plugins=(
     sublime
     sudo
     urltools
-    web-search
     z           # fast directory jumping: z foo → cd to most-used dir matching "foo"
     brew
 )

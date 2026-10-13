@@ -2,7 +2,11 @@
 # Shared test infrastructure. Source this instead of source/01_dotfiles.sh.
 # Wraps e_error to count failures and provides test_done for exit codes.
 
+# bin/dotfiles, which this loads, sets DOTFILES to ~/.dotfiles. Keep the caller's, so a test run from another
+# checkout (a worktree, a CI copy) tests that checkout and not the installed one.
+__test_dotfiles="$DOTFILES"
 source "$DOTFILES/source/01_dotfiles.sh"
+DOTFILES="$__test_dotfiles"
 
 __test_failures=0
 

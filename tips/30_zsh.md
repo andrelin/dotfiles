@@ -25,7 +25,7 @@ Highest-leverage shortcuts:
 ```sh
 z foo                       # cd to most-used dir matching "foo" (z plugin)
 Esc Esc                     # prepend "sudo " to the current command (sudo plugin)
-web-search google "query"   # open a search in your browser (web-search plugin)
+extract archive.tar.gz      # unpack any common archive format (extract plugin)
 ```
 
 Enabled plugins, grouped to make the list scannable. Each name links to its upstream docs.
@@ -57,7 +57,6 @@ Don't tie to one tool — useful in any shell session.
 
 | Plugin | What it does |
 | --- | --- |
-| [alias-finder](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/alias-finder) | Prints any matching alias when you type a long command (`alias-finder "git status"` → `gst`). Helps internalise the alias surface. |
 | [colored-man-pages](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/colored-man-pages) | Colourises `man` output. Automatic — no commands. |
 | [colorize](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/colorize) | Syntax-highlighted file viewing via Pygments / chroma. `ccat file.py`, `cless file.py`. |
 | [command-not-found](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/command-not-found) | On Ubuntu/WSL, suggests the apt package for a missing command. No-op on macOS. |
@@ -67,7 +66,6 @@ Don't tie to one tool — useful in any shell session.
 | [safe-paste](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/safe-paste) | Stops pasted text from auto-executing if it contains a newline. Defends against malicious clipboard snippets. Zero-config. |
 | [sudo](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/sudo) | `Esc Esc` toggles `sudo` on the current line (or prepends to the previous command if the line is empty). |
 | [urltools](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/urltools) | `urlencode "a b&c"`, `urldecode "a%20b%26c"`. Pair with `encode64` for HTTP/OAuth poking. |
-| [web-search](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/web-search) | `google "query"`, `ddg "query"`, `bing "query"`, `github "query"`, `stackoverflow "query"`, … |
 | [z](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/z) | Frecency-based directory jumping. `z foo` cd's to the most-used dir matching "foo"; `z -l foo` lists candidates. |
 
 Full plugin index (for adding new ones): <https://github.com/ohmyzsh/ohmyzsh/wiki/Plugins>

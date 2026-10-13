@@ -3,8 +3,6 @@ source $DOTFILES/vendor/zsh-autosuggestions/zsh-autosuggestions.zsh
 # shellcheck disable=SC2034 # Read by zsh-autosuggestions plugin
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#777777"
 
-source $DOTFILES/vendor/zsh-completions/zsh-completions.plugin.zsh
-
 source $DOTFILES/vendor/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # zsh-history-substring-search must load AFTER zsh-syntax-highlighting (per its docs).

@@ -11,7 +11,7 @@ if [[ "$(command -v direnv)" ]]; then
 fi
 
 # kube-ps1: Kubernetes context/namespace in prompt.
-_kube_ps1="$(brew --prefix kube-ps1 2>/dev/null)/share/kube-ps1.sh"
+_kube_ps1="${HOMEBREW_PREFIX:-/usr/local}/opt/kube-ps1/share/kube-ps1.sh"
 [[ -f "$_kube_ps1" ]] && source "$_kube_ps1"
 unset _kube_ps1
 

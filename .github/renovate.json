@@ -27,6 +27,11 @@
       "allowedVersions": "<7"
     }
   ],
+  "lockFileMaintenance": {
+    "description": "Most security alerts here are transitive dependencies of the docs site, which no package.json bump reaches. A weekly lockfile refresh pulls their fixed versions within the existing ranges.",
+    "enabled": true,
+    "automerge": true
+  },
   "vulnerabilityAlerts": {
     "description": "Security fixes skip the weekly window and the release-age hold and merge themselves, so an advisory is remediated in hours rather than waiting for Monday.",
     "enabled": true,

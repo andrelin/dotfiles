@@ -51,7 +51,7 @@ in § *The staged workflow*. No external spec.
 | --- | --- | --- |
 | 0 · Plan files are `plan-*.md` at the repo root | ✅ DONE | |
 | 1 · Work-context resolver and guard script | ✅ DONE | 281 assertions pass. glab finding and deviations in Task 1 |
-| 2 · Register the hooks, and run tests on `claude/` changes | 🚧 PARTIAL | code and docs done; manual verification pending |
+| 2 · Register the hooks, and run tests on `claude/` changes | ✅ DONE | merged into the real settings 2026-10-16; manual checks below |
 | 2b · Command shims for aliases, functions and scripts (spike first) | ⏳ PENDING | |
 | 3 · User-level settings hardening | ⏳ PENDING | |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
@@ -93,7 +93,19 @@ Answered by the user on 2026-10-16:
 - `plan-project-management.md`'s five decisions are answered there; `.claude-pm.json` replaces the marker in its
   Task 8, and auto-close is allowed at personal and company level behind `pm close-check`.
 
-Next: Task 2's manual verification, which needs the user in interactive sessions; then Task 2b.
+Task 2's manual verification, 2026-10-16, Claude Code 2.1.292, in a repo with origin `example-client/x`:
+
+- A live block: the main session's own Bash call (auto mode) was stopped with the guard's message.
+- In bypass and auto mode, asked to commit, Claude declined from the prose before trying, so the hook wasn't reached
+  there; the probe (`git commit`, `git push` exit 2, `git status`, `git add` exit 0) covers the hook itself.
+- `!git add a.txt && git commit -m x` ran; `!` must be the first character of the prompt.
+- `/doctor` reported every settings file parsing, with no complaint about `onFailure`.
+- A copy of the guard with `exit 1` at the top of `main` exits 2 with `work-context guard failed (exit 1)`; run on a
+  copy, since a crashing live guard also blocks the `Edit` that would restore it.
+- `claude-settings-merge` run by hand before `~/.claude/hooks` was linked would register a hook pointing at nothing;
+  the init script links first, so only a hand run hits it.
+
+Next: Task 2b.
 
 ## Findings and decisions
 

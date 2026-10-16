@@ -40,7 +40,7 @@ jobs:
           # storage quota, while minutes are free on a public repo. Re-downloading each
           # run is the cheaper side of that trade.
           use-cache: 'false'
-          additional-packages: curl git sudo
+          additional-packages: curl git jq sudo
           wsl-conf: |
             [automount]
             options = "metadata"

@@ -12,6 +12,11 @@ if [[ ! -x "$SCRIPT" ]]; then
   echo "ERROR: $SCRIPT is missing or not executable" >&2
   exit 1
 fi
+# The cases build their hook input with jq; without it every input is empty and the guard rightly passes it.
+if [[ ! "$(type -P jq)" ]]; then
+  echo "ERROR: jq is required to build the hook input" >&2
+  exit 1
+fi
 
 e_header "$(basename "$0" .sh)"
 

@@ -53,7 +53,7 @@ in § *The staged workflow*. No external spec.
 | 1 · Work-context resolver and guard script | ✅ DONE | 281 assertions pass. glab finding and deviations in Task 1 |
 | 2 · Register the hooks, and run tests on `claude/` changes | ✅ DONE | merged into the real settings 2026-10-16; manual checks below |
 | 2b · Command shims for aliases, functions and scripts (spike first) | ✅ DONE | on `PATH` through `CLAUDE_ENV_FILE`, not `source/`; see Task 2b |
-| 3 · User-level settings hardening | ⏳ PENDING | |
+| 3 · User-level settings hardening | 🚧 PARTIAL | built; real-settings merge and manual check pending. Deviations in Task 3 |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
 | 5b · `reviewing-for-feedback` skill | ⏳ PENDING | |
@@ -105,7 +105,7 @@ Task 2's manual verification, 2026-10-16, Claude Code 2.1.292, in a repo with or
 - `claude-settings-merge` run by hand before `~/.claude/hooks` was linked registered a hook pointing at nothing; it
   now exits 1 with the settings untouched when `~/.claude/hooks/work-context.sh` isn't readable, tested.
 
-Next: Task 3.
+Next: Task 3's real-settings merge and manual check, with the user; then Task 6.
 
 ## Findings and decisions
 
@@ -1145,6 +1145,19 @@ In a session in this checkout, ask Claude to read a file under `link/.ssh/keys/`
 there, and a deny rule may not follow the link. If the read isn't denied, `hardening` also adds the
 `$DOTFILES`-expanded `Read(<checkout>/link/.ssh/keys/**)` — expanded at merge time into the machine-local settings,
 so no absolute path is tracked — with a test for it, and the status note records which.
+
+**Status, 2026-10-16:** built and tested (36 assertions in `test/test_claude_settings_merge.sh`, 15 of them new);
+the merge into the real `~/.claude/settings.json` and the manual check above are pending, with the user.
+Deviations and decisions:
+
+- `hardening` does **not** require `~/.claude/hooks/work-context.sh`: it registers no hook, so a missing guard can't
+  leave it pointing at nothing. Only `hooks` keeps that check, and a test pins that `hardening` runs without it.
+- The `how-it-works.md` bullet sits at lines 38-42, not 38-41: Task 2b added `shims/` to it. Its pointer to
+  `claude/docs/claude-local-md.md` is a code span, not a link, since `website/scripts/gather-docs.ts` doesn't gather
+  `claude/` and a link from `docs/` into it would break the site build.
+- The `claude-local-md.md` addition is a short bold-led paragraph rather than a bullet, matching that doc's shape.
+- `unique` sorts the whole deny list, as `bin/sort-claude-settings` would; existing entries keep, but not their order.
+- The `link/.ssh/keys` follow-up rule waits on the manual check and is not built.
 
 ## Task 4 · Rewrite the superpowers precedence doc
 

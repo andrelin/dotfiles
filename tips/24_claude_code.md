@@ -87,15 +87,15 @@ error-only form over the whole repo.
 
 ## Tip 24.6: `claude-settings-merge`
 
-Registers the dotfiles-owned hook entries in the machine-local `~/.claude/settings.json`, leaving every other key
-and every other hook alone.
+Registers the dotfiles-owned hook entries and deny rules in the machine-local `~/.claude/settings.json`, leaving
+every other key and every other hook alone.
 
 ```sh
-claude-settings-merge hooks ~/.claude/settings.json   # register the work-context guard
+claude-settings-merge hooks ~/.claude/settings.json       # register the work-context guard
+claude-settings-merge hardening ~/.claude/settings.json   # credential, rc-file and marker deny rules; load AGENTS.md
 ```
 
-It removes its own entries and appends fresh ones on every run, so it is safe to repeat and an updated entry
-reaches every machine. `init/52_macos_claude.sh` runs it, so `dotfiles` is usually all you need.
-Exits 1 with the file untouched when `jq` or `~/.claude/hooks/work-context.sh` is missing, or the file isn't valid JSON.
+Both are safe to repeat, `hardening` never overrides an `instructionFiles` you set, and `dotfiles` runs both.
+Exits 1 with the file untouched when `jq` (or, for `hooks`, `~/.claude/hooks/work-context.sh`) is missing, or the file isn't valid JSON.
 
 From `bin/claude-settings-merge`.

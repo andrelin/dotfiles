@@ -32,6 +32,12 @@ Two ways out, in order of preference:
   Note that an import in a *project*-level file resolving outside the working directory triggers a one-time
   approval dialog; declining disables it permanently for that project.
 
+**A local file can hide the repo's `AGENTS.md`.** By default any `CLAUDE.md` or `CLAUDE.local.md` at or above the
+working directory stops Claude Code loading `AGENTS.md`, so the local file silently drops a customer's.
+`claude-settings-merge hardening` sets the agents-md plugin's `instructionFiles` to `claude-md-and-agents-md` in the
+user settings, the only place it is read besides `--settings` and managed settings, and leaves a value already there.
+The cost: a repo with a separate `CLAUDE.md` *and* `AGENTS.md` loads both; one that imports the other loads it once.
+
 **`~/.claude/CLAUDE.md`** stays the home for anything that holds across every project rather than this one.
 
 The same test applies to the rest of any `CLAUDE.md`: a sentence that only makes sense from one person's seat

@@ -105,4 +105,47 @@ mv "$workdir/guard" "$HOME/.claude/hooks/work-context.sh"
 "$SCRIPT" bogus "$settings" 2>/dev/null && rc=0 || rc=$?
 assert "$rc" "2" "an unknown subcommand is a usage error"
 
+e_header "hardening"
+
+function harden() { "$SCRIPT" hardening "$settings"; }
+function deny_has() { jq -e --arg r "$1" '.permissions.deny | index($r) != null' "$settings" >/dev/null && echo yes || echo no; }
+instruction_files='.pluginConfigs["cc-plugin-agents-md@builtin"].options.instructionFiles'
+
+echo '{}' > "$settings"
+harden
+assert "$(jq '.permissions.deny | length' "$settings")" "15" "{} gains the fifteen deny rules"
+# The ~/ anchor is what makes the Edit rule reach a marker above the repo; a bare or **/ path would not.
+assert "$(deny_has 'Edit(~/**/.claude-files-issues)')" "yes" "the marker Edit rule is anchored at ~/"
+assert "$(deny_has 'Bash(touch *.claude-files-issues*)')" "yes" "the marker touch rule is added verbatim"
+assert "$(deny_has 'Read(~/.ssh/id_*)')" "yes" "a credential Read rule is added"
+assert "$(jq -r "$instruction_files" "$settings")" "claude-md-and-agents-md" "instructionFiles is set when absent"
+
+printf '{"permissions":{"allow":["Bash(ls *)"],"deny":["Bash(rm -rf *)","Edit(~/.zshrc)"]}}\n' > "$settings"
+harden
+harden
+assert "$(deny_has 'Bash(rm -rf *)')" "yes" "an existing deny entry is kept"
+assert "$(jq '.permissions.deny | length' "$settings")" "16" "two runs over an overlapping list duplicate nothing"
+assert "$(jq -c '.permissions.allow' "$settings")" '["Bash(ls *)"]' "the allow list is untouched"
+
+printf '{"pluginConfigs":{"cc-plugin-agents-md@builtin":{"options":{"instructionFiles":"claude-md-or-agents-md","x":1}}}}\n' > "$settings"
+harden
+assert "$(jq -r "$instruction_files" "$settings")" "claude-md-or-agents-md" "a deliberate instructionFiles choice is left alone"
+assert "$(jq -r '.pluginConfigs["cc-plugin-agents-md@builtin"].options.x' "$settings")" "1" "sibling plugin options are kept"
+
+rm -f "$settings"
+mv "$HOME/.claude/hooks/work-context.sh" "$workdir/guard"
+harden && rc=0 || rc=$?
+assert "$rc" "0" "hardening runs without the guard script, since it registers no hook"
+assert "$(jq '.permissions.deny | length' "$settings")" "15" "hardening creates a missing file"
+mv "$workdir/guard" "$HOME/.claude/hooks/work-context.sh"
+
+printf '{"permissions": \n' > "$settings"
+before="$(cksum < "$settings")"
+harden 2>/dev/null && rc=0 || rc=$?
+assert "$rc" "1" "hardening on invalid JSON exits 1"
+assert "$(cksum < "$settings")" "$before" "hardening on invalid JSON leaves the file byte-identical"
+
+"$SCRIPT" hardening 2>/dev/null && rc=0 || rc=$?
+assert "$rc" "2" "hardening without a file is a usage error"
+
 test_done

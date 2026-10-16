@@ -2,16 +2,17 @@
 #
 # Merge the dotfiles-owned entries into a machine-local Claude Code settings.json, leaving everything else as is.
 #
-# Usage: claude-settings-merge hooks <settings-file>
-#   hooks  Register ~/.claude/hooks/work-context.sh for PreToolUse and SessionStart.
+# Usage: claude-settings-merge hooks|hardening <settings-file>
+#   hooks      Register ~/.claude/hooks/work-context.sh for PreToolUse and SessionStart.
+#   hardening  Add the credential, rc-file and issue-marker deny rules, and load AGENTS.md beside CLAUDE.md.
 #
-# Exit 0 on success; 1 when jq or the guard script is missing or the file isn't valid JSON, with the file untouched;
-# 2 on bad usage.
+# Exit 0 on success; 1 when jq is missing, the guard script is missing (hooks only) or the file isn't valid JSON,
+# with the file untouched; 2 on bad usage.
 
 set -euo pipefail
 
 function usage() {
-  echo "Usage: $(basename "$0") hooks <settings-file>" >&2
+  echo "Usage: $(basename "$0") hooks|hardening <settings-file>" >&2
   exit 2
 }
 
@@ -34,12 +35,31 @@ hooks_filter='
   })
 '
 
-[[ $# -eq 2 && "$1" == hooks ]] || usage
+# unique also sorts, so the deny list stays in the order bin/sort-claude-settings would give it.
+# The marker rules are anchored at ~/ because the marker sits above the repo, beyond a bare or **/ path's reach.
+# instructionFiles is set only when unset, so a deliberate local choice survives.
+hardening_filter='
+  .permissions.deny = (((.permissions.deny // []) + [
+    "Read(~/.ssh/id_*)", "Read(~/.ssh/keys/**)", "Read(~/.aws/credentials)", "Read(~/.kube/config)",
+    "Read(~/.git-credentials)", "Read(~/.gitconfig_credentials)", "Read(~/.gnupg/**)", "Read(~/.config/gh/hosts.yml)",
+    "Edit(~/.zshrc)", "Edit(~/.bashrc)", "Edit(~/.bash_profile)", "Edit(~/.zprofile)", "Edit(~/.profile)",
+    "Edit(~/**/.claude-files-issues)", "Bash(touch *.claude-files-issues*)"
+  ]) | unique)
+  | .pluginConfigs["cc-plugin-agents-md@builtin"].options.instructionFiles //= "claude-md-and-agents-md"
+'
+
+[[ $# -eq 2 ]] || usage
 settings="$2"
+case "$1" in
+  hooks) filter="$hooks_filter" ;;
+  hardening) filter="$hardening_filter" ;;
+  *) usage ;;
+esac
 
 # A hook pointing at nothing either blocks every tool call (onFailure: block) or silently guards nothing.
+# hardening registers no hook, so it doesn't need the guard.
 guard="$HOME/.claude/hooks/work-context.sh"
-if [[ ! -r "$guard" ]]; then
+if [[ "$1" == hooks && ! -r "$guard" ]]; then
   echo "$guard not found; run dotfiles first. $settings left untouched." >&2
   exit 1
 fi
@@ -51,7 +71,7 @@ fi
 
 [[ -s "$settings" ]] || echo '{}' > "$settings"
 
-if jq "$hooks_filter" "$settings" > "$settings.tmp"; then
+if jq "$filter" "$settings" > "$settings.tmp"; then
   mv "$settings.tmp" "$settings"
 else
   rm -f "$settings.tmp"

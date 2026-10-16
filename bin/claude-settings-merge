@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#
+# Merge the dotfiles-owned entries into a machine-local Claude Code settings.json, leaving everything else as is.
+#
+# Usage: claude-settings-merge hooks <settings-file>
+#   hooks  Register ~/.claude/hooks/work-context.sh for PreToolUse and SessionStart.
+#
+# Exit 0 on success; 1 when jq is missing or the file isn't valid JSON, with the file untouched; 2 on bad usage.
+
+set -euo pipefail
+
+function usage() {
+  echo "Usage: $(basename "$0") hooks <settings-file>" >&2
+  exit 2
+}
+
+# Owned entries are found by their command, then removed and re-appended on every run, so a change to the
+# canonical entry reaches machines that already ran this. A foreign hook sharing a group with ours stays.
+# shellcheck disable=SC2016 # $vars are jq's, not the shell's
+hooks_filter='
+  def owned: (.command // "") | contains("work-context.sh");
+  def merge(event; entry):
+    .hooks[event] = ([(.hooks[event] // [])[]
+      | .hooks = [(.hooks // [])[] | select(owned | not)]
+      | select(.hooks | length > 0)] + [entry]);
+  merge("PreToolUse"; {
+    matcher: "Bash|Monitor|Write|Edit|MultiEdit|NotebookEdit",
+    hooks: [{type: "command", command: "/bin/bash ~/.claude/hooks/work-context.sh pre-tool-use",
+             timeout: 10, onFailure: "block"}]
+  })
+  | merge("SessionStart"; {
+    hooks: [{type: "command", command: "/bin/bash ~/.claude/hooks/work-context.sh session-start", timeout: 10}]
+  })
+'
+
+[[ $# -eq 2 && "$1" == hooks ]] || usage
+settings="$2"
+
+if ! type -P jq >/dev/null; then
+  echo "jq not found; $settings left untouched." >&2
+  exit 1
+fi
+
+[[ -s "$settings" ]] || echo '{}' > "$settings"
+
+if jq "$hooks_filter" "$settings" > "$settings.tmp"; then
+  mv "$settings.tmp" "$settings"
+else
+  rm -f "$settings.tmp"
+  echo "Couldn't update $settings; is it valid JSON?" >&2
+  exit 1
+fi

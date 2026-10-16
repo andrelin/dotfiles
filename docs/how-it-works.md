@@ -35,10 +35,11 @@ the one running, and step 6 remembers your last selection.
 - The `/backups` directory is created when needed: anything in `~/` that `/copy` or `/link` would overwrite goes there.
 - The `/bin` directory contains executable shell scripts (including [dotfiles][dotfiles]) and symlinks to them, and is added to `$PATH`.
 - The `/caches` directory contains cached files used by some scripts or functions.
-- The `/claude` directory holds shared Claude Code config — `CLAUDE.md`, `skills/`, `rules/`, `docs/` and the
-  statusline script — symlinked into `~/.claude/` by [init/52_macos_claude.sh](../init/52_macos_claude.sh),
+- The `/claude` directory holds shared Claude Code config — `CLAUDE.md`, `skills/`, `rules/`, `docs/`, `hooks/` and
+  the statusline script — symlinked into `~/.claude/` by [init/52_macos_claude.sh](../init/52_macos_claude.sh),
   leaving machine-local state (sessions, history) alone. `settings.json` stays machine-local too; the script only
-  points its `statusLine` at the linked script.
+  points its `statusLine` at the linked script and, through `bin/claude-settings-merge`, registers the two hook
+  entries for the work-context guard in `hooks/work-context.sh`.
 - The `/conf` directory stores app configuration (Sublime Text, IntelliJ), linked into place by dedicated init scripts.
 - The `/docs` directory holds the guide pages split out of the README — this one and the [installation guide](installation.md).
 - The `/hooks` directory contains git hooks that are symlinked into `.git/hooks/` by [init/12_git_hooks.sh](../init/12_git_hooks.sh).

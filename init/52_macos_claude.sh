@@ -32,7 +32,7 @@ for src in "$DOTFILES"/claude/*; do
 done
 
 # settings.json stays machine-local (plugins, permissions and hooks differ per machine),
-# so only the statusLine entry is set here, pointing at the linked script.
+# so only the statusLine entry and the guard's two hook entries are set here.
 settings="$HOME/.claude/settings.json"
 status_line='{"type":"command","command":"bash ~/.claude/statusline-command.sh"}'
 
@@ -49,6 +49,12 @@ else
     rm -f "$settings.tmp"
     e_error "Couldn't update $settings — is it valid JSON?"
   fi
+fi
+
+if "$DOTFILES/bin/claude-settings-merge" hooks "$settings"; then
+  e_success "Registering the work-context guard hooks."
+else
+  e_error "Couldn't register the work-context guard hooks in $settings."
 fi
 
 unset settings status_line

@@ -51,7 +51,7 @@ in § *The staged workflow*. No external spec.
 | --- | --- | --- |
 | 0 · Plan files are `plan-*.md` at the repo root | ✅ DONE | |
 | 1 · Work-context resolver and guard script | ✅ DONE | 281 assertions pass. glab finding and deviations in Task 1 |
-| 2 · Register the hooks, and run tests on `claude/` changes | ⏳ PENDING | |
+| 2 · Register the hooks, and run tests on `claude/` changes | 🚧 PARTIAL | code and docs done; manual verification pending |
 | 2b · Command shims for aliases, functions and scripts (spike first) | ⏳ PENDING | |
 | 3 · User-level settings hardening | ⏳ PENDING | |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
@@ -99,7 +99,7 @@ Answered by the user on 2026-10-16:
 - `plan-project-management.md`'s five decisions are answered there; `.claude-pm.json` replaces the marker in its
   Task 8, and auto-close is allowed at personal and company level behind `pm close-check`.
 
-Next: Task 2.
+Next: Task 2's manual verification, which needs the user in interactive sessions; then Task 2b.
 
 ## Findings and decisions
 
@@ -872,6 +872,20 @@ cleaned by `trap … EXIT`.
     so a personal fork's `gh pr create` to an outside parent is blocked, though origin says personal.
   - `docs/how-it-works.md:38-41`
   - `tips.md:53-54` — add `claude-settings-merge` to the 24 entry's list
+
+**As built — deviations from the spec below** (all other points are as specified):
+
+- **Line numbers drifted:** `work-contexts.md:19` and `:21` are now `:20` and `:22`; the others matched.
+- **A shared group:** a hook group holding a foreign hook beside an owned one loses only the owned hook, and a group
+  left empty is dropped, so `cc-status` hooks survive even when grouped with ours. Tested.
+- **Exit 2 on bad usage** (an unknown subcommand or wrong argument count), beside the specified 0 and 1. Tested,
+  as are a missing file, an empty file and a missing `jq`.
+- **`claude/CLAUDE.md` is pinned at 66 lines** in `.md-baseline`, so it may not grow: the two sentences and the
+  scratch carve-out went in, and the "There, prefer the local clone…" sentence came out (`work-contexts.md`
+  § *customer* still carries it), with the section's lines rewrapped up to the 150-character cap. Still 66.
+- **The scratch carve-out** is stated in `work-contexts.md` § *Why the resolution order is what it is*, beside the
+  rule it narrows, rather than repeated in § *Enforcement*; that kept the file at its 100-line aim.
+- Not run here: `claude-settings-merge` against the real `~/.claude/settings.json`, and the manual verification below.
 
 **Interfaces:**
 

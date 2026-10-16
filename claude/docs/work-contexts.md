@@ -1,7 +1,6 @@
 # Work contexts — the detail behind the four levels
 
-The resolution order, the permission lists and the one-approval rule are in `~/.claude/CLAUDE.md`
-§ *Work contexts*, because they have to be loaded before the first git command runs.
+The resolution order, the permission lists and the one-approval rule are in `~/.claude/CLAUDE.md` § *Work contexts*, loaded before any git command.
 This file carries the reasoning and the edge cases.
 
 ## Why the levels nest
@@ -17,9 +16,11 @@ A customer repo being private makes the reader smaller, not the care looser.
 - The company name marker catches employer work that lives on the personal account instead of the org.
   Both are company work, so both get the company rules.
 - Customer work is defined by *exclusion*, so the rule keeps working for a new customer with no edits.
-- **Both unknowns resolve upward.** An unreadable remote is customer; a repo whose visibility you can't determine is public.
+- **Both unknowns resolve upward.** An unreadable remote is customer — bar the guard's scratch carve-out: an origin-less
+  repo under a temp directory is personal, so tests' throwaway repos aren't blocked; unknown visibility is public.
   Guessing low is the only guess that can't be taken back.
-- **Never infer the level from the directory path.** Repo locations differ between machines — `~/src/foo` on one, `~/src/<group>/foo` on another.
+- **Never infer the level from the directory path.** Repo locations differ between machines — `~/src/foo` on one, `~/src/<group>/foo` on another
+  — bar two narrow, path-based exceptions the guard makes: the scratch carve-out and the `.claude-files-issues` marker.
 
 ## personal private — full autonomy
 
@@ -64,7 +65,8 @@ They exist because someone else's codebase is the wrong place to be surprising.
 An engagement's own `CLAUDE.md` sits closer to the work and overrides anything here, in either direction —
 read it at the root of that customer's tree before starting.
 
-- Claude prepares the working tree; the user composes history and does every remote write.
+- Claude prepares the working tree; the user composes history and does every remote write — bar `issue create` where
+  the guard allows it; issue reads through the CLI are fine.
 - The rule is about *effect on history*, not command names.
   A rebase or merge that mints new content during conflict resolution violates it just as much as `git commit`.
 - Prefer the local clone over the hosting platform's CLI (`gh`, `glab`, `az`, …) for reads and writes.
@@ -79,3 +81,20 @@ When the user waives a rule — "skip the PR this time", "push it" — that appl
 Approving the *content* of the next change ("yes, remove that line") is not approval to deliver it the same way.
 Ask again, every time, however recently they said yes and however similar the next one looks.
 This binds hardest where a repo's own `CLAUDE.md` sets the rule being waived — that file governs, and a one-off exception does not amend it.
+
+## Enforcement — what the guard blocks, and what it can't see
+
+`~/.claude/hooks/work-context.sh` is a `PreToolUse` hook on the shell and file-writing tools, registered by `bin/claude-settings-merge`.
+
+- **It blocks at customer level only:** the forbidden git list, and every `gh`, `glab` or Azure DevOps `az` call off its read allowlist.
+- **Strictest target wins,** so personal and company (§ *company*) block only a write that could reach customer: origin,
+  `upstream`, `github` and `gh-resolved` remotes, push URLs, named targets — a personal fork's `gh pr create` to an outside parent.
+- **Exit 2,** because it beats allow rules and every permission mode, bypass included; a crash blocks too.
+  The user's one-off waiver is `! <command>` at the prompt, which no hook sees.
+- **`issue create`** is allowed at customer level only to origin's own issues, below a `.claude-files-issues` marker
+  in an ancestor of the repo under `$HOME`; only the user creates the marker, and the guard blocks Claude's writes to it.
+- **Accepted gaps:** shell aliases, functions, scripts and `find -exec` that call git; a GraphQL mutation sent from a file;
+  `GH_REPO=x; export GH_REPO`; a script writing the marker; a git alias's arguments past its first word.
+  A separator inside quotes blocks falsely, failing safe, and an origin-less repo outside a temp directory is customer.
+  Hooks don't run before the workspace-trust prompt is accepted, in `claude -p --bare`, or in cloud routines.
+- **The prose still binds where no hook sees:** what goes *into* a commit, MCP tools, the platforms' web UIs.

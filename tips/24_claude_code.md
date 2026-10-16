@@ -56,6 +56,8 @@ The `_macos_` marker means it is not selected by default on Linux or WSL, where 
   branch and model on row 1, styled like the zsh prompt
   ([link/.omz-custom/andrelin.zsh-theme](../link/.omz-custom/andrelin.zsh-theme)); context and rate-limit bars
   on row 2.
+- `claude/hooks/` → `~/.claude/hooks/` — hook scripts; `work-context.sh` blocks Claude's commits, pushes and
+  platform writes on customer repos and names the work context at session start (Tip 24.6).
 
 Only these entries are linked; machine-local state (`projects/`, `sessions/`, `history.jsonl`) stays untouched,
 and anything already at one of those paths is moved into `backups/` first.
@@ -80,3 +82,18 @@ content, so comments, badge blocks and a doctoc ToC are free.
 `.md-baseline` pins a file at a length you have decided not to shorten — it fails only if it grows past that.
 A `PostToolUse` hook runs it on any markdown you edit, the pre-commit hook covers staged files, and CI runs the
 error-only form over the whole repo.
+
+## Tip 24.6: `claude-settings-merge`
+
+Registers the dotfiles-owned hook entries in the machine-local `~/.claude/settings.json`, leaving every other key
+and every other hook alone.
+
+```sh
+claude-settings-merge hooks ~/.claude/settings.json   # register the work-context guard
+```
+
+It removes its own entries and appends fresh ones on every run, so it is safe to repeat and an updated entry
+reaches every machine. `init/52_macos_claude.sh` runs it, so `dotfiles` is usually all you need.
+Exits 1 with the file untouched when `jq` is missing or the file isn't valid JSON.
+
+From `bin/claude-settings-merge`.

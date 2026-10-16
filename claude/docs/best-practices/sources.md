@@ -33,7 +33,7 @@ All under `https://code.claude.com/docs/en/`: `best-practices`, `memory`, `conte
 
 ## Studies [S]
 
-- METR, AI and experienced developer productivity (2025): <https://simonwillison.net/b/8833> (summary); 2026
+- METR, AI and experienced developer productivity (2025): <https://simonwillison.net/2025/Jul/12/ai-open-source-productivity/> (summary); 2026
   update: <https://blog.robbowley.net/2026/04/04/metrs-developer-productivity-research-2026-update/>
 - METR, SWE-bench-passing PRs maintainers would reject (Mar 2026): <https://metr.org/notes/2026-03-10-many-swe-bench-passing-prs-would-not-be-merged-into-main/>
 - Evaluating AGENTS.md files (ICLR 2026): <https://arxiv.org/abs/2602.11988>
@@ -41,11 +41,11 @@ All under `https://code.claude.com/docs/en/`: `best-practices`, `memory`, `conte
 - LLM reviews anchoring human reviewers (USI): <https://www.usi.ch/en/feeds/30481>
 - Self-preference in LLM judges (2026): <https://arxiv.org/abs/2606.20093>
 - LLM bug-report summaries, fabrication and omission: <https://www.alphaxiv.org/abs/2605.24137>
-- CodeRabbit, AI versus human PRs (vendor-run): <https://coderabbit.ai/blog/state-of-ai-vs-human-code-generation-report>
+- CodeRabbit, AI versus human PRs (vendor-run): <https://www.coderabbit.ai/blog/state-of-ai-vs-human-code-generation-report>
 - DORA, State of AI-assisted development 2025: <https://www.infoq.com/news/2025/09/dora-state-of-ai-in-dev-2025>
 - Vercel, AGENTS.md against skills (vendor, narrow): <https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals>
 - Aider, architect/editor model split (benchmark): <https://aider.chat/2025/01/24/r1-sonnet.html>
-- Snyk ToxicSkills: <https://snyk.io/blog/toxicskills-malicious-ai-agent-skills-clawhub>
+- Snyk ToxicSkills: <https://snyk.io/blog/toxicskills-malicious-ai-agent-skills-clawhub/>
 - Invariant Labs, GitHub MCP cross-repo injection: <https://invariantlabs.ai/blog/mcp-github-vulnerability>
 - IDEsaster, agent-tool CVEs: <https://thehackernews.com/2025/12/researchers-uncover-30-flaws-in-ai.html>
 - Rules File Backdoor: <https://thehackernews.com/2025/03/new-rules-file-backdoor-attack-lets.html>
@@ -67,7 +67,7 @@ All under `https://code.claude.com/docs/en/`: `best-practices`, `memory`, `conte
 - Kent Beck on TDD with agents: <https://newsletter.pragmaticengineer.com/p/tdd-ai-agents-and-coding-with-kent>
 - OpenAI, AGENTS.md to the Agentic AI Foundation: <https://openai.com/index/agentic-ai-foundation/>
 - GitHub Agentic Workflows, safe outputs: <https://github.github.com/gh-aw/reference/safe-outputs/>; staged mode:
-  <https://github.github.com/gh-aw/reference/staged-mode>
+  <https://github.github.com/gh-aw/reference/staged-mode/>
 - ccpm: <https://github.com/automazeio/ccpm>
 - postmark-mcp backdoor: <https://koi.ai/blog/postmark-mcp-npm-malicious-backdoor-email-theft>
 - Anthropic's duplicate bot, reported failures [U]: <https://github.com/anthropics/claude-code/issues/35923>

@@ -1,0 +1,5 @@
+# Sites that answer CI's link checker with 403 behind bot protection, though the
+# pages load in a browser. Check them by hand when the file citing them changes.
+^https://openai\.com/index/agentic-ai-foundation/$
+^https://www\.usi\.ch/en/feeds/30481$
+^https://git-secret\.io/$

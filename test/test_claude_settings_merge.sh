@@ -23,7 +23,7 @@ mkdir -p "$HOME/.claude/hooks"
 touch "$HOME/.claude/hooks/work-context.sh"
 
 # The guard's two hook entries, exactly as the init script must register them.
-pre_tool_use='{"matcher":"Bash|Monitor|Write|Edit|MultiEdit|NotebookEdit","hooks":[{"type":"command","command":"/bin/bash ~/.claude/hooks/work-context.sh pre-tool-use","timeout":10,"onFailure":"block"}]}'
+pre_tool_use='{"matcher":"Bash|Monitor|Read|Grep|Write|Edit|MultiEdit|NotebookEdit","hooks":[{"type":"command","command":"/bin/bash ~/.claude/hooks/work-context.sh pre-tool-use","timeout":10,"onFailure":"block"}]}'
 session_start='{"hooks":[{"type":"command","command":"/bin/bash ~/.claude/hooks/work-context.sh session-start","timeout":10}]}'
 cc_pre='{"matcher":"","hooks":[{"type":"command","command":"cc-status pre"}]}'
 cc_start='{"hooks":[{"type":"command","command":"cc-status start"}]}'
@@ -70,6 +70,12 @@ assert "$(jq -c '.hooks.PreToolUse' "$settings")" \
   "[{\"matcher\":\"Bash\",\"hooks\":[{\"type\":\"command\",\"command\":\"cc-status pre\"}]},$pre_tool_use]" \
   "a shared group loses only the guard's hook"
 
+# An install from before Read and Grep were guarded picks them up on its next run.
+old_matcher='{"matcher":"Bash|Monitor|Write|Edit|MultiEdit|NotebookEdit","hooks":[{"type":"command","command":"/bin/bash ~/.claude/hooks/work-context.sh pre-tool-use","timeout":10,"onFailure":"block"}]}'
+printf '{"hooks":{"PreToolUse":[%s]}}\n' "$old_matcher" > "$settings"
+merge
+assert "$(owned PreToolUse)" "[$pre_tool_use]" "an entry with the old matcher gains Read and Grep"
+
 others='{"model":"opus","autoMode":{"enabled":true},"enabledPlugins":{"superpowers@x":true},"hooks":{"Stop":[{"hooks":[{"type":"command","command":"say done"}]}]}}'
 printf '%s\n' "$others" > "$settings"
 merge
@@ -111,20 +117,37 @@ function harden() { "$SCRIPT" hardening "$settings"; }
 function deny_has() { jq -e --arg r "$1" '.permissions.deny | index($r) != null' "$settings" >/dev/null && echo yes || echo no; }
 instruction_files='.pluginConfigs["cc-plugin-agents-md@builtin"].options.instructionFiles'
 
+dots="$workdir/dots"
+mkdir -p "$dots"
+export DOTFILES="$dots"
+keys_rule="Read(/$dots/link/.ssh/keys/**)"
+
 echo '{}' > "$settings"
 harden
-assert "$(jq '.permissions.deny | length' "$settings")" "15" "{} gains the fifteen deny rules"
+assert "$(jq '.permissions.deny | length' "$settings")" "18" "{} gains the eighteen deny rules"
 # The ~/ anchor is what makes the Edit rule reach a marker above the repo; a bare or **/ path would not.
 assert "$(deny_has 'Edit(~/**/.claude-files-issues)')" "yes" "the marker Edit rule is anchored at ~/"
 assert "$(deny_has 'Bash(touch *.claude-files-issues*)')" "yes" "the marker touch rule is added verbatim"
 assert "$(deny_has 'Read(~/.ssh/id_*)')" "yes" "a credential Read rule is added"
 assert "$(jq -r "$instruction_files" "$settings")" "claude-md-and-agents-md" "instructionFiles is set when absent"
+assert "$(deny_has 'Read(~/.ssh/config_private)')" "yes" "the revealed git-secret ssh config is denied"
+assert "$(deny_has 'Read(~/.ssh/allowed_signers)')" "yes" "the revealed git-secret allowed_signers is denied"
+# // anchors a rule at the filesystem root; a single / would be relative to the settings file.
+assert "$(deny_has "$keys_rule")" "yes" "the checkout's link/.ssh/keys is denied by its DOTFILES path"
+
+echo '{}' > "$settings"
+out="$(env -u DOTFILES "$SCRIPT" hardening "$settings" 2>&1)" && rc=0 || rc=$?
+assert "$rc" "0" "without DOTFILES hardening still succeeds"
+assert "$(jq '.permissions.deny | length' "$settings")" "17" "without DOTFILES the other rules still merge"
+assert "$(jq '[.permissions.deny[] | select(contains("link/.ssh/keys"))] | length' "$settings")" "0" \
+  "without DOTFILES no checkout rule is written"
+assert "${out/*DOTFILES*/found}" "found" "without DOTFILES it says the checkout rule was skipped"
 
 printf '{"permissions":{"allow":["Bash(ls *)"],"deny":["Bash(rm -rf *)","Edit(~/.zshrc)"]}}\n' > "$settings"
 harden
 harden
 assert "$(deny_has 'Bash(rm -rf *)')" "yes" "an existing deny entry is kept"
-assert "$(jq '.permissions.deny | length' "$settings")" "16" "two runs over an overlapping list duplicate nothing"
+assert "$(jq '.permissions.deny | length' "$settings")" "19" "two runs over an overlapping list duplicate nothing"
 assert "$(jq -c '.permissions.allow' "$settings")" '["Bash(ls *)"]' "the allow list is untouched"
 
 printf '{"pluginConfigs":{"cc-plugin-agents-md@builtin":{"options":{"instructionFiles":"claude-md-or-agents-md","x":1}}}}\n' > "$settings"
@@ -136,7 +159,7 @@ rm -f "$settings"
 mv "$HOME/.claude/hooks/work-context.sh" "$workdir/guard"
 harden && rc=0 || rc=$?
 assert "$rc" "0" "hardening runs without the guard script, since it registers no hook"
-assert "$(jq '.permissions.deny | length' "$settings")" "15" "hardening creates a missing file"
+assert "$(jq '.permissions.deny | length' "$settings")" "18" "hardening creates a missing file"
 mv "$workdir/guard" "$HOME/.claude/hooks/work-context.sh"
 
 printf '{"permissions": \n' > "$settings"

@@ -95,6 +95,8 @@ This binds hardest where a repo's own `CLAUDE.md` sets the rule being waived —
   since the Bash tool's shell snapshot is taken before `CLAUDECODE` is set), check the real argv that aliases, functions and scripts pass.
 - **`issue create`** is allowed at customer level only to origin's own issues, below a `.claude-files-issues` marker
   in an ancestor of the repo under `$HOME`; only the user creates the marker, and the guard blocks Claude's writes to it.
+- **Revealed git-secret files, at every level:** a `Read`, `Grep` `path`, file write or shell word naming a path the
+  nearest `.gitsecret/paths/mapping.cfg` lists, and `git secret reveal|cat|changes`; not a `Grep` over a directory or an interpreter opening one.
 - **Accepted gaps:** a script calling `/usr/bin/git` by absolute path, past the shims; a GraphQL mutation sent from a file;
   `GH_REPO=x; export GH_REPO`; a script writing the marker; a git alias's arguments past its first word.
   A separator inside quotes blocks falsely, failing safe, and an origin-less repo outside a temp directory is customer.

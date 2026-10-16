@@ -587,4 +587,91 @@ assert "$(hook_rc "$(bash_json "$P" "git status")")" 2 "a session launched with 
   e_success "and names the restart" || e_error "and names the restart"
 unset "$waive"
 
+# --- git-secret ----------------------------------------------------------------------------------------------
+
+e_header "git-secret: revealed files, at every level"
+
+GS="$root/gsecret"; mkrepo "$GS" "$PERSONAL_URL"
+mkdir -p "$GS/.gitsecret/paths" "$GS/conf"
+printf '%s\n' 'conf/secret.env:0123abcd' 'top.key:4567ef01' > "$GS/.gitsecret/paths/mapping.cfg"
+: > "$GS/conf/secret.env"; : > "$GS/conf/other.env"; : > "$GS/top.key"
+ln -s "$GS/conf" "$root/gsconf"
+: > "$P/notes.txt"
+
+# grep_json <cwd> [path]: a Grep call, with no path key when none is given.
+function grep_json() {
+  jq -cn --arg cwd "$1" --arg p "${2-}" \
+    '{tool_name: "Grep", cwd: $cwd, tool_input: ({pattern: "x"} + (if $p == "" then {} else {path: $p} end))}'
+}
+
+assert "$(hook_rc "$(file_json Read file_path "$GS/conf/secret.env")")" 2 "Read of a listed file"
+assert "$(hook_rc "$(file_json Read file_path "$root/gsconf/secret.env")")" 2 "Read of a listed file via a symlinked parent"
+assert "$(hook_rc "$(file_json Read file_path "$GS/conf/other.env")")" 0 "Read of an unlisted file beside it"
+assert "$(hook_rc "$(file_json Read file_path "$P/notes.txt")")" 0 "Read in a repo with no .gitsecret"
+assert "$(hook_rc "$(grep_json "$GS" top.key)")" 2 "Grep whose relative path is a listed file"
+assert "$(hook_rc "$(grep_json "$GS" "$GS")")" 0 "Grep over the repo"
+assert "$(hook_rc "$(grep_json "$GS")")" 0 "Grep with no path"
+assert "$(hook_rc "$(file_json Edit file_path "$GS/top.key" new_string x)")" 2 "Edit of a listed file"
+assert "$(hook_rc "$(file_json Write file_path "$GS/top.key")")" 2 "Write of a listed file"
+assert "$(hook_rc "$(file_json NotebookEdit notebook_path "$GS/top.key" new_source x)")" 2 "NotebookEdit of a listed file"
+[[ "$(hook_err "$(file_json Read file_path "$GS/top.key")")" == *"$GS/top.key\` is a git-secret file"* ]] &&
+  e_success "the message names the file" || e_error "the message names the file"
+
+while IFS= read -r cmd; do
+  expect_bash 2 "$GS" "$cmd"
+done <<'EOF2'
+cat conf/secret.env
+head -1 ./top.key
+cd conf && cat secret.env
+grep x < top.key
+grep x <top.key
+cp top.key /tmp/x
+python3 -c 1 top.key
+diff --from-file=top.key x
+echo $(cat top.key)
+bash -c 'cat top.key'
+cat ~/gsecret/top.key
+EOF2
+assert "$(hook_rc "$(bash_json "$GS" "echo top.key")")" 2 \
+  "echo top.key: an accepted false block, since any word naming a revealed file counts"
+expect_bash 2 "$P" "cat $GS/top.key"
+expect_bash 2 "$P" "cd $GS && cat top.key"
+assert "$(hook_rc "$(bash_json "$GS" "tail -f top.key" Monitor)")" 2 "a Monitor command reading a listed file"
+expect_bash 2 "$GS" "cat 'conf/secret.env'"
+expect_bash 2 "$GS" "git status; cat \"top.key\""
+expect_bash 0 "$GS" "cat conf/other.env"
+expect_bash 0 "$GS" "ls conf"
+expect_bash 0 "$GS" "cd conf && cat other.env"
+
+# Every line holds a path, so every line is scanned; the guard once took 90 seconds over this, past the hook timeout.
+NL=$'\n'
+heredoc="git status; cat > out.txt <<'EOF'$NL"
+for (( i = 0; i < 2000; i++ )); do heredoc+="text naming src/dir/file$i.txt and more words$NL"; done
+heredoc+="EOF"
+start=$EPOCHREALTIME
+rc="$(hook_rc "$(bash_json "$GS" "$heredoc")")"
+elapsed=$(( (${EPOCHREALTIME/./} - ${start/./}) / 1000 ))
+assert "$rc" 0 "a 2000-line heredoc passes"
+(( elapsed < 5000 )) && e_success "in under 5 seconds (${elapsed} ms)" || e_error "in under 5 seconds (${elapsed} ms)"
+
+e_header "git-secret: commands that reveal"
+
+while IFS= read -r cmd; do
+  expect_bash 2 "$GS" "$cmd"
+done <<'EOF2'
+git secret reveal
+git secret cat top.key
+git secret changes
+git-secret reveal -f
+/usr/local/bin/git-secret reveal
+EOF2
+expect_bash 2 "$P" "git -C $GS secret reveal"
+expect_bash 0 "$GS" "git secret hide"
+expect_bash 0 "$GS" "git secret list"
+expect_bash 0 "$GS" "git-secret whoknows"
+expect_argv 2 "$GS" git secret reveal
+expect_argv 0 "$GS" git secret hide
+[[ "$(hook_err "$(bash_json "$GS" "git secret reveal")")" == *"! cd $GS && git secret reveal"* ]] &&
+  e_success "the reveal message offers the user's command" || e_error "the reveal message offers the user's command"
+
 test_done

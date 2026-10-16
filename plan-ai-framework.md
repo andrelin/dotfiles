@@ -53,7 +53,8 @@ in § *The staged workflow*. No external spec.
 | 1 · Work-context resolver and guard script | ✅ DONE | 281 assertions pass. glab finding and deviations in Task 1 |
 | 2 · Register the hooks, and run tests on `claude/` changes | ✅ DONE | merged into the real settings 2026-10-16; manual checks below |
 | 2b · Command shims for aliases, functions and scripts (spike first) | ✅ DONE | on `PATH` through `CLAUDE_ENV_FILE`, not `source/`; see Task 2b |
-| 3 · User-level settings hardening | 🚧 PARTIAL | built; real-settings merge and manual check pending. Deviations in Task 3 |
+| 3 · User-level settings hardening | 🚧 PARTIAL | merged into the real settings 2026-10-16; marker check with the user pending |
+| 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
 | 5b · `reviewing-for-feedback` skill | ⏳ PENDING | |
@@ -67,7 +68,7 @@ in § *The staged workflow*. No external spec.
 | 12 · Hidden-Unicode check on agent-loaded files | ⏳ PENDING | |
 | M · Machine-local cleanup (untracked, by hand) | ⏳ PENDING | |
 
-Order: 1 → 2 → 2b → 3, then 6 → 6b, then 5 → 5b → 8 → 9 → 10 (each builds on the one before; Task 5's real-run tests
+Order: 1 → 2 → 2b → 3 → 3b, then 6 → 6b, then 5 → 5b → 8 → 9 → 10 (each builds on the one before; Task 5's real-run tests
 wait for 10, and it stays 🚧 PARTIAL until then), then 4 (it names Task 9's skill), then 7 so its audit covers the
 new skills, and 11 last, being low priority. 12 is independent and small: any time after 0. M is by hand, any time after 3.
 
@@ -1157,7 +1158,87 @@ Deviations and decisions:
   `claude/` and a link from `docs/` into it would break the site build.
 - The `claude-local-md.md` addition is a short bold-led paragraph rather than a bullet, matching that doc's shape.
 - `unique` sorts the whole deny list, as `bin/sort-claude-settings` would; existing entries keep, but not their order.
-- The `link/.ssh/keys` follow-up rule waits on the manual check and is not built.
+- The `link/.ssh/keys` follow-up rule is built in Task 3b unconditionally: the auto-mode classifier refused the probe
+  read, and the rule is harmless if the `~/.ssh` one already follows the link.
+
+## Task 3b · Keep revealed git-secret files out of Claude's reach
+
+Added by the user on 2026-10-16: Claude must not read git-secret's files once revealed (decrypted), in any repo and
+at every level. Static deny rules can't follow each repo's file list, so the guard does it.
+
+**Files:**
+
+- Modified: `claude/hooks/work-context.sh`, `test/test_work_context.sh`; `bin/claude-settings-merge` (both
+  subcommands) and `test/test_claude_settings_merge.sh`; `claude/docs/work-contexts.md` § *Enforcement* (one line);
+  `docs/how-it-works.md` (the `claude/` bullet's deny-rule sentence); `tips/24_claude_code.md` if a tip names the
+  matcher or the rules.
+
+**The secret list.** For a path, walk up from its directory (pure bash, no git call) to the first ancestor holding
+`.gitsecret/paths/mapping.cfg`, stopping at `/`; each line's text before the first `:` is a path relative to that
+ancestor. A path is *secret* when its canonical form (`cd -P` on its parent, as Task 1's marker rule does) equals a
+listed one's. No mapping file → nothing is secret. Paths are compared as given in the file, no globbing.
+
+**What the guard blocks, at every level** (personal included), exit 2 with
+"`<path>` is a git-secret file, revealed in plaintext; only the user reads it":
+
+- `Read`, `Edit`, `Write`, `MultiEdit`, `NotebookEdit` whose `file_path`/`notebook_path` is secret; `Grep` whose
+  `path` is secret. A `Grep` over a directory is not checked: ripgrep skips the gitignored revealed files by default,
+  and `git secret add` puts them in `.gitignore`. Record that as an accepted gap, with `Grep` given an explicit
+  no-ignore option or a revealed file someone un-ignored.
+- A Bash or Monitor segment with any word that, resolved against the segment's effective directory (Task 1's `cd`
+  rules), is secret. Redirection targets count for this check (`cat < f`), though Task 1 drops them for `check-argv`.
+- `git secret reveal|cat|changes` (through `check-argv`, so the shims catch aliases and scripts too) and a segment
+  whose first word, by basename, is `git-secret` with those subcommands. Other `git secret` subcommands pass
+  (`hide`, `add`, `list`, `whoknows`, `tell`).
+
+The user keeps the `!` route: the shim honours the waiver prefix on a `!` reveal, and `!` never reaches PreToolUse.
+
+**Hook matcher:** `claude-settings-merge hooks` adds `Read` and `Grep` to the PreToolUse matcher
+(`Bash|Monitor|Read|Grep|Write|Edit|MultiEdit|NotebookEdit`), so an existing install picks it up on the next run.
+`pre-tool-use` exits 0 fast for a `Read`/`Grep` whose path has no `.gitsecret` ancestor.
+
+**Hardening additions:** `Read(~/.ssh/config_private)`, `Read(~/.ssh/allowed_signers)` (this repo's revealed files
+as installed in `~`), and `Read(<checkout>/link/.ssh/keys/**)` with `<checkout>` the `$DOTFILES`-expanded path,
+expanded at merge time into the machine-local settings so no absolute path is tracked. A missing `DOTFILES` skips
+that one rule with a message, never failing the merge.
+
+**Tests** — `test/test_work_context.sh`, with a fixture repo under a personal origin whose
+`.gitsecret/paths/mapping.cfg` lists `conf/secret.env` and `top.key`, both present:
+
+- `Read` of `conf/secret.env` (absolute, and via a symlinked parent) exits 2; `Read` of `conf/other.env` exits 0;
+  `Read` in a repo with no `.gitsecret` exits 0; `Grep` with `path` `top.key` exits 2, with `path` the repo exits 0;
+  `Edit` and `Write` of `top.key` exit 2.
+- Bash, cwd the fixture: `cat conf/secret.env`, `head -1 ./top.key`, `cd conf && cat secret.env`,
+  `grep x < top.key`, `cp top.key /tmp/x` and `python3 -c 1 top.key` exit 2; `cat conf/other.env` and `ls conf`
+  exit 0; `echo top.key` exits 2, an accepted false block that the test's name says so.
+- `git secret reveal`, `git secret cat top.key`, `git secret changes` and `git-secret reveal -f` exit 2 in the
+  personal fixture; `git secret hide` and `git secret list` exit 0; `check-argv <personal> git secret reveal` exits 2.
+- `test/test_claude_settings_merge.sh`: the matcher holds `Read|Grep`; an old matcher is replaced; the three
+  hardening rules are added, the checkout one from the test's `DOTFILES`; without `DOTFILES` the others still merge.
+
+**Status, 2026-10-16:** built and tested. `test/test_work_context.sh` 330 assertions, `test/test_claude_shims.sh` 19,
+`test/test_claude_settings_merge.sh` 44 (8 new), all green; ShellCheck clean. A `Read` in a repo with no
+`.gitsecret` takes about 17 ms through the hook (20 runs in 0.33 s, `~/.claude/shims` present).
+The merge into the real `~/.claude/settings.json` is left to the main session. Deviations and decisions:
+
+- **The checkout rule is `Read(//<DOTFILES>/link/.ssh/keys/**)`:** in a permission rule `//` anchors at the
+  filesystem root, while a single `/` is relative to the settings file. `DOTFILES` is used as given, not canonicalised.
+- **The segment split is now line by line.** Bash 3.2's `${s//x/y}` is quadratic in its matches: a 117 KB heredoc
+  took 95 s in the guard as of Task 2b whenever it named git, past the 10 s timeout, so `onFailure: block` would
+  have blocked it. It now takes about 1 s, and a 2000-line heredoc test pins it under 5 s.
+- **A segment nothing else needs parsed** — relevant only because it holds a `/`, a `~` or a name the current
+  directory's mapping lists — gets a quick scan by bash's own word split instead of `split_words`, which took 2 ms
+  a line. Its cost: a quoted path holding whitespace is split apart there and missed.
+- **A shell word counts only when it exists and isn't a directory** (a revealed file is present), and a
+  `--opt=value` word is checked by its value too; a tool's path needn't exist. A bare word is looked up only when
+  the directory's mapping lists its name, so most words cost no `cd -P`.
+- `git-secret` is a fast-path word, since the tool regex doesn't match it. The reveal message offers the waiver
+  prefix only for `git`, the one the shims wrap.
+
+Accepted gaps, beyond the `Grep` ones above: without `jq` nothing is checked for secrets; a word built at run time
+(`cat $F`, a glob, a name inside a script); a symlink *to* a listed file, since only the parent is canonicalised;
+a relative word after the directory turns unknown (`popd`, `cd "$X"`); and false blocks on any word naming a
+listed file, `echo top.key` or a heredoc line included.
 
 ## Task 4 · Rewrite the superpowers precedence doc
 

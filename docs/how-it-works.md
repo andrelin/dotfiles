@@ -40,12 +40,16 @@ the one running, and step 6 remembers your last selection.
   leaving machine-local state (sessions, history) alone. `settings.json` stays machine-local too; the script only
   points its `statusLine` at the linked script and, through `bin/claude-settings-merge`, registers the two hook
   entries for the work-context guard in `hooks/work-context.sh`. Its `hardening` call adds deny rules: `Read` of
-  credential files (`~/.ssh` keys, `~/.aws/credentials`, `~/.kube/config`, git, GnuPG and `gh` credentials), `Edit`
+  credential files (`~/.ssh` keys, `~/.aws/credentials`, `~/.kube/config`, git, GnuPG and `gh` credentials, this repo's
+  revealed `~/.ssh` files, and the checkout's `link/.ssh/keys` by its `$DOTFILES` path), `Edit`
   of the shell rc files, and creating the `.claude-files-issues` marker, so issue filing stays the user's opt-in.
   The `Read` rules also cover Bash's `cat`, `head`, `tail`, `sed` and `<`, but not `grep -r` over a parent directory
   or an interpreter (Python, Node) opening the file itself. The marker rules cover the Write and Edit tools, shell
   redirects and `touch`; `cp` or `mv` from a script and interpreters get past them, and only the guard hook backs
   that up. It also loads a repo's `AGENTS.md` beside any `CLAUDE.md` (why: `claude/docs/claude-local-md.md`).
+  Static rules can't follow each repo's git-secret list, so the guard hook keeps revealed git-secret files from Claude
+  in any repo: a `Read`, `Grep`, file write or shell word naming a path `.gitsecret/paths/mapping.cfg` lists, and
+  `git secret reveal`, `cat` and `changes`. A `Grep` over a whole directory and interpreters opening a file get past it.
 - The `/conf` directory stores app configuration (Sublime Text, IntelliJ), linked into place by dedicated init scripts.
 - The `/docs` directory holds the guide pages split out of the README — this one and the [installation guide](installation.md).
 - The `/hooks` directory contains git hooks that are symlinked into `.git/hooks/` by [init/12_git_hooks.sh](../init/12_git_hooks.sh).

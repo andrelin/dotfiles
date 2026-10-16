@@ -6,6 +6,9 @@
 # Homebrew bash. So no mapfile, associative arrays, ${var,,} or |&. `level` and `check-argv` use only builtins and
 # git, so Task 2b's shim can call them under a PATH holding nothing else.
 #
+# It also keeps revealed git-secret files out of Claude's reach at every level: their paths, and the commands that
+# reveal them.
+#
 # Usage: work-context.sh level [dir] | check-argv <dir> <tool> [args...] | pre-tool-use | can-file-issue [dir]
 #        | session-start
 
@@ -13,6 +16,7 @@
 LC_ALL=C
 
 MARKER=.claude-files-issues
+SECRET_MAPPING=.gitsecret/paths/mapping.cfg
 WAIVE_VAR=WORK_CONTEXT_WAIVE
 TRACKED="GH_REPO GH_HOST GITLAB_HOST GL_HOST GITLAB_URI GITLAB_REPO GIT_DIR GIT_WORK_TREE"
 GIT=${WORK_CONTEXT_GIT:-git}
@@ -75,6 +79,70 @@ bump() {
   local r
   case $1 in personal) r=1 ;; company) r=2 ;; *) r=3 ;; esac
   if (( r > W_RANK )); then W_RANK=$r; W_LEVEL=$1; W_REMOTE=$2; W_URL=$3; fi
+}
+
+# --- git-secret ----------------------------------------------------------------------------------------------
+
+# find_mapping <canonical-dir> -> MAP_ROOT, the nearest ancestor holding a git-secret mapping ("" for /).
+find_mapping() {
+  local d=$1
+  while :; do
+    if [[ -f ${d%/}/$SECRET_MAPPING ]]; then MAP_ROOT=${d%/}; return 0; fi
+    [[ -n $d && $d != / ]] || return 1
+    d=${d%/*}
+    [[ -n $d ]] || d=/
+  done
+}
+
+# secret_names <dir> -> SECRET_NAMES, the basenames the mapping above dir lists, one per line; cached per dir.
+secret_names() {
+  local cdir line rel
+  [[ $1 == "${SN_DIR-}" && -n $1 ]] && return 0
+  SN_DIR=$1 SECRET_NAMES=""
+  [[ -n $1 ]] || return 0
+  cdir=$(canon "$1") || return 0
+  find_mapping "$cdir" || return 0
+  while IFS= read -r line || [[ -n $line ]]; do
+    rel=${line%%:*}
+    [[ -n $rel ]] && SECRET_NAMES+=${rel##*/}$NL
+  done < "$MAP_ROOT/$SECRET_MAPPING"
+}
+
+# is_secret <absolute-path>: the path, its parent canonicalised, is one the nearest mapping lists.
+is_secret() {
+  local p=$1 base cp line rel lp
+  base=${p##*/}
+  [[ -n $base && $base != . && $base != .. ]] || return 1
+  cp=$(canon "${p%/*}/") || return 1
+  cp=${cp%/}
+  find_mapping "${cp:-/}" || return 1
+  while IFS= read -r line || [[ -n $line ]]; do
+    rel=${line%%:*}
+    rel=${rel#./}
+    [[ ${rel##*/} == "$base" ]] || continue
+    [[ $MAP_ROOT/$rel == "$cp/$base" ]] && return 0
+    if [[ $rel == */* ]]; then
+      lp=$(canon "$MAP_ROOT/${rel%/*}") && [[ ${lp%/}/$base == "$cp/$base" ]] && return 0
+    fi
+  done < "$MAP_ROOT/$SECRET_MAPPING"
+  return 1
+}
+
+deny_secret() {
+  echo "Blocked by the work-context guard: \`$1\` is a git-secret file, revealed in plaintext; only the user reads it." >&2
+  exit 2
+}
+
+# check_secret_path <path> <base-dir>: a tool's path, relative ones resolved against base-dir.
+check_secret_path() {
+  local p=$1
+  case $p in
+    /*) ;;
+    "$TILDE"/*) p=$HOME/${p#"$TILDE"/} ;;
+    *) [[ -n $2 ]] || return 0; p=$2/$p ;;
+  esac
+  is_secret "$p" && deny_secret "$1"
+  return 0
 }
 
 # --- level resolution ----------------------------------------------------------------------------------------
@@ -355,6 +423,11 @@ check_git() {
       [[ $first == push ]] && forbidden=1
       ;;
   esac
+  if [[ $sub == secret ]]; then
+    reveals_secret "${rest[@]}" || return 0
+    deny_reveal "$dir" git "${shown[@]}" "$orig_sub" "${rest[@]}"
+    return 2
+  fi
   (( forced )) && forbidden=1
   (( forbidden )) || return 0
 
@@ -700,6 +773,28 @@ deny() {
     "\`! cd $qdir && $waive$seg\`. Rules: ~/.claude/CLAUDE.md § Work contexts." >&2
 }
 
+# reveals_secret <args after git secret>: a subcommand that decrypts, to disk or to stdout.
+reveals_secret() {
+  local a
+  for a in "$@"; do
+    [[ $a == -* ]] && continue
+    case $a in reveal|cat|changes) return 0 ;; esac
+    return 1
+  done
+  return 1
+}
+
+# deny_reveal <dir> <tool> <args...>: at every level, since a revealed file is plaintext wherever it lands.
+deny_reveal() {
+  local dir=$1 seg waive="" qdir
+  shift
+  seg=$(quote_words "$@")
+  if [[ $dir == "$UNKNOWN_DIR" ]]; then qdir=$dir; else qdir=$(quote_words "$dir"); fi
+  [[ $2 == git && -d "$HOME/.claude/shims" ]] && waive="$WAIVE_VAR=1 "
+  printf '%s\n' "Blocked by the work-context guard: \`$seg\` decrypts git-secret files into plaintext; only the user reveals them." \
+    "Give the user the exact command to run: \`! cd $qdir && $waive$seg\`." >&2
+}
+
 deny_marker() {
   echo "Only the user creates $MARKER: ask them to run \`! touch $1\`" >&2
   exit 2
@@ -725,6 +820,7 @@ def sets_waiver: test("WORK_CONTEXT_WAIVE[[:space:]]*=") or test("export[^\\n]*W
 (.tool_input.command | s), "\u0000",
 (.tool_input.file_path | s), "\u0000",
 (.tool_input.notebook_path | s), "\u0000",
+(.tool_input.path | s), "\u0000",
 (.cwd | s), "\u0000",
 ([.tool_input.content, .tool_input.new_string, .tool_input.new_source,
   (.tool_input.edits | if type == "array" then .[] | objects | .new_string else empty end)]
@@ -737,6 +833,7 @@ read_input() {
     IFS= read -r -d '' CMD
     IFS= read -r -d '' FPATH
     IFS= read -r -d '' NBPATH
+    IFS= read -r -d '' GPATH
     IFS= read -r -d '' CWD
     IFS= read -r -d '' SETS_WAIVER
     IFS= read -r -d '' sentinel
@@ -1048,6 +1145,54 @@ check_marker_segment() {
   esac
 }
 
+# secret_word <word>: a word of the segment, resolved by the cd rules, that names a revealed git-secret file.
+secret_word() {
+  local w=$1
+  [[ $w == -* ]] && return 0
+  # A bare name resolves into SEG_DIR, whose mapping's names SECRET_NAMES holds, so only those need a lookup.
+  if [[ $w != */* ]]; then [[ $NL$SECRET_NAMES == *"$NL$w$NL"* ]] || return 0; fi
+  resolve_cd "$SEG_DIR" "$w"
+  [[ -n $NEWDIR && -e $NEWDIR && ! -d $NEWDIR ]] || return 0
+  is_secret "$NEWDIR" && deny_secret "$w"
+  return 0
+}
+
+# Every word counts, redirection targets and the value of a --opt=value word included.
+check_secret_segment() {
+  local i w
+  secret_names "$SEG_DIR"
+  for (( i = 0; i < NW; i++ )); do
+    w=${WORDS[i]-}
+    redirect_op "$w" && w=$RTGT
+    [[ -n $w ]] || continue
+    secret_word "$w"
+    [[ $w == *=* ]] && secret_word "${w#*=}"
+  done
+  return 0
+}
+
+# quick_secret_scan <segment>: the secret check alone, for a segment nothing else needs parsed. Bash's own word
+# split runs in C, where split_words' loop would take seconds over a long heredoc; the cost is that a quoted path
+# holding whitespace is split apart and missed.
+quick_secret_scan() {
+  local w IFS=$' \t\r'
+  SEG_DIR=$DIR
+  secret_names "$DIR"
+  set -f
+  for w in $1; do
+    w=${w//\'/}
+    w=${w//\"/}
+    redirect_op "$w" && w=$RTGT
+    w=${w#\(}
+    w=${w%\)}
+    [[ -n $w ]] || continue
+    secret_word "$w"
+    [[ $w == *=* ]] && secret_word "${w#*=}"
+  done
+  set +f
+  return 0
+}
+
 # argv without redirections, from the first real word.
 build_argv() {
   local i w
@@ -1180,43 +1325,57 @@ find_inner() {
   done
 }
 
+# secret_relevant <text>: could the text name a revealed git-secret file, from the current directory or by a path.
+secret_relevant() {
+  local n r=1
+  [[ $1 == */* || $1 == *"$TILDE"* ]] && return 0
+  secret_names "$DIR"
+  [[ -n $SECRET_NAMES ]] || return 1
+  local IFS=$NL
+  set -f
+  for n in $SECRET_NAMES; do
+    [[ $1 == *"$n"* ]] && { r=0; break; }
+  done
+  set +f
+  return $r
+}
+
 segment_relevant() {
   [[ $1 =~ $TOOL_RE ]] && return 0
   case $1 in
     *cd*|*pushd*|*popd*|*export*|*unset*|*declare*|*typeset*|*readonly*|*'('*|*')'*) return 0 ;;
-    *"$MARKER"*|*"$WAIVE_VAR"*) return 0 ;;
+    *"$MARKER"*|*"$WAIVE_VAR"*|*git-secret*) return 0 ;;
   esac
   return 1
 }
 
 # process_command <text> <nested>: splits, normalises and guards every segment. Exits 2 on the first block.
 process_command() {
-  local text=$1 nested=$2 s pos len seglen seg k opens closes net p
+  local text=$1 nested=$2 s seglen seg k opens closes net p
   local -a seg_off=() seg_len=() dstack=() ib_text=() ib_off=() ib_done=()
-  # Separators become \001 in a copy of the same length, so offsets map back to the text; the & of a
-  # redirection (>&, &>, <&) is protected first.
-  s=$text
-  s=${s//'>&'/">$X1$X1"}
-  s=${s//'&>'/"$X1$X1>"}
-  s=${s//'<&'/"<$X1$X1"}
-  s=$text
-  local prot=${text//'>&'/'>_'}
-  prot=${prot//'&>'/'_>'}
-  prot=${prot//'<&'/'<_'}
-  s=${prot//[;|&]/$X1}
-  s=${s//"$NL"/$X1}
-  len=${#s}
-  pos=0
-  while (( pos <= len )); do
-    seg=${s:pos}
-    seg=${seg%%"$X1"*}
-    seglen=${#seg}
-    if [[ -n ${seg//[[:space:]]/} ]]; then
-      seg_off+=("$pos")
-      seg_len+=("$seglen")
-    fi
-    pos=$((pos + seglen + 1))
-  done
+  # Line by line, because bash 3.2's ${s//x/y} is quadratic in the number of matches: a 2000-line heredoc took
+  # 90 seconds as one substitution. Within a line, separators become \001 in a copy of the same length, so offsets
+  # map back to the text; the & of a redirection (>&, &>, <&) is protected first.
+  local line lpos=0 lp llen
+  while IFS= read -r line || [[ -n $line ]]; do
+    s=${line//'>&'/'>_'}
+    s=${s//'&>'/'_>'}
+    s=${s//'<&'/'<_'}
+    s=${s//[;|&]/$X1}
+    llen=${#s}
+    lp=0
+    while (( lp <= llen )); do
+      seg=${s:lp}
+      seg=${seg%%"$X1"*}
+      seglen=${#seg}
+      if [[ -n ${seg//[[:space:]]/} ]]; then
+        seg_off+=("$((lpos + lp))")
+        seg_len+=("$seglen")
+      fi
+      lp=$((lp + seglen + 1))
+    done
+    lpos=$((lpos + ${#line} + 1))
+  done <<< "$text"
 
   if (( ! nested )); then
     find_inner "$text"
@@ -1226,7 +1385,9 @@ process_command() {
 
   for (( k = 0; k < ${#seg_off[@]}; k++ )); do
     seg=${text:seg_off[k]:seg_len[k]}
-    if segment_relevant "$seg"; then
+    if ! segment_relevant "$seg"; then
+      secret_relevant "$seg" && quick_secret_scan "$seg"
+    else
       opens=${seg//[!(]/}
       closes=${seg//[!)]/}
       net=$(( ${#opens} - ${#closes} ))
@@ -1283,6 +1444,7 @@ process_segment() {
   fi
 
   check_marker_segment
+  check_secret_segment
   build_argv
   (( ${#ARGV[@]} )) || return 0
 
@@ -1317,6 +1479,12 @@ process_segment() {
         DIR=$saved
       fi
       ;;
+    git-secret)
+      if reveals_secret "${ARGV[@]:1}"; then
+        deny_reveal "${SEG_DIR:-$UNKNOWN_DIR}" "${ARGV[@]}"
+        exit 2
+      fi
+      ;;
     git|gh|glab|az)
       FORCE_WRITE=0
       if [[ $FIRST == gh || $FIRST == glab ]] && [[ ${ARGV[1]-} == api && ${ARGV[2]-} == graphql ]]; then
@@ -1347,15 +1515,21 @@ pre_tool_use() {
       done
       ;;
   esac
+  case $TOOL in
+    Read|Write|Edit|MultiEdit|NotebookEdit)
+      for f in "$FPATH" "$NBPATH"; do
+        [[ -n $f ]] && check_secret_path "$f" "$CWD"
+      done
+      ;;
+    Grep) [[ -n $GPATH ]] && check_secret_path "$GPATH" "${CWD:-$PWD}" ;;
+  esac
   if [[ $SETS_WAIVER == 1 ]] && ! exempt_path "${FPATH:-$NBPATH}"; then
     deny_waiver ""
   fi
 
   [[ -n $CMD ]] || exit 0
-  if ! [[ $CMD =~ $TOOL_RE ]] && [[ $CMD != *"$MARKER"* && $CMD != *"$WAIVE_VAR"* ]]; then
-    exit 0
-  fi
   DIR=${CWD:-$PWD}
+  segment_relevant "$CMD" || secret_relevant "$CMD" || exit 0
   init_env
   process_command "${CMD//"$BSNL"/}" 0
   exit 0

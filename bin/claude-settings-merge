@@ -5,6 +5,7 @@
 # Usage: claude-settings-merge hooks|hardening <settings-file>
 #   hooks      Register ~/.claude/hooks/work-context.sh for PreToolUse and SessionStart.
 #   hardening  Add the credential, rc-file and issue-marker deny rules, and load AGENTS.md beside CLAUDE.md.
+#              The checkout's link/.ssh/keys rule is expanded from $DOTFILES, and skipped when that is unset.
 #
 # Exit 0 on success; 1 when jq is missing, the guard script is missing (hooks only) or the file isn't valid JSON,
 # with the file untouched; 2 on bad usage.
@@ -26,7 +27,7 @@ hooks_filter='
       | .hooks = [(.hooks // [])[] | select(owned | not)]
       | select(.hooks | length > 0)] + [entry]);
   merge("PreToolUse"; {
-    matcher: "Bash|Monitor|Write|Edit|MultiEdit|NotebookEdit",
+    matcher: "Bash|Monitor|Read|Grep|Write|Edit|MultiEdit|NotebookEdit",
     hooks: [{type: "command", command: "/bin/bash ~/.claude/hooks/work-context.sh pre-tool-use",
              timeout: 10, onFailure: "block"}]
   })
@@ -38,13 +39,17 @@ hooks_filter='
 # unique also sorts, so the deny list stays in the order bin/sort-claude-settings would give it.
 # The marker rules are anchored at ~/ because the marker sits above the repo, beyond a bare or **/ path's reach.
 # instructionFiles is set only when unset, so a deliberate local choice survives.
+# A deny rule may not follow the ~/.ssh link into the checkout, so its keys get their own rule, by absolute path:
+# // anchors it at the filesystem root, where a single / would be relative to the settings file.
+# shellcheck disable=SC2016 # $extra is jq's, not the shell's
 hardening_filter='
   .permissions.deny = (((.permissions.deny // []) + [
     "Read(~/.ssh/id_*)", "Read(~/.ssh/keys/**)", "Read(~/.aws/credentials)", "Read(~/.kube/config)",
     "Read(~/.git-credentials)", "Read(~/.gitconfig_credentials)", "Read(~/.gnupg/**)", "Read(~/.config/gh/hosts.yml)",
+    "Read(~/.ssh/config_private)", "Read(~/.ssh/allowed_signers)",
     "Edit(~/.zshrc)", "Edit(~/.bashrc)", "Edit(~/.bash_profile)", "Edit(~/.zprofile)", "Edit(~/.profile)",
     "Edit(~/**/.claude-files-issues)", "Bash(touch *.claude-files-issues*)"
-  ]) | unique)
+  ] + $extra) | unique)
   | .pluginConfigs["cc-plugin-agents-md@builtin"].options.instructionFiles //= "claude-md-and-agents-md"
 '
 
@@ -69,9 +74,18 @@ if ! type -P jq >/dev/null; then
   exit 1
 fi
 
+extra='[]'
+if [[ "$1" == hardening ]]; then
+  if [[ -n "${DOTFILES:-}" ]]; then
+    extra="$(jq -cn --arg r "Read(/${DOTFILES%/}/link/.ssh/keys/**)" '[$r]')"
+  else
+    echo "DOTFILES is not set; skipping the deny rule for the checkout's link/.ssh/keys." >&2
+  fi
+fi
+
 [[ -s "$settings" ]] || echo '{}' > "$settings"
 
-if jq "$filter" "$settings" > "$settings.tmp"; then
+if jq --argjson extra "$extra" "$filter" "$settings" > "$settings.tmp"; then
   mv "$settings.tmp" "$settings"
 else
   rm -f "$settings.tmp"

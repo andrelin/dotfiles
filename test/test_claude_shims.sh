@@ -162,17 +162,4 @@ out="$(GH_STUB_DIR="$C" through "$P" "$TEST_PATH" gh pr create)"; rc=$?
 assert "$rc" 2 "unwaived gh: its inner git push in a customer repo exits 2"
 assert "$out" "" "unwaived gh: its inner git push never reaches git"
 
-# --- source/89_claude_shims.sh -------------------------------------------------------------------------------
-
-e_header "source/89_claude_shims.sh"
-
-mkdir -p "$root/.claude/shims"
-function first_entry() {
-  env -i HOME="$root" PATH=/usr/bin:/bin "$@" /bin/bash -c \
-    'source "$1"; source "$1"; printf "%s\n" "$PATH"' _ "$CHECKOUT/source/89_claude_shims.sh"
-}
-assert "$(first_entry CLAUDECODE=1)" "$root/.claude/shims:/usr/bin:/bin" \
-  "in Claude Code: prepends the shims once"
-assert "$(first_entry)" "/usr/bin:/bin" "outside Claude Code: PATH untouched"
-
 test_done

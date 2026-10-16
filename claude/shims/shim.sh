@@ -1,7 +1,8 @@
 #!/bin/bash
-# Command shim for git, gh, glab and az, linked under each name in ~/.claude/shims, which source/89_claude_shims.sh
-# puts first on PATH inside Claude Code only. The PreToolUse guard sees only the literal command, so a shell alias,
-# function or script that pushes slips past it; the shim sees the real argv and asks the same guard, `check-argv`.
+# Command shim for git, gh, glab and az, linked under each name in ~/.claude/shims, which the guard's session-start
+# puts first on PATH inside Claude Code only, through CLAUDE_ENV_FILE. The PreToolUse guard sees only the literal
+# command, so a shell alias, function or script that pushes slips past it; the shim sees the real argv and asks the
+# same guard, `check-argv`.
 #
 # Must stay bash 3.2-compatible: Claude Code's Bash tool may run it under macOS's /bin/bash. Builtins only, so it
 # works under a PATH that holds nothing but itself and the real tool.

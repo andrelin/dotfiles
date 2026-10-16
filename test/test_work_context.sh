@@ -473,6 +473,21 @@ assert "$(mentions "$(session_context "$MGL")")" "blocked issue-create" "custome
 [[ "$(session_context "$root/not-a-repo")" == *"no git repository"* ]] && e_success "non-repo says so" ||
   e_error "non-repo says so"
 
+# The Bash tool's PATH comes from a shell snapshot, so the shims reach it only through CLAUDE_ENV_FILE.
+env_file="$root/claude-env"
+: > "$env_file"
+CLAUDE_ENV_FILE="$env_file" session_context "$P" >/dev/null
+assert "$(cat "$env_file")" "" "without a shims dir the env file is untouched"
+mkdir -p "$HOME/.claude/shims"
+CLAUDE_ENV_FILE="$env_file" session_context "$P" >/dev/null
+CLAUDE_ENV_FILE="$env_file" session_context "$C" >/dev/null
+assert "$(PATH=/usr/bin:/bin; source "$env_file"; echo "$PATH")" "$HOME/.claude/shims:/usr/bin:/bin" \
+  "the env file puts the shims first on PATH, once however often it runs"
+assert "$(PATH=/usr/bin:/bin; source "$env_file"; source "$env_file"; echo "$PATH")" \
+  "$HOME/.claude/shims:/usr/bin:/bin" "sourcing the env file twice adds the shims once"
+assert "$(session_context "$P" | wc -l | tr -d ' ')" "1" "without CLAUDE_ENV_FILE nothing else changes"
+rmdir "$HOME/.claude/shims"
+
 # --- deny message --------------------------------------------------------------------------------------------
 
 e_header "deny message"

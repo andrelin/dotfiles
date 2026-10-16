@@ -52,7 +52,7 @@ in § *The staged workflow*. No external spec.
 | 0 · Plan files are `plan-*.md` at the repo root | ✅ DONE | |
 | 1 · Work-context resolver and guard script | ✅ DONE | 281 assertions pass. glab finding and deviations in Task 1 |
 | 2 · Register the hooks, and run tests on `claude/` changes | ✅ DONE | merged into the real settings 2026-10-16; manual checks below |
-| 2b · Command shims for aliases, functions and scripts (spike first) | 🚧 PARTIAL | built; user `!` checks pending. 21 assertions pass; spike and deviations in Task 2b |
+| 2b · Command shims for aliases, functions and scripts (spike first) | ✅ DONE | on `PATH` through `CLAUDE_ENV_FILE`, not `source/`; see Task 2b |
 | 3 · User-level settings hardening | ⏳ PENDING | |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
@@ -105,7 +105,7 @@ Task 2's manual verification, 2026-10-16, Claude Code 2.1.292, in a repo with or
 - `claude-settings-merge` run by hand before `~/.claude/hooks` was linked registered a hook pointing at nothing; it
   now exits 1 with the settings untouched when `~/.claude/hooks/work-context.sh` isn't readable, tested.
 
-Next: Task 2b's link and `!` checks (it is built and committed), then Task 3.
+Next: Task 3.
 
 ## Findings and decisions
 
@@ -312,7 +312,6 @@ Research into Anthropic's docs and engineering posts, practitioner writing and s
 | `.claude/rules/scripts.md` | 1 |
 | `.github/workflows/shellcheck.yml` | 1, 2, 2b, 6b, 10 |
 | `claude/shims/shim.sh` + `git`/`gh`/`glab`/`az` symlinks (new) | 2b |
-| `source/89_claude_shims.sh` (new) | 2b |
 | `source/README.md` | 2b |
 | `test/test_claude_shims.sh` (new) | 2b |
 | `bin/claude-settings-merge` (new) | 2, 3 |
@@ -986,8 +985,16 @@ That is what the waiver below is for; record which way it went, and stop only if
   zsh shell snapshot, which ends with an `export PATH=…` captured from an interactive zsh.
 - With a probe `source/89_*.sh` holding the planned line, pointing at a pass-through shim dir,
   `CLAUDECODE=1 zsh -i -c 'command -v git'` names the shim, first on `PATH`; without `CLAUDECODE` it names
-  `/opt/homebrew/bin/git`. So the shim comes first, and neither stop condition holds.
-- Still pending: the two `!` commits with the user, once `~/.claude/shims` is linked; the main session runs them.
+  `/opt/homebrew/bin/git`. That probe was wrong: it set `CLAUDECODE` itself.
+- **In a real session the shim never reached `PATH`:** Claude Code takes the shell snapshot before `CLAUDECODE` is
+  set, so `source/89_claude_shims.sh` never fired, and the user's plain `!` commit went through.
+- **Fix, by the user's choice:** `work-context.sh session-start` appends a guarded
+  `export PATH="$HOME/.claude/shims:$PATH"` to `CLAUDE_ENV_FILE` when `~/.claude/shims` exists, which Claude Code
+  sources before each Bash call; `source/89_claude_shims.sh`, its tests and the `source/README.md` row are removed.
+  Tests in `test_work_context.sh`: no shims dir leaves the file untouched; sourcing it puts the shims first, once.
+- **Verified 2026-10-16** in a fresh session in a repo with origin `example-client/x`: `!command -v git` and the
+  Bash tool both name `~/.claude/shims/git`; `!git commit --allow-empty --no-gpg-sign -m y` is blocked, offering
+  the waiver form; the alias `gp` is blocked through the shim.
 
 **As built — deviations from the spec below** (all other points are as specified):
 
@@ -1011,7 +1018,6 @@ That is what the waiver below is for; record which way it went, and stop only if
   a script's absolute `/usr/bin/git`. The file is at 101 lines, one past its aim.
 - **`docs/how-it-works.md:38`** names `shims/` among the linked `claude/` entries, per § *Global constraints*
   (docs ship with the change), though the Files list didn't name it.
-- Not done here: linking `~/.claude/shims` (`bin/dotfiles`) and the user's `!` checks.
 
 **The waiver.** The shim must never take away the user's own route, so it honours `WORK_CONTEXT_WAIVE=1` in its
 environment: it then skips the guard and `exec`s the real binary. Only the user can set it:
@@ -1036,19 +1042,18 @@ environment: it then skips the guard and `exec`s the real binary. Only the user 
 **Files:**
 
 - Created: `claude/shims/shim.sh` (executable); symlinks `claude/shims/git`, `gh`, `glab`, `az` → `shim.sh`, committed
-  as symlinks; `source/89_claude_shims.sh`; `test/test_claude_shims.sh`
+  as symlinks; `test/test_claude_shims.sh`
 - Modified: `.github/workflows/shellcheck.yml:28-32` (add `claude/shims/shim.sh`) and `.claude/rules/scripts.md:29-31`
   (name it among the individually listed files); `claude/docs/work-contexts.md`
   § *Enforcement* (one line on the shims); `tips/24_claude_code.md` Tip 24.4 (a `claude/shims/` bullet);
-  `source/README.md:10-15` (a `80–89 | Late PATH overrides | Claude Code shims` row)
+  `claude/hooks/work-context.sh` `session_start` and `test/test_work_context.sh` (the `CLAUDE_ENV_FILE` line)
 
 **Interfaces:** consumes `work-context.sh check-argv <dir> <tool> [args…]` from Task 1. Produces nothing later tasks use.
 
 **Change.**
 
-- `source/89_claude_shims.sh`: `[[ -n "$CLAUDECODE" && -d "$HOME/.claude/shims" ]] && export PATH="$HOME/.claude/shims:$PATH"`.
-  Number 89, a new 80–89 range, so it prepends after every other `.sh` `PATH` change while staying out of the 90–99
-  range `source/README.md` reserves for zsh-only files; the guard keeps it out of the user's own shells.
+- `session-start` puts the shims on the Bash tool's `PATH` through `CLAUDE_ENV_FILE`, as above; the user's own shells
+  never see them.
 - `shim.sh`, builtins only: `tool=${0##*/}`. `shim_dir` is the physical directory of the shim itself
   (`cd -P -- "${BASH_SOURCE[0]%/*}" && pwd -P`, which resolves the `~/.claude/shims` symlink into the checkout), and
   the guard is `"$shim_dir/../hooks/work-context.sh"` — so a test runs the checked-out guard, and CI needs no

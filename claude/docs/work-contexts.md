@@ -91,7 +91,8 @@ This binds hardest where a repo's own `CLAUDE.md` sets the rule being waived —
   `upstream`, `github` and `gh-resolved` remotes, push URLs, named targets — a personal fork's `gh pr create` to an outside parent.
 - **Exit 2,** because it beats allow rules and every permission mode, bypass included; a crash blocks too.
   The user's one-off waiver is `! WORK_CONTEXT_WAIVE=1 <command>`, which the shims honour and the guard blocks Claude from setting.
-- **Shims** in `~/.claude/shims`, first on `PATH` in Claude Code only, check the real argv that aliases, functions and scripts pass.
+- **Shims** in `~/.claude/shims`, first on `PATH` in Claude Code only (session-start writes it to `CLAUDE_ENV_FILE`,
+  since the Bash tool's shell snapshot is taken before `CLAUDECODE` is set), check the real argv that aliases, functions and scripts pass.
 - **`issue create`** is allowed at customer level only to origin's own issues, below a `.claude-files-issues` marker
   in an ancestor of the repo under `$HOME`; only the user creates the marker, and the guard blocks Claude's writes to it.
 - **Accepted gaps:** a script calling `/usr/bin/git` by absolute path, past the shims; a GraphQL mutation sent from a file;

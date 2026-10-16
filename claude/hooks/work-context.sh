@@ -1410,6 +1410,12 @@ session_start() {
     [[ $CL == customer ]] && text+=" $blocked"
   fi
   printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$(json_string "$text")"
+  # The Bash tool's PATH comes from a shell snapshot taken before CLAUDECODE is set, so source/ can't add the
+  # shims; Claude Code sources CLAUDE_ENV_FILE before each Bash call instead.
+  if [[ -n ${CLAUDE_ENV_FILE-} && -d $HOME/.claude/shims ]]; then
+    printf 'case ":$PATH:" in *":%s:"*) ;; *) export PATH="%s:$PATH" ;; esac\n' \
+      "$HOME/.claude/shims" "$HOME/.claude/shims" >> "$CLAUDE_ENV_FILE"
+  fi
 }
 
 # --- main ----------------------------------------------------------------------------------------------------

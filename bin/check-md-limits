@@ -183,10 +183,12 @@ is_follow_up_tracker() {
   ' "$1"
 }
 
-# The plan-files rule's globs, less the durable files it also loads on.
+# The plan-files rule's globs, less the durable files it also loads on. plan-*.md
+# is matched at the root only, so plan-files.md and plan-handover-checklist.md
+# under claude/ stay capped; PLAN*.md is the older spelling, still recognised.
 is_plan_file() {
   case "$1" in
-    PLAN*.md | */PLAN*.md | plan.md | */plan.md | plans/* | */plans/*) return 0 ;;
+    plan-*.md | PLAN*.md | */PLAN*.md | plan.md | */plan.md | plans/* | */plans/*) return 0 ;;
     proposal.md | */proposal.md | roadmap.md | */roadmap.md) return 0 ;;
     migration.md | */migration.md) return 0 ;;
     *) return 1 ;;

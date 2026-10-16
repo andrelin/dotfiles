@@ -1,11 +1,11 @@
 ---
 name: writing-plans
-description: Read before writing or editing a plan file (PLAN-*.md, proposal.md, roadmap.md, migration.md), before handing one to an executor, and before referencing one from a durable doc.
+description: Read before writing or editing a plan file (plan-*.md, proposal.md, roadmap.md, migration.md), before handing one to an executor, and before referencing one from a durable doc.
 ---
 
 # Plan files
 
-Any markdown document laying out work to be done — `PLAN-*.md`, `proposal.md`, `roadmap.md`, `migration.md`.
+Any markdown document laying out work to be done — `plan-*.md` at the repo root, `proposal.md`, `roadmap.md`, `migration.md`.
 Identify one by content (numbered changes, sections, a backlog), not by filename.
 These are this user's conventions, not a plugin's plan format: where `superpowers:writing-plans` differs, this wins.
 

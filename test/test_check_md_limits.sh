@@ -442,6 +442,13 @@ mkdir -p "$workdir/plans"
 assert "$(check_file PLAN-x.md "# Plan
 
 $(repeat_lines 400)")" "clean/0" "a PLAN-*.md file has no length cap"
+assert "$(check_file plan-x.md "# Plan
+
+$(repeat_lines 400)")" "clean/0" "a plan-*.md file at the root has no length cap"
+mkdir -p "$workdir/rules"
+assert "$(check_file rules/plan-files.md "# Rule
+
+$(repeat_lines 400)")" "ERROR/1" "a nested plan-*.md, like the plan-files rule, is still capped"
 assert "$(check_file plans/step.md "# Plan
 
 $(repeat_lines 400)")" "clean/0" "a file under plans/ has no length cap"

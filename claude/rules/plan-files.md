@@ -1,5 +1,6 @@
 ---
 paths:
+  - "plan-*.md"
   - "**/PLAN*.md"
   - "**/plan.md"
   - "**/plans/**"

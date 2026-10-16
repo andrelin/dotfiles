@@ -6,7 +6,10 @@ on:
       - 'website/**'
       - 'tips/**'
       - 'docs/**'
-      - 'claude/**'
+      # Not claude/hooks: test/test_work_context.sh tests the guard there.
+      - 'claude/skills/**'
+      - 'claude/docs/**'
+      - 'claude/rules/**'
       - '.claude/**'
       - '**.md'
       - '.md-baseline'
@@ -38,7 +41,7 @@ jobs:
           - name: RHEL 9
             runner: ubuntu-latest
             container: redhat/ubi9
-            prerequisites: yum install -y sudo git && git config --global --add safe.directory '*'
+            prerequisites: yum install -y sudo git jq && git config --global --add safe.directory '*'
     steps:
       # Container prerequisites (must run before checkout for git)
       - if: matrix.prerequisites

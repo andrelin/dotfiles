@@ -27,7 +27,7 @@ jobs:
           failed=0
           for f in bin/dotfiles bin/eachdir bin/isip bin/check-md-limits \
                    bin/sync-claude-deny bin/sort-claude-settings hooks/pre-commit \
-                   claude/statusline-command.sh \
+                   claude/statusline-command.sh claude/hooks/work-context.sh \
                    init/*.sh source/*.sh test/*.sh \
                    link/.bashrc link/.bash_profile; do
             echo "--- $f ---"

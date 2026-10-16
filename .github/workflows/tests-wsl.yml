@@ -6,7 +6,10 @@ on:
       - 'website/**'
       - 'tips/**'
       - 'docs/**'
-      - 'claude/**'
+      # Not claude/hooks: test/test_work_context.sh tests the guard there.
+      - 'claude/skills/**'
+      - 'claude/docs/**'
+      - 'claude/rules/**'
       - '.claude/**'
       - '**.md'
       - '.md-baseline'

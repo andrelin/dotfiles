@@ -58,6 +58,8 @@ The `_macos_` marker means it is not selected by default on Linux or WSL, where 
   on row 2.
 - `claude/hooks/` → `~/.claude/hooks/` — hook scripts; `work-context.sh` blocks Claude's commits, pushes and
   platform writes on customer repos and names the work context at session start (Tip 24.6).
+- `claude/shims/` → `~/.claude/shims/` — `git`, `gh`, `glab` and `az` shims, first on `PATH` in Claude Code only, so the
+  guard sees aliases, functions and scripts too; waive it once with `! WORK_CONTEXT_WAIVE=1 git push` at the prompt.
 
 Only these entries are linked; machine-local state (`projects/`, `sessions/`, `history.jsonl`) stays untouched,
 and anything already at one of those paths is moved into `backups/` first.

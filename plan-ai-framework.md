@@ -52,7 +52,7 @@ in § *The staged workflow*. No external spec.
 | 0 · Plan files are `plan-*.md` at the repo root | ✅ DONE | |
 | 1 · Work-context resolver and guard script | ✅ DONE | 281 assertions pass. glab finding and deviations in Task 1 |
 | 2 · Register the hooks, and run tests on `claude/` changes | ✅ DONE | merged into the real settings 2026-10-16; manual checks below |
-| 2b · Command shims for aliases, functions and scripts (spike first) | ⏳ PENDING | |
+| 2b · Command shims for aliases, functions and scripts (spike first) | 🚧 PARTIAL | built; user `!` checks pending. 21 assertions pass; spike and deviations in Task 2b |
 | 3 · User-level settings hardening | ⏳ PENDING | |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
@@ -105,7 +105,7 @@ Task 2's manual verification, 2026-10-16, Claude Code 2.1.292, in a repo with or
 - `claude-settings-merge` run by hand before `~/.claude/hooks` was linked registered a hook pointing at nothing; it
   now exits 1 with the settings untouched when `~/.claude/hooks/work-context.sh` isn't readable, tested.
 
-Next: Task 2b.
+Next: Task 2b's link and `!` checks (it is built and committed), then Task 3.
 
 ## Findings and decisions
 
@@ -979,6 +979,39 @@ task skipped and record the gap in `work-contexts.md` § *Enforcement* — if `C
 the shim doesn't come first.
 The plain `!` commit is *expected* to be blocked: `!` runs in the same shell as the Bash tool, so the shim sees it too.
 That is what the waiver below is for; record which way it went, and stop only if the waived commit is blocked as well.
+
+**Spike results, 2026-10-16** (main session):
+
+- In the Bash tool `CLAUDECODE=1`; `gpc` is a shell function and `gp` an alias for `git push`, both from Claude Code's
+  zsh shell snapshot, which ends with an `export PATH=…` captured from an interactive zsh.
+- With a probe `source/89_*.sh` holding the planned line, pointing at a pass-through shim dir,
+  `CLAUDECODE=1 zsh -i -c 'command -v git'` names the shim, first on `PATH`; without `CLAUDECODE` it names
+  `/opt/homebrew/bin/git`. So the shim comes first, and neither stop condition holds.
+- Still pending: the two `!` commits with the user, once `~/.claude/shims` is linked; the main session runs them.
+
+**As built — deviations from the spec below** (all other points are as specified):
+
+- **Line numbers drifted:** `.claude/rules/scripts.md:29-31` is now `:30-32`, and it already named `shim.sh` among
+  the 3.2 exceptions (Task 1), so only the ShellCheck list changed; the others matched.
+- **The guard runs with the shim dir off its `PATH`**, beside `WORK_CONTEXT_GIT`, so its own git calls can't recurse
+  through a shim dir other than `~/.claude/shims` (the test's temp one) even when no real git was found.
+- **The `PATH` walk** canonicalises every entry in one subshell, a relative entry against the starting directory,
+  and then finds the tool with builtin `-f`/`-x` tests, so a call costs one fork beyond the guard.
+  A `case` inside `$( … )` is a syntax error in bash 3.2, so the walk uses `[[ … ]]`.
+- **The waiver** is honoured only for the value `1`, as the deny message writes it.
+- **`source/89_claude_shims.sh`** is an `if`, not the `&&` one-liner, so sourcing it never returns 1, and skips the
+  prepend when the dir is already on `PATH`, so a re-sourced shell doesn't stack copies.
+- **Extra tests:** a guard missing beside the shim dir exits 2 with the fail-closed message; without the waiver,
+  a stub `gh` whose own `git push` targets a customer repo is blocked (the shim stays on its `PATH`); the 127 case
+  puts a second, symlinked spelling of the shim dir on `PATH`, so a walk comparing entries as written would exec
+  itself; `source/89_claude_shims.sh` prepends once with `CLAUDECODE` set and leaves `PATH` alone without it.
+  Every shim call runs under a 10-second watchdog, so a recursing shim fails the suite instead of hanging it.
+- **`work-contexts.md` § *Enforcement*** gained the shims line, the waiver line now names
+  `! WORK_CONTEXT_WAIVE=1 <command>`, and the accepted gaps drop aliases, functions, scripts and `find -exec` for
+  a script's absolute `/usr/bin/git`. The file is at 101 lines, one past its aim.
+- **`docs/how-it-works.md:38`** names `shims/` among the linked `claude/` entries, per § *Global constraints*
+  (docs ship with the change), though the Files list didn't name it.
+- Not done here: linking `~/.claude/shims` (`bin/dotfiles`) and the user's `!` checks.
 
 **The waiver.** The shim must never take away the user's own route, so it honours `WORK_CONTEXT_WAIVE=1` in its
 environment: it then skips the guard and `exec`s the real binary. Only the user can set it:

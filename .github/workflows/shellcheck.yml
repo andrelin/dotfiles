@@ -28,7 +28,7 @@ jobs:
           for f in bin/dotfiles bin/eachdir bin/isip bin/check-md-limits \
                    bin/sync-claude-deny bin/sort-claude-settings bin/claude-settings-merge \
                    hooks/pre-commit \
-                   claude/statusline-command.sh claude/hooks/work-context.sh \
+                   claude/statusline-command.sh claude/hooks/work-context.sh claude/shims/shim.sh \
                    init/*.sh source/*.sh test/*.sh \
                    link/.bashrc link/.bash_profile; do
             echo "--- $f ---"

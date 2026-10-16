@@ -90,10 +90,11 @@ This binds hardest where a repo's own `CLAUDE.md` sets the rule being waived —
 - **Strictest target wins,** so personal and company (§ *company*) block only a write that could reach customer: origin,
   `upstream`, `github` and `gh-resolved` remotes, push URLs, named targets — a personal fork's `gh pr create` to an outside parent.
 - **Exit 2,** because it beats allow rules and every permission mode, bypass included; a crash blocks too.
-  The user's one-off waiver is `! <command>` at the prompt, which no hook sees.
+  The user's one-off waiver is `! WORK_CONTEXT_WAIVE=1 <command>`, which the shims honour and the guard blocks Claude from setting.
+- **Shims** in `~/.claude/shims`, first on `PATH` in Claude Code only, check the real argv that aliases, functions and scripts pass.
 - **`issue create`** is allowed at customer level only to origin's own issues, below a `.claude-files-issues` marker
   in an ancestor of the repo under `$HOME`; only the user creates the marker, and the guard blocks Claude's writes to it.
-- **Accepted gaps:** shell aliases, functions, scripts and `find -exec` that call git; a GraphQL mutation sent from a file;
+- **Accepted gaps:** a script calling `/usr/bin/git` by absolute path, past the shims; a GraphQL mutation sent from a file;
   `GH_REPO=x; export GH_REPO`; a script writing the marker; a git alias's arguments past its first word.
   A separator inside quotes blocks falsely, failing safe, and an origin-less repo outside a temp directory is customer.
   Hooks don't run before the workspace-trust prompt is accepted, in `claude -p --bare`, or in cloud routines.

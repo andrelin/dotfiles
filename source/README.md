@@ -12,4 +12,5 @@ Numbered by category:
 | 20–29 | Tools                   | Docker, editor, file utilities    |
 | 30–39 | Shell customization     | Aliases, variables                |
 | 40–49 | Functions & integrations| Git, Kafka, Kubernetes, Postgres  |
+| 80–89 | Late PATH overrides     | Claude Code shims                 |
 | 90–99 | Zsh-specific            | Oh-my-zsh, theme, modules         |

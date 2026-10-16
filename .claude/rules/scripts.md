@@ -29,5 +29,5 @@ check and `init/20_homebrew.sh`, which a fresh Mac runs under Apple's 3.2 before
 and `claude/hooks/work-context.sh` and `claude/shims/shim.sh`, which Claude Code runs under macOS's `/bin/bash`.
 **CI runs shellcheck** (`-x -s bash --severity=warning`) over globbed `init/*.sh`, `source/*.sh` and `test/*.sh`, so a
 new script there needs no workflow edit, plus the `bin/` scripts, `hooks/pre-commit`, the linked `.bashrc`/`.bash_profile`,
-`claude/statusline-command.sh` and `claude/hooks/work-context.sh`, listed individually.
+`claude/statusline-command.sh`, `claude/hooks/work-context.sh` and `claude/shims/shim.sh`, listed individually.
 `source/*.zsh` is zsh and unchecked: run it before handing over.

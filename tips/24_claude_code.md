@@ -94,6 +94,6 @@ claude-settings-merge hooks ~/.claude/settings.json   # register the work-contex
 
 It removes its own entries and appends fresh ones on every run, so it is safe to repeat and an updated entry
 reaches every machine. `init/52_macos_claude.sh` runs it, so `dotfiles` is usually all you need.
-Exits 1 with the file untouched when `jq` is missing or the file isn't valid JSON.
+Exits 1 with the file untouched when `jq` or `~/.claude/hooks/work-context.sh` is missing, or the file isn't valid JSON.
 
 From `bin/claude-settings-merge`.

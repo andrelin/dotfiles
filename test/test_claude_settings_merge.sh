@@ -17,6 +17,10 @@ e_header "$(basename "$0" .sh)"
 workdir="$(mktemp -d)"
 trap 'rm -rf "$workdir"' EXIT
 settings="$workdir/settings.json"
+# The script refuses to register a guard that isn't there, so HOME holds a stand-in.
+export HOME="$workdir/home"
+mkdir -p "$HOME/.claude/hooks"
+touch "$HOME/.claude/hooks/work-context.sh"
 
 # The guard's two hook entries, exactly as the init script must register them.
 pre_tool_use='{"matcher":"Bash|Monitor|Write|Edit|MultiEdit|NotebookEdit","hooks":[{"type":"command","command":"/bin/bash ~/.claude/hooks/work-context.sh pre-tool-use","timeout":10,"onFailure":"block"}]}'
@@ -86,6 +90,17 @@ ln -s "$(type -P bash)" "$nojq/bash"
 PATH="$nojq" "$nojq/bash" "$SCRIPT" hooks "$settings" 2>/dev/null && rc=0 || rc=$?
 assert "$rc" "1" "missing jq exits 1"
 assert "$(cat "$settings")" "{}" "missing jq leaves the file untouched"
+
+echo '{}' > "$settings"
+mv "$HOME/.claude/hooks/work-context.sh" "$workdir/guard"
+merge 2>/dev/null && rc=0 || rc=$?
+assert "$rc" "1" "a missing guard script exits 1"
+assert "$(cat "$settings")" "{}" "a missing guard script leaves the file untouched"
+ln -s "$workdir/nowhere" "$HOME/.claude/hooks/work-context.sh"
+merge 2>/dev/null && rc=0 || rc=$?
+assert "$rc" "1" "a dangling link to the guard exits 1"
+rm "$HOME/.claude/hooks/work-context.sh"
+mv "$workdir/guard" "$HOME/.claude/hooks/work-context.sh"
 
 "$SCRIPT" bogus "$settings" 2>/dev/null && rc=0 || rc=$?
 assert "$rc" "2" "an unknown subcommand is a usage error"

@@ -102,8 +102,8 @@ Task 2's manual verification, 2026-10-16, Claude Code 2.1.292, in a repo with or
 - `/doctor` reported every settings file parsing, with no complaint about `onFailure`.
 - A copy of the guard with `exit 1` at the top of `main` exits 2 with `work-context guard failed (exit 1)`; run on a
   copy, since a crashing live guard also blocks the `Edit` that would restore it.
-- `claude-settings-merge` run by hand before `~/.claude/hooks` was linked would register a hook pointing at nothing;
-  the init script links first, so only a hand run hits it.
+- `claude-settings-merge` run by hand before `~/.claude/hooks` was linked registered a hook pointing at nothing; it
+  now exits 1 with the settings untouched when `~/.claude/hooks/work-context.sh` isn't readable, tested.
 
 Next: Task 2b.
 

@@ -5,7 +5,8 @@
 # Usage: claude-settings-merge hooks <settings-file>
 #   hooks  Register ~/.claude/hooks/work-context.sh for PreToolUse and SessionStart.
 #
-# Exit 0 on success; 1 when jq is missing or the file isn't valid JSON, with the file untouched; 2 on bad usage.
+# Exit 0 on success; 1 when jq or the guard script is missing or the file isn't valid JSON, with the file untouched;
+# 2 on bad usage.
 
 set -euo pipefail
 
@@ -35,6 +36,13 @@ hooks_filter='
 
 [[ $# -eq 2 && "$1" == hooks ]] || usage
 settings="$2"
+
+# A hook pointing at nothing either blocks every tool call (onFailure: block) or silently guards nothing.
+guard="$HOME/.claude/hooks/work-context.sh"
+if [[ ! -r "$guard" ]]; then
+  echo "$guard not found; run dotfiles first. $settings left untouched." >&2
+  exit 1
+fi
 
 if ! type -P jq >/dev/null; then
   echo "jq not found; $settings left untouched." >&2

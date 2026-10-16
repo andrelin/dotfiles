@@ -7,7 +7,8 @@ This file carries the reasoning and the edge cases.
 ## Why the levels nest
 
 Each level keeps the ones above it with the audience substituted.
-Level 2's bar is *safe for anyone*; at 3 and 4 the same bar binds with "anyone" narrowed to colleagues, or to the client.
+Level 2's bar is *safe for anyone*. Level 3 keeps it whole, since a live audience is anyone, and adds showcase
+quality; at 4 the same bar binds with "anyone" narrowed to the client.
 A customer repo being private makes the reader smaller, not the care looser.
 
 ## Why the resolution order is what it is
@@ -41,14 +42,19 @@ Before committing, check the change carries none of:
 A missing rule costs a follow-up commit; a published one costs a history rewrite across every branch,
 and every existing clone and fork keeps it anyway.
 
-## company — personal freedom over the code, customer care over what is published
+## company — full autonomy, held to a colleague's and an audience's eye
 
-Demos, presentations, and teaching material.
-The split is what an audience will see: **the code** is the user's to refactor and restructure as freely as any personal project,
-but **the history and the remote** are part of the material and belong to the user.
-That middle position is the whole category, not an exception to it.
+Demos, presentations, teaching material, and experiments with AI-driven development.
+Same git and platform permissions as personal: commit, push, open and merge PRs, write to the tracker.
+What it adds is a higher bar than personal public's, since anything committed may be walked through live in front
+of colleagues or an audience:
 
-**Why:** demo repos are walked through live in front of an audience, so anything committed is on screen.
+- every change reaches `main` reviewed (`/code-review` at least) and with CI green — never pushed straight to `main`;
+- the history reads as a story: one purpose per commit, no "fix typo" or "wip" left behind;
+- code, tests and docs are the kind you would want on a slide, not merely working.
+
+**Why:** the employer wants AI-driven development explored, which needs the agent to own the whole loop, history
+and remote included. Tighten a single repo through its own `CLAUDE.md` where that proves wrong.
 Project context still belongs in the repo — that is the multi-machine rule — but the user's own personal context stays out.
 
 ## customer — user owns the remote, careful by default

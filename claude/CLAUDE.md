@@ -18,10 +18,10 @@ Company org → **company**; another owner → **customer**; the personal accoun
 | --- | --- | --- |
 | personal private | not committing secrets | yours, push and merge included |
 | personal public | world-readable forever: no customer names, hostnames, internal tooling, secrets | yours |
-| company | also safe for colleagues and a live audience | the user's |
+| company | also showcase quality: reviewed, green CI and a readable history before it reaches `main` | yours |
 | customer | the client's codebase; their `CLAUDE.md` wins over this file | the user's |
 
-**Where history and the remote are the user's** (company and customer) these are **forbidden**: `git commit`,
+**Where history and the remote are the user's** (customer) these are **forbidden**: `git commit`,
 `commit --amend`, `cherry-pick`, `revert`, `push` in any form, opening or merging PRs, any conflicted rebase or
 merge — `--abort` and hand back. `git add`, `restore`, `checkout`/`switch`, `stash`, `branch` (ref only), `fetch`,
 inspection and a clean zero-conflict rebase or merge are fine; draft the message for the user to run.
@@ -42,7 +42,7 @@ break it. Personal context is the exception, in a gitignored `CLAUDE.local.md`
 
 ## Code review — locally, never through the platform
 
-On company and customer work — including inside a `/code-review` run, which loads its own skill and not this file
+On customer work — including inside a `/code-review` run, which loads its own skill and not this file
 — read the diff from the local clone, never the platform's API or web UI, and post nothing back (no `--comment`,
 no inline comments) unless the user says so. Set up with `git fetch origin main && git diff origin/main...HEAD`.
 

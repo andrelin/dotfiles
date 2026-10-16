@@ -1,11 +1,11 @@
 ---
 name: reviewing-locally
-description: Read before reviewing a branch, MR or PR on customer or company work, and before running /code-review on one - its target and its findings both depend on the diff being set up first.
+description: Read before reviewing a branch, MR or PR on customer work, and before running /code-review on one - its target and its findings both depend on the diff being set up first.
 ---
 
 # Reviewing a branch locally, against a freshly fetched default branch
 
-**Customer and company work only.** On personal projects, review however you like — the remote is yours.
+**Customer work only.** On personal and company projects, review however you like — the remote is yours.
 
 ## Works alongside `/code-review`, not instead of it
 

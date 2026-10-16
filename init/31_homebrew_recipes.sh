@@ -3,7 +3,7 @@
 
 # In CI, only install recipes needed by downstream scripts.
 if [[ "$CI" ]]; then
-  recipes=(bash zsh)
+  recipes=(bash jq zsh)
   brew_install_recipes
   return 0
 fi

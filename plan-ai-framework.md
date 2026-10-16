@@ -73,15 +73,9 @@ new skills, and 11 last, being low priority. 12 is independent and small: any ti
 
 ## Handover — where the sessions of 2026-10-16 stopped
 
-Nothing is committed. Uncommitted in the working tree:
-
-- Task 0's four files: `bin/check-md-limits`, `claude/rules/plan-files.md`, `claude/skills/writing-plans/SKILL.md`,
-  `test/test_check_md_limits.sh`.
-- Task 1's files: `claude/hooks/work-context.sh`, `test/test_work_context.sh`, the three workflows and
-  `.claude/rules/scripts.md`. 281 assertions pass and ShellCheck is clean, verified by the main session.
-- The company-level change below: `claude/CLAUDE.md`, `claude/docs/work-contexts.md`,
-  `claude/docs/skill-precedence.md`, `claude/skills/reviewing-locally/SKILL.md`.
-- `claude/docs/best-practices/` (11 files), this plan and `plan-project-management.md`.
+Everything is committed and pushed: Tasks 0, 1 and 2 (code and docs), the company-level change, the research in
+`claude/docs/best-practices/` and both plans. Task 1's 281 assertions and Task 2's 18 pass, and ShellCheck is clean,
+verified by the main session. Task 2's hooks are not yet merged into the real `~/.claude/settings.json`.
 
 Done in the first session: review rounds 1–5 on this plan (§ *Review log (plan)*, every round-5 finding fixed); the
 split of Task 5 from 5b; the best-practices research, folded in as § *What the 2026-10-16 research changes* plus

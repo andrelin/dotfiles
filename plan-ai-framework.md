@@ -72,11 +72,32 @@ Order: 1 → 2 → 2b → 3 → 3b, then 6 → 6b, then 5 → 5b → 8 → 9 →
 wait for 10, and it stays 🚧 PARTIAL until then), then 4 (it names Task 9's skill), then 7 so its audit covers the
 new skills, and 11 last, being low priority. 12 is independent and small: any time after 0. M is by hand, any time after 3.
 
-## Handover — where the sessions of 2026-10-16 stopped
+## Handover — where the sessions of 2026-10-16 stopped (Friday)
 
-Everything is committed and pushed: Tasks 0, 1 and 2 (code and docs), the company-level change, the research in
-`claude/docs/best-practices/` and both plans. Task 1's 281 assertions and Task 2's 18 pass, and ShellCheck is clean,
-verified by the main session. Task 2's hooks are not yet merged into the real `~/.claude/settings.json`.
+End of 2026-10-16: Tasks 0, 1, 2, 2b and 3b are done, committed and pushed, CI green on every workflow; Task 3 is
+merged into the real `~/.claude/settings.json` (hooks with the `Read|Grep` matcher, 18 deny rules, `instructionFiles`)
+and waits only on its marker check. The other session's review of `plan-project-management.md` is uncommitted in the
+working tree; commit it on its own when that session is done.
+
+**Start Monday here, in this order:**
+
+1. **The user's questions of 2026-10-16, answer first:**
+   - **Why bash 3.2 for the guard and shim, when the repo's floor is 5.0?** Because the hook command and the shim's
+     shebang name `/bin/bash`, macOS's 3.2, and a hook's `PATH` may lack Homebrew. Proposal to make: have
+     `claude-settings-merge hooks` write the absolute path of the bash ≥ 5 it finds at merge time (machine-local, so
+     nothing is tracked) and the shim use `#!/usr/bin/env bash` (it inherits the session's `PATH`), then drop the
+     3.2 exception from `.claude/rules/scripts.md` and Global constraints. Needs a test that the merge refuses, or
+     falls back loudly, when no bash ≥ 5 is found.
+   - **No username in paths:** `hardening` wrote `Read(//Users/<name>/.dotfiles/link/.ssh/keys/**)`, expanded from
+     `$DOTFILES`. Fix: write `Read(~/<rel>/link/.ssh/keys/**)` when `$DOTFILES` is under `$HOME`, and have
+     `hardening` remove a stale owned checkout rule, so a moved checkout or renamed user can't leave one behind.
+     Then re-run it on the real settings and check the absolute rule is gone.
+   - **jq in CI:** the user prefers dotfiles installing jq through Homebrew, as `123bbeb` does (`init/31` CI recipes)
+     — already in place, and the WSL job was green on `2720f36`. Nothing to do but confirm.
+2. **Task 3's marker check** with the user, in a bypass session in `~/guard-test` (still on disk; delete it after):
+   Write, `touch` and `echo >` of `~/guard-test/sub/.claude-files-issues` denied, recording whether the deny rule or
+   the guard spoke; then the user's own `!touch` works. Then mark Task 3 done.
+3. **Task 6** (`filing-learnings`), per the order line above the status table.
 
 Done in the first session: review rounds 1–5 on this plan (§ *Review log (plan)*, every round-5 finding fixed); the
 split of Task 5 from 5b; the best-practices research, folded in as § *What the 2026-10-16 research changes* plus
@@ -106,7 +127,7 @@ Task 2's manual verification, 2026-10-16, Claude Code 2.1.292, in a repo with or
 - `claude-settings-merge` run by hand before `~/.claude/hooks` was linked registered a hook pointing at nothing; it
   now exits 1 with the settings untouched when `~/.claude/hooks/work-context.sh` isn't readable, tested.
 
-Next: Task 3's real-settings merge and manual check, with the user; then Task 6.
+Next: see *Start Monday here* at the top of this section.
 
 ## Findings and decisions
 

@@ -82,12 +82,10 @@ working tree; commit it on its own when that session is done.
 **Start Monday here, in this order:**
 
 1. **The user's questions of 2026-10-16, answer first:**
-   - **Why bash 3.2 for the guard and shim, when the repo's floor is 5.0?** Because the hook command and the shim's
-     shebang name `/bin/bash`, macOS's 3.2, and a hook's `PATH` may lack Homebrew. Proposal to make: have
-     `claude-settings-merge hooks` write the absolute path of the bash ≥ 5 it finds at merge time (machine-local, so
-     nothing is tracked) and the shim use `#!/usr/bin/env bash` (it inherits the session's `PATH`), then drop the
-     3.2 exception from `.claude/rules/scripts.md` and Global constraints. Needs a test that the merge refuses, or
-     falls back loudly, when no bash ≥ 5 is found.
+   - **Why bash 3.2 for the guard and shim, when the repo's floor is 5.0? — decided 2026-10-19: keep 3.2.** The hook
+     command and the shim's shebang name `/bin/bash`, macOS's 3.2, and a hook's `PATH` may lack Homebrew. Writing a
+     bash ≥ 5 path at merge time was proposed and declined: it adds a lookup, a refusal mode and a test so two files
+     can drop a constraint they already meet. The exception in `.claude/rules/scripts.md` and Global constraints stays.
    - **No username in paths — done 2026-10-19:** `hardening` wrote `Read(//Users/<name>/.dotfiles/link/.ssh/keys/**)`.
      It now writes `Read(~/<rel>/link/.ssh/keys/**)` when `$DOTFILES` is under `$HOME` and drops any earlier
      checkout rule first (kept when `DOTFILES` is unset, so the keys never go unguarded); 5 new assertions. Re-run

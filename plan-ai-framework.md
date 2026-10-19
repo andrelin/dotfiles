@@ -93,7 +93,7 @@ working tree; commit it on its own when that session is done.
      refused by the deny rule.
    - **jq in CI:** the user prefers dotfiles installing jq through Homebrew, as `123bbeb` does (`init/31` CI recipes)
      — already in place, and the WSL job was green on `2720f36`. Nothing to do but confirm.
-2. **Task 3's marker check — done 2026-10-19**, recorded under Task 3's status; delete `~/guard-test` once its session is closed.
+2. **Task 3's marker check — done 2026-10-19**, recorded under Task 3's status; `~/guard-test` deleted.
 3. **Task 6** (`filing-learnings`), per the order line above the status table.
 
 Done in the first session: review rounds 1–5 on this plan (§ *Review log (plan)*, every round-5 finding fixed); the

@@ -27,7 +27,8 @@ in § *The staged workflow*. No external spec.
   associative arrays, `${var,,}` or `|&`. `jq` is required, as it already is for this repo's hooks.
   This is an exception to the repo's bash 5.0 floor (`.claude/rules/scripts.md:27-28`), so `work-context.sh` and
   `shim.sh` each open with a comment saying they must stay 3.2-compatible and why, and Task 1 adds both to the
-  rule's list of 3.2 exceptions.
+  rule's list of 3.2 exceptions. Writing a bash ≥ 5 path at merge time was declined 2026-10-19: a lookup, a refusal
+  mode and a test, so two files could drop a constraint they already meet.
 - **Markdown limits** from `~/.claude/rules/markdown-limits.md`:
   - 150-character lines, one sentence per line
   - a skill aims at 100 lines, hard cap 150
@@ -57,7 +58,7 @@ in § *The staged workflow*. No external spec.
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests wait for Tasks 8–10 |
-| 5b · `reviewing-for-feedback` skill | ⏳ PENDING | |
+| 5b · `reviewing-for-feedback` skill | ⏳ IN PROGRESS | written and first-review tested 2026-10-19; re-review run next |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19; eval sets await the user's review, then the real runs |
 | 7 · Instruction-set audit | ⏳ PENDING | |
@@ -72,29 +73,33 @@ Order: 1 → 2 → 2b → 3 → 3b, then 6 → 6b, then 5 → 5b → 8 → 9 →
 wait for 10, and it stays 🚧 PARTIAL until then), then 4 (it names Task 9's skill), then 7 so its audit covers the
 new skills, and 11 last, being low priority. 12 is independent and small: any time after 0. M is by hand, any time after 3.
 
-## Handover — where the sessions of 2026-10-16 stopped (Friday)
+## Handover — where the session of 2026-10-19 stopped
 
-End of 2026-10-16: Tasks 0, 1, 2, 2b and 3b are done, committed and pushed, CI green on every workflow; Task 3 is
-merged into the real `~/.claude/settings.json` (hooks with the `Read|Grep` matcher, 18 deny rules, `instructionFiles`)
-and waits only on its marker check. The other session's review of `plan-project-management.md` is uncommitted in the
-working tree; commit it on its own when that session is done.
+End of 2026-10-19: Tasks 3, 6 and 5 (🚧, its real runs wait for 8–10) are committed and pushed, as are the
+username-free keys rule, the bash 3.2 decision, and the company-orgs file (`~/.claude-company-orgs`, user-written;
+the work repo it was made for resolves `company`). Task 6b is built and 🚧. Task 5b's skill is committed, ⏳.
 
-**Start Monday here, in this order:**
+**Start tomorrow here, in this order:**
 
-1. **The user's questions of 2026-10-16, answer first:**
-   - **Why bash 3.2 for the guard and shim, when the repo's floor is 5.0? — decided 2026-10-19: keep 3.2.** The hook
-     command and the shim's shebang name `/bin/bash`, macOS's 3.2, and a hook's `PATH` may lack Homebrew. Writing a
-     bash ≥ 5 path at merge time was proposed and declined: it adds a lookup, a refusal mode and a test so two files
-     can drop a constraint they already meet. The exception in `.claude/rules/scripts.md` and Global constraints stays.
-   - **No username in paths — done 2026-10-19:** `hardening` wrote `Read(//Users/<name>/.dotfiles/link/.ssh/keys/**)`.
-     It now writes `Read(~/<rel>/link/.ssh/keys/**)` when `$DOTFILES` is under `$HOME` and drops any earlier
-     checkout rule first (kept when `DOTFILES` is unset, so the keys never go unguarded); 5 new assertions. Re-run
-     on the real settings: the absolute rule is gone, and a `Read` of the checkout's keys by absolute path is still
-     refused by the deny rule.
-   - **jq in CI:** the user prefers dotfiles installing jq through Homebrew, as `123bbeb` does (`init/31` CI recipes)
-     — already in place, and the WSL job was green on `2720f36`. Nothing to do but confirm.
-2. **Task 3's marker check — done 2026-10-19**, recorded under Task 3's status; `~/guard-test` deleted.
-3. **Task 6** (`filing-learnings`) — done 2026-10-19.
+1. **Task 6b — the user reviews the two eval sets** (`test/skill-triggers/writing-plans.json`,
+   `test/skill-triggers/tuning-skill-descriptions.json`), once. Then the real `bin/skill-trigger-eval` runs on
+   `tuning-skill-descriptions` and `writing-plans`, scores recorded under Task 6b, row ✅. Run them from a session
+   that doesn't need either skill: the run hides it machine-wide.
+2. **Task 5b — the re-review test.** The scratch repos lived in the session scratchpad and are gone; rebuild them as
+   Task 5b's status describes (`gross_ore` truncating the VAT, a round-number test, commits by another author).
+   Run the first review again (its report lands in the new session's scratchpad), then commit the fix in the upstream
+   repo. Pushing it to the bare remote is blocked by the guard — a path remote resolves `customer` — so the user
+   runs the push with `! … WORK_CONTEXT_WAIVE=1 git push …`. Then the re-review, given the first report: the rounding
+   finding must come back addressed, and verifiers must run per lens with a `Verified:` line per finding (the
+   permissions-open run skipped them). Then Task 5's *Whose work* hand-over, now that 5b exists: the
+   `migration.md`-by-another-author setup, answered "a colleague's", must end in this skill with `git status`
+   unchanged. Then row ✅ and commit.
+3. **Then Task 8, 9, 10** in the plan's order; Task 5's remaining real-run tests are listed under its status.
+
+Headless test runs: `claude -p … --output-format stream-json --verbose`, with `--add-dir ~/.claude/docs` (and the
+checkout's `claude/docs`) or the skill stops for want of its docs; `--permission-mode bypassPermissions` where the
+point is that nothing changes, since the guard still runs. Cost so far: a full in-rounds review of a toy plan is
+about $2 a round on opus; a feedback review about $1.
 
 Done in the first session: review rounds 1–5 on this plan (§ *Review log (plan)*, every round-5 finding fixed); the
 split of Task 5 from 5b; the best-practices research, folded in as § *What the 2026-10-16 research changes* plus
@@ -124,7 +129,7 @@ Task 2's manual verification, 2026-10-16, Claude Code 2.1.292, in a repo with or
 - `claude-settings-merge` run by hand before `~/.claude/hooks` was linked registered a hook pointing at nothing; it
   now exits 1 with the settings untouched when `~/.claude/hooks/work-context.sh` isn't readable, tested.
 
-Next: see *Start Monday here* at the top of this section.
+Next: see *Start tomorrow here* at the top of this section.
 
 ## Findings and decisions
 
@@ -1631,6 +1636,21 @@ description: Read before reviewing someone else's branch, MR, PR or plan to give
   transcript shows a `Skill` call or an edit; and no `gh`, `glab` or `az` call appears.
 - **Re-review:** the author fixes the planted bug; given the first report, the second marks that finding addressed.
 - **Handover:** Task 5's *Whose work* test ends in this skill.
+
+**Status, 2026-10-19:** written, 65 lines, `bin/check-md-limits` clean. The scratch setup is as the test says:
+`origin` a local bare clone (level `customer`), the colleague's branch `feature/gross-total` adding `gross_ore`,
+which truncates the VAT where `vat_ore` rounds half up, under a test of round numbers only.
+
+- *Baseline,* no skill: found the bug and wrote paste-ready comments, changing nothing — but by one reader, no
+  verification, no report file or verdict, no severity grouping; and it tried `git worktree add`, stopped only by
+  headless permissions.
+- *With the skill,* headless with default permissions: the skill loaded, four lens reviewers with `model: opus`,
+  findings by severity with paste-ready comments and a suggested verdict; one verifier over all findings rather than
+  one per lens — the wording now says per lens, never one over all.
+- *With the skill, permissions bypassed* (the guard still active): HEAD, index, status, worktrees, branches and
+  stashes unchanged; no `gh`, `glab`, `az`, worktree, checkout, switch, stash, commit or rebase command; the report
+  written to the scratchpad, ending with its path and that it lasts only this session. No verifier at all, though:
+  the report now carries a `Verified:` line per finding, and a red flag answers "the reviewers agree".
 
 ## Task 6 · `filing-learnings` skill
 

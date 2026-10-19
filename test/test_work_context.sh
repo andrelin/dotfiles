@@ -91,6 +91,30 @@ mkrepo "$root/scratchy/noorigin"
 assert "$(wc_run level "$root/scratchy/noorigin")" "customer" "a sibling sharing the scratch prefix's name"
 assert "$(cd "$P" && wc_run level)" "personal" "level defaults to the working directory"
 
+e_header "level: the user's company orgs file"
+
+# An owner listed in ~/.claude-company-orgs is company work, on that host only. The file is the user's, untracked,
+# so an acquired client's name never reaches this public repo.
+printf '%s\n' '# acquired' 'dev.azure.com/Example-Acquired' '  gitlab.example.com/acq-group   # its GitLab' \
+  '# dev.azure.com/commented-out' '' > "$HOME/.claude-company-orgs"
+n=0
+while IFS='|' read -r url expected; do
+  n=$((n + 1))
+  mkrepo "$root/orgs/$n" "$url"
+  assert "$(wc_run level "$root/orgs/$n")" "$expected" "listed: $url"
+done <<'EOF'
+https://dev.azure.com/example-acquired/proj/_git/repo|company
+https://example-acquired@dev.azure.com/example-acquired/proj/_git/repo|company
+git@ssh.dev.azure.com:v3/example-acquired/p/r|company
+https://gitlab.example.com/acq-group/x.git|company
+git@github.com:example-acquired/x.git|customer
+https://dev.azure.com/example-client/proj/_git/repo|customer
+https://dev.azure.com/commented-out/p/_git/r|customer
+https://dev.azure.com/example-acquired-two/p/_git/r|customer
+EOF
+rm "$HOME/.claude-company-orgs"
+assert "$(wc_run level "$root/orgs/1")" "customer" "without the file, a listed owner is customer again"
+
 # --- check-argv ----------------------------------------------------------------------------------------------
 
 # argv_rc <dir> <tool> [args...]: the exit status of check-argv.
@@ -537,6 +561,32 @@ rc="$(wc_run pre-tool-use < "$root/big.json" 2>/dev/null; echo $?)"
 elapsed=$(( (${EPOCHREALTIME/./} - ${start/./}) / 1000 ))
 assert "$rc" 0 "a 5 MB Write passes"
 (( elapsed < 2000 )) && e_success "in under 2 seconds (${elapsed} ms)" || e_error "in under 2 seconds (${elapsed} ms)"
+
+# --- company orgs guard -------------------------------------------------------------------------------------
+
+e_header "company orgs guard"
+
+# The file upgrades a customer repo to company, so only the user writes it, as with the marker.
+orgs="$HOME/.claude-company-orgs"
+assert "$(hook_rc "$(file_json Write file_path "$orgs")")" 2 "Write of the orgs file"
+assert "$(hook_rc "$(file_json Edit file_path "$orgs" new_string x)")" 2 "Edit of the orgs file"
+assert "$(hook_rc "$(file_json Write file_path "$root/t/company-orgs")")" 0 "Write of a file merely like it"
+expect_bash 2 "$P" "echo dev.azure.com/example-client >> $orgs"
+expect_bash 2 "$P" "printf x >\"$orgs\""
+expect_bash 2 "$P" "tee -a $orgs < /dev/null"
+expect_bash 2 "$P" "sed -i '' 1d $orgs"
+expect_bash 2 "$P" "cp /dev/null $orgs"
+expect_bash 0 "$P" "cat $orgs"
+deny="$(printf '%s' "$(file_json Write file_path "$orgs")" | wc_run pre-tool-use 2>&1 >/dev/null)"
+[[ "$deny" == *'! echo'*'>> '* ]] && e_success "the denial gives the user the command" ||
+  e_error "the denial gives the user the command: $deny"
+assert "$(nojq_hook "$(file_json Write file_path "$orgs")" 2>/dev/null; echo $?)" 2 "without jq, an orgs-file write blocks"
+
+# A listed customer repo is company to check-argv too, which the shims call.
+printf '%s\n' 'dev.azure.com/example-acquired' > "$orgs"
+expect_argv 0 "$root/orgs/1" git push
+rm "$orgs"
+expect_argv 2 "$root/orgs/1" git push
 
 # --- waiver guard --------------------------------------------------------------------------------------------
 

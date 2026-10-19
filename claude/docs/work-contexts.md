@@ -13,6 +13,10 @@ A customer repo being private makes the reader smaller, not the care looser.
 ## Why the resolution order is what it is
 
 - The company org is checked first because it is not the personal account and would otherwise fall to customer.
+- **Owners the company has taken on** count as company when the user lists them, one `<host>/<owner>` per line, in
+  `~/.claude-company-orgs`. It is untracked because naming one in this public repo would publish the relationship.
+  An `ssh.` host prefix is dropped, so `dev.azure.com/<org>` covers both Azure DevOps clone URLs. Only the user
+  writes it: like the issue marker it loosens the guard, so the guard blocks Claude writing it.
 - The company name marker catches employer work that lives on the personal account instead of the org.
   Both are company work, so both get the company rules.
 - Customer work is defined by *exclusion*, so the rule keeps working for a new customer with no edits.

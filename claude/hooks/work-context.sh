@@ -16,6 +16,7 @@
 LC_ALL=C
 
 MARKER=.claude-files-issues
+COMPANY_ORGS=.claude-company-orgs
 SECRET_MAPPING=.gitsecret/paths/mapping.cfg
 WAIVE_VAR=WORK_CONTEXT_WAIVE
 TRACKED="GH_REPO GH_HOST GITLAB_HOST GL_HOST GITLAB_URI GITLAB_REPO GIT_DIR GIT_WORK_TREE"
@@ -180,10 +181,25 @@ parse_url() {
   [[ -n $U_OWNER && -n $U_REPO ]]
 }
 
+# company_org <host> <owner>: listed in the user's ~/.claude-company-orgs, one <host>/<owner> per line, # comments.
+# It names the owners the company has taken on, so it stays untracked; an ssh. host prefix is dropped, which makes
+# one line cover both of Azure DevOps' clone URLs. Builtins only, for the shims. Call it under nocasematch.
+company_org() {
+  local line want=${1#ssh.}/$2
+  [[ -r $HOME/$COMPANY_ORGS ]] || return 1
+  while IFS= read -r line || [[ -n $line ]]; do
+    line=${line%%#*}
+    line=${line#"${line%%[![:space:]]*}"}
+    line=${line%"${line##*[![:space:]]}"}
+    [[ -n $line && $line == "$want" ]] && return 0
+  done < "$HOME/$COMPANY_ORGS"
+  return 1
+}
+
 # classify <host> <owner> <repo> -> CL
 classify() {
   shopt -s nocasematch
-  if [[ $2 == uptimeconsulting ]]; then
+  if [[ $2 == uptimeconsulting ]] || company_org "$1" "$2"; then
     CL=company
   elif [[ $2 == andrelin && $1 == github.com ]]; then
     if [[ $3 == *uptime* ]]; then CL=company; else CL=personal; fi
@@ -795,8 +811,12 @@ deny_reveal() {
     "Give the user the exact command to run: \`! cd $qdir && $waive$seg\`." >&2
 }
 
-deny_marker() {
-  echo "Only the user creates $MARKER: ask them to run \`! touch $1\`" >&2
+deny_protected() {
+  if [[ ${1##*/} == "$COMPANY_ORGS" ]]; then
+    echo "Only the user edits ~/$COMPANY_ORGS: ask them to run \`! echo '<host>/<owner>' >> ~/$COMPANY_ORGS\`" >&2
+  else
+    echo "Only the user creates $MARKER: ask them to run \`! touch $1\`" >&2
+  fi
   exit 2
 }
 
@@ -846,6 +866,7 @@ no_jq_path() {
   local input="" re
   IFS= read -r -d '' input
   [[ $input == *"$MARKER"* ]] && deny_jq "it names $MARKER"
+  [[ $input == *"$COMPANY_ORGS"* ]] && deny_jq "it names $COMPANY_ORGS"
   [[ $input == *"$WAIVE_VAR"* ]] && deny_jq "it names $WAIVE_VAR"
   re='"command"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)"'
   if [[ $input =~ $re ]]; then
@@ -983,7 +1004,8 @@ cd_target() {
   CD_TARGET=$1
 }
 
-basename_is_marker() { [[ ${1##*/} == "$MARKER" ]]; }
+# The issue marker and the company orgs file: each loosens the guard, so only the user writes them.
+basename_is_protected() { [[ ${1##*/} == "$MARKER" || ${1##*/} == "$COMPANY_ORGS" ]]; }
 
 # normalise: strips wrappers and prefixes from WORDS, from the front. Sets NI (first real word), SEG_DIR,
 # WAIVER_SET, and trims trailing group closers.
@@ -1126,20 +1148,20 @@ redirect_op() {
   return 0
 }
 
-# A file named after the marker, written by a redirection or a file-creating command.
-check_marker_segment() {
+# A protected file, written by a redirection or a file-writing command.
+check_protected_segment() {
   local i w
   for (( i = NI; i < NW; i++ )); do
     w=${WORDS[i]}
     if redirect_op "$w" && [[ $ROP == *'>'* ]]; then
-      if [[ -n $RTGT ]]; then basename_is_marker "$RTGT" && deny_marker "$RTGT"
-      else basename_is_marker "${WORDS[i+1]-}" && deny_marker "${WORDS[i+1]}"; fi
+      if [[ -n $RTGT ]]; then basename_is_protected "$RTGT" && deny_protected "$RTGT"
+      else basename_is_protected "${WORDS[i+1]-}" && deny_protected "${WORDS[i+1]}"; fi
     fi
   done
   case $FIRST in
-    touch|cp|mv|tee|install|ln)
+    touch|cp|mv|tee|install|ln|sed|perl|dd|truncate)
       for (( i = NI + 1; i < NW; i++ )); do
-        basename_is_marker "${WORDS[i]}" && deny_marker "${WORDS[i]}"
+        basename_is_protected "${WORDS[i]}" && deny_protected "${WORDS[i]}"
       done
       ;;
   esac
@@ -1344,7 +1366,7 @@ segment_relevant() {
   [[ $1 =~ $TOOL_RE ]] && return 0
   case $1 in
     *cd*|*pushd*|*popd*|*export*|*unset*|*declare*|*typeset*|*readonly*|*'('*|*')'*) return 0 ;;
-    *"$MARKER"*|*"$WAIVE_VAR"*|*git-secret*) return 0 ;;
+    *"$MARKER"*|*"$COMPANY_ORGS"*|*"$WAIVE_VAR"*|*git-secret*) return 0 ;;
   esac
   return 1
 }
@@ -1443,7 +1465,7 @@ process_segment() {
     deny_waiver "$rest_words"
   fi
 
-  check_marker_segment
+  check_protected_segment
   check_secret_segment
   build_argv
   (( ${#ARGV[@]} )) || return 0
@@ -1511,7 +1533,7 @@ pre_tool_use() {
   case $TOOL in
     Write|Edit|MultiEdit|NotebookEdit)
       for f in "$FPATH" "$NBPATH"; do
-        [[ -n $f ]] && basename_is_marker "$f" && deny_marker "$f"
+        [[ -n $f ]] && basename_is_protected "$f" && deny_protected "$f"
       done
       ;;
   esac

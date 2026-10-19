@@ -11,8 +11,8 @@ legal name belongs, otherwise Uptime or Uptime Consulting; `uptimeconsulting` is
 
 Resolve from `git remote get-url origin`, first match wins, never from the directory path; both unknowns resolve upward,
 so an unreadable remote is **customer** (an origin-less repo in a temp directory is **personal**) and undeterminable visibility is **public**.
-Company org → **company**; another owner → **customer**; the personal account with `uptime` in the repo name
-(case-insensitive) → **company**; otherwise **personal**, split by `gh repo view --json visibility`.
+Company org or an owner listed in `~/.claude-company-orgs` → **company**; another owner → **customer**; the personal account
+with `uptime` in the repo name (case-insensitive) → **company**; otherwise **personal**, split by `gh repo view --json visibility`.
 
 | Level | Bar on what you commit | History and remote |
 | --- | --- | --- |

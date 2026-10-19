@@ -56,7 +56,7 @@ in § *The staged workflow*. No external spec.
 | 3 · User-level settings hardening | ✅ DONE | merged into the real settings 2026-10-16; marker check 2026-10-19 |
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
-| 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
+| 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests wait for Tasks 8–10 |
 | 5b · `reviewing-for-feedback` skill | ⏳ PENDING | |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19; eval sets await the user's review, then the real runs |
@@ -1546,6 +1546,47 @@ description: Read before reviewing your own plan or a branch this workflow built
 - **`writing-plans`, size gate and safety net:** asked to plan a one-line typo fix, it offers to just make the change
   instead; asked to plan a change to an untested function in a scratch repo, the plan's first task adds tests for
   that function's current behaviour and the last step is an end-to-end verification.
+
+**Status, 2026-10-19:** the skill (85 lines), both docs and the `writing-plans` edits (92 lines) are written and pass
+`bin/check-md-limits`. Baselines, run headless in scratch repos before writing, with `writing-plans` as it stood:
+
+- *Review* (`plan-slug-unicode.md`, a toy plan with a placeholder and an untested spec line): four rounds, $1.88.
+  One general reviewer per round, no `model`; every prompt set a threshold ("load-bearing / minor", "say NOTHING
+  LOAD-BEARING"); rounds 2 to 4 told the reviewer what to check, from earlier findings; no verifier, no log, no
+  findings file; reviewers read the live plan, and no prompt forbade skills. Done at "nothing load-bearing", minors
+  left.
+- *Size gate* (a typo in one function name): a full plan file and a reviewer subagent, which was told not to edit
+  and wrote scratch copies of the file anyway.
+
+Most of that is shape, so the skill is a recipe — the round as numbered steps, the reviewer prompt verbatim — with
+red flags for the parts an agent argues its way out of.
+
+**Deviation:** `review-lenses.md` is 94 lines, not ≤ 80: twelve lenses as headings with three questions each don't
+fit 80, and the lens shape was kept over the line count.
+
+With the skill, the same scratch setups (headless needs `--add-dir` for `~/.claude/docs`, or the session stops for
+want of the lens file — which it did, rightly, rather than invent lenses):
+
+- *Size gate:* offers to just make the change, no plan file. *Safety net* (`format_nok`, untested): task 1 pins
+  today's behaviour, the last task is an end-to-end check.
+- *Review* (2, 3, 5, 6): six lens reviewers in parallel each round with `model: opus`, a verifier per lens, the
+  findings file before fixes, a row per round. 33 reviewer and verifier prompts checked: every one forbids skills and
+  plan files, none sets a threshold, none carries an earlier finding. Counts by round, blocking/major:
+  2/20, 4/10, 0/2, 0/2, 0/5, 1/2, 0/1 — stopped by hand during round 7's fixes, for cost and to test resuming. Two
+  fixes followed. It fixed nits too, so the toy plan grew from 22 to 151 lines and every round found fresh faults in
+  the new text: step 4 now leaves nits alone, with that reason. And reviewers wrote probe scripts to `/tmp`, which
+  the old "edit any file" forbade in letter: the prompt now says to change nothing in the repo and experiment in a
+  fresh `mktemp -d`, and passes the plan copy's path, since one round-2 verifier got a placeholder for pasted text.
+- *Resuming* (6): round 7 in the findings file with no row → finished without dispatching a reviewer, row written; it
+  also found three entries marked `Fixed:` with no change in the plan (the interrupted run marked before editing) and
+  applied them. An open `user decision needed` → asked first. A `Done (plan):` log → said so and asked, naming the
+  close it would make.
+- *Whose work* (1): a `migration.md` committed by another author → asked before writing anything, `git status`
+  clean. The hand-over half waits for Task 5b's skill.
+
+Still to run, all needing Tasks 8–10: intake against Task 8's issue, a review to `Done (<kind>):` (this plan's next
+review, and the code review after Task 9's toy run), diff input, re-evaluation with a planted failing test, tests
+after fixes, completion, test tampering, and the untracked and tracked `proposal.md` cases.
 
 ## Task 5b · `reviewing-for-feedback` skill
 

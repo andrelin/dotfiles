@@ -11,6 +11,13 @@ These are this user's conventions, not a plugin's plan format: where `superpower
 
 ## Writing one
 
+- **A change whose diff fits in one sentence needs no plan:** say so and offer to just make it.
+- **Given an issue** (`/writing-plans <issue>`), read it first: `owner/repo#n` with `gh issue view <n> -R <owner/repo>`,
+  a number in the current repo or a URL as is, `glab issue view` likewise; a Jira key, ask the user to paste it.
+  A follow-up tracker item by its heading, or a ref (`B2.3`) resolved to its heading at once, since refs are
+  reassigned; a heading carrying an issue number is read as that issue. Carry its acceptance criteria into the spec.
+- **Name it** `plan-<issue-number>-<slug>.md`, or `plan-<slug>.md` with no issue. At company and customer level, first
+  add `/plan-*.md` to `$(git rev-parse --git-path info/exclude)`.
 - **Specific enough to implement without ambiguity:** exact file paths, method signatures, env var names.
   This matters *more* when an agent implements it: the executor works in a fresh context that never saw the
   exploration behind the plan, and meets an ambiguity by picking the most plausible reading and carrying on,
@@ -22,6 +29,8 @@ These are this user's conventions, not a plugin's plan format: where `superpower
   **Assume an agent executor unless the plan is explicitly for a person**; that case is rare, so don't pay for it by default.
 - **Spell out the tests.** Every plan that changes code says which unit and integration tests to write, following
   the project's conventions. A plan without its test plan is incomplete.
+- **Weakly tested code gets tests first:** the first task pins the current behaviour of what the plan touches, before
+  any task changes it. Every plan ends with an end-to-end verification step.
 - Terse and code-reference-heavy. No "what this code does" recaps — the reader has the codebase.
 
 ## Structure
@@ -57,9 +66,9 @@ Fold setup, configuration, scaffolding and doc updates into the task whose deliv
 
 At handover, and not before, run the placeholder patterns and three-pass self-review in
 `~/.claude/docs/plan-handover-checklist.md` — each is a decision the plan should have made, left for a guess.
-**Then have an independent agent review it** — one round at minimum, more for large or uncertain work: the author
-cannot see the ambiguity they already know the answer to, where a fresh reviewer meets the plan as its executor
-will. Feed findings back and re-review; **ready to implement means a round came back with nothing load-bearing left**.
+**Then run `reviewing-in-rounds plan <file>`** — the author cannot see the ambiguity they already know the answer to;
+**ready to implement means its log ends in `Done (plan):`**. Then move its tracker item, if it has one, to in-flight
+(`writing-follow-up-items`), and print `ai implement <plan-file>` for a fresh session.
 
 ## Keeping it in sync
 
@@ -78,4 +87,6 @@ file itself; the rest is here.
 Deleted once the work ships. **Never reference one from anything that outlives it** — `CLAUDE.md`, READMEs,
 memory, PR/MR descriptions — inline the load-bearing content into the durable doc instead.
 Cross-references *between* plans are fine (shared lifecycle); links *from* durable docs *into* plans are not.
+When the last task lands, fold what outlives the work — decisions, conventions, gotchas — into the durable doc it
+belongs in, then delete the plan and its review files in that same change.
 A long-lived personal tracker is **not** a plan file — that is `writing-follow-up-items` and `maintaining-follow-up-trackers`.

@@ -96,7 +96,8 @@ claude-settings-merge hardening ~/.claude/settings.json   # credential, rc-file 
 ```
 
 Both are safe to repeat, `hardening` never overrides an `instructionFiles` you set, and `dotfiles` runs both.
-`hardening` denies the checkout's `link/.ssh/keys` by its `$DOTFILES` path, and skips only that rule when `DOTFILES` is unset.
+`hardening` denies the checkout's `link/.ssh/keys` by its `$DOTFILES` path, `~/`-relative when under `$HOME`, replacing
+an earlier checkout's rule; it skips only that rule, and keeps an old one, when `DOTFILES` is unset.
 Exits 1 with the file untouched when `jq` (or, for `hooks`, `~/.claude/hooks/work-context.sh`) is missing, or the file isn't valid JSON.
 
 From `bin/claude-settings-merge`.

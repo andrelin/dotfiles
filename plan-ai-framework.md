@@ -59,7 +59,7 @@ in § *The staged workflow*. No external spec.
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
 | 5b · `reviewing-for-feedback` skill | ⏳ PENDING | |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
-| 6b · `tuning-skill-descriptions` skill and trigger evals | ⏳ PENDING | |
+| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | spike done 2026-10-19: `run_eval.py`, installed copy hidden |
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | ⏳ PENDING | |
 | 9 · `implementing-plans` skill | ⏳ PENDING | |
@@ -1701,6 +1701,19 @@ it and the skill. The eval set is `run_eval.py`'s format: a JSON array of
    requirements below then apply to that wrapper, less those specific to `run_eval`.
 4. Confirm it needs only the standard library and Python 3.10 or later (its `str | None` annotations fail on
    macOS's `/usr/bin/python3` 3.9 and RHEL 9's 3.9). A third-party module is a stop, to ask.
+
+**Spike results, 2026-10-19, Claude Code 2.1.292:**
+
+1. Confirmed from `run_eval.py` and one live query: the candidate goes to `.claude/commands/<skill>-skill-<id>.md`
+   under the nearest ancestor holding `.claude/`, `claude -p` runs by name from `PATH`, and only a `Skill` or `Read`
+   call naming that file counts. Any other first tool call scores the run a non-trigger on the spot (`:141`).
+2. **The installed copy competes.** On one should-fire query for `dependency-bot-prs`, in place: 0/3, and a manual run
+   showed `Skill dependency-bot-prs` — the real skill — taken instead of the candidate. Moved aside: 1/3. Requirement
+   6 stays. Even uncontested a bare command file pulls less than a real skill, so scores compare candidates with each
+   other, not with any absolute bar; the skill says so.
+3. `claude plugin eval` is not used: it runs hand-authored `case.yaml` suites as full graded agent runs against a
+   plugin, with no way to score a candidate description without editing the file.
+4. Standard library only. Python 3.10 or later: Homebrew's 3.15 qualifies, macOS's `/usr/bin/python3` 3.9 doesn't.
 
 **`bin/skill-trigger-eval` requirements,** bash 5 like the rest of `bin/`:
 

@@ -58,7 +58,7 @@ in § *The staged workflow*. No external spec.
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
 | 5b · `reviewing-for-feedback` skill | ⏳ PENDING | |
-| 6 · `filing-learnings` skill | ⏳ PENDING | |
+| 6 · `filing-learnings` skill | 🚧 PARTIAL | written and scenario-tested 2026-10-19; fresh-session trigger check pending |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ⏳ PENDING | |
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | ⏳ PENDING | |
@@ -94,7 +94,7 @@ working tree; commit it on its own when that session is done.
    - **jq in CI:** the user prefers dotfiles installing jq through Homebrew, as `123bbeb` does (`init/31` CI recipes)
      — already in place, and the WSL job was green on `2720f36`. Nothing to do but confirm.
 2. **Task 3's marker check — done 2026-10-19**, recorded under Task 3's status; `~/guard-test` deleted.
-3. **Task 6** (`filing-learnings`), per the order line above the status table.
+3. **Task 6** (`filing-learnings`) — written 2026-10-19; only the fresh-session trigger check is left, with the user.
 
 Done in the first session: review rounds 1–5 on this plan (§ *Review log (plan)*, every round-5 finding fixed); the
 split of Task 5 from 5b; the best-practices research, folded in as § *What the 2026-10-16 research changes* plus
@@ -1636,6 +1636,21 @@ project skill name.
 - **Trigger check, using `superpowers:writing-skills`' pressure-test method.** In a fresh session, finish a toy task in
   which the user corrects the same assumption twice, then confirm the skill loads before the completion report.
   Repeat with a clean task, where it must *not* propose a learning. Record both outcomes in the status table.
+
+**Status, 2026-10-19:** written, 66 lines, `bin/check-md-limits` clean. Scenario runs with subagents, three without the
+skill and three with it, each told to read it, so they test the body and not the trigger:
+
+| Scenario | Without the skill | With it |
+| --- | --- | --- |
+| Company, the same correction twice | edits `CLAUDE.md` before reporting, no cut ("stays at about 35 lines") | proposes one line last, names a stale line as the cut, writes nothing |
+| Customer, the same correction twice, "please remember this" | writes a 5-line section to the customer tree, no cut | one line, customer tree, "nothing to cut" said in the slot, writes nothing |
+| Clean task (with skill: a dated README noticed) | proposes nothing | proposes nothing, names "it might help someday" |
+
+The baselines already picked the right home, never memory, from the global `CLAUDE.md`; what failed was the shape —
+writing before asking, a section where a line will do, no cut. So the body is a recipe for the close-out (report,
+then the proposal in a fixed four-line shape, then the write on a yes) rather than a list of prohibitions, per
+`superpowers:writing-skills`' *Match the form to the failure*.
+Left: the trigger check above, in a fresh session where the skill must load on its own.
 
 ## Task 6b · `tuning-skill-descriptions` skill and trigger evals
 

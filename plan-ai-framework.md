@@ -1716,7 +1716,7 @@ it and the skill. The eval set is `run_eval.py`'s format: a JSON array of
 4. Standard library only. Python 3.10 or later: Homebrew's 3.15 qualifies, macOS's `/usr/bin/python3` 3.9 doesn't.
 
 **Status, 2026-10-19:** script, skill, tip, both eval sets, the `writing-agent-instructions` sentence and the plugin
-install are done; `test/test_skill_trigger_eval.sh` passes (40 assertions, three mutations of the script each caught),
+install are done; `test/test_skill_trigger_eval.sh` passes (37 assertions, three mutations of the script each caught),
 ShellCheck clean. Left: the user reviews the two eval sets, then the real runs on `tuning-skill-descriptions` and
 `writing-plans`. Deviations:
 

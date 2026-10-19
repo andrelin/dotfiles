@@ -1,0 +1,22 @@
+[
+  {"query": "The proving-causes skill didn't load when I asked about a flaky pipeline yesterday. Figure out why and fix its description so it triggers on that.", "should_trigger": true},
+  {"query": "Reword the description of the writing-tests skill so it also loads when I'm reviewing someone else's tests, and check it still doesn't fire on unrelated code changes.", "should_trigger": true},
+  {"query": "writing-mr-descriptions keeps loading when I just ask for a commit message. Tighten its description so that stops.", "should_trigger": true},
+  {"query": "I just wrote a new skill for Gradle build logic. Before I commit, measure whether its description actually triggers on the kinds of requests it's meant for.", "should_trigger": true},
+  {"query": "Change one word in the cutting-comments description, 'drafting' to 'writing', and make sure that doesn't hurt how often it loads.", "should_trigger": true},
+  {"query": "Build an eval set of should-fire and near-miss queries for the dependency-bot-prs skill so we can score its description.", "should_trigger": true},
+  {"query": "Two of my skills, writing-follow-up-items and maintaining-follow-up-trackers, both fire on 'tidy the tracker'. Sort out their descriptions so only the right one loads.", "should_trigger": true},
+  {"query": "Score three candidate descriptions for reviewing-locally against its eval set and tell me which one to keep.", "should_trigger": true},
+  {"query": "The filing-learnings skill fires after a single correction. Decide whether its description should require a repeated correction, and test the difference.", "should_trigger": true},
+  {"query": "Shorten the writing-plans description to under 300 characters without losing the triggers it currently catches, and prove it with scores.", "should_trigger": true},
+  {"query": "Write a CLAUDE.md for the new billing-api repo: stack, layering and the commands, under 30 lines.", "should_trigger": false},
+  {"query": "The proving-causes skill body is too long. Move its excuse table into a reference doc and point to it from the skill.", "should_trigger": false},
+  {"query": "Should the rule about Gradle wrappers live in CLAUDE.md, a rule with a paths glob, or a skill? Decide and move it.", "should_trigger": false},
+  {"query": "Package the writing-tests skill as a .skill file so I can upload it to claude.ai.", "should_trigger": false},
+  {"query": "Add a red-flags section to the cutting-comments skill listing the excuses agents give for keeping a comment.", "should_trigger": false},
+  {"query": "Write a new rule for Kotlin files that loads on src/**/*.kt and says to prefer data classes for DTOs.", "should_trigger": false},
+  {"query": "We just finished a task where I corrected you twice about money being Long øre. Propose the line to file and where it goes.", "should_trigger": false},
+  {"query": "Add a PostToolUse hook to settings.json that runs check-md-limits on every markdown file Claude edits.", "should_trigger": false},
+  {"query": "Write the plan for Task 7, the instruction-set audit, with its tasks, files and tests.", "should_trigger": false},
+  {"query": "Our CLAUDE.md is 70 lines. Cut it under 50 by moving what only matters sometimes into skills and rules.", "should_trigger": false}
+]

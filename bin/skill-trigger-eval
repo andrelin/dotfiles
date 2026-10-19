@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+#
+# Score how often a skill's description triggers on its eval set, with skill-creator's run_eval.
+#
+# Usage: skill-trigger-eval <skill> [--description <text>] [--model <alias>]
+#   The eval set is test/skill-triggers/<skill>.json: [{"query": "...", "should_trigger": true|false}, ...].
+#   --description  score this candidate instead of the skill's current description, without editing the file.
+#   --model        the model for every run; default the one bin/ai uses for a stage skill, else opus.
+#
+# The installed copy of the skill is moved out of the skills dir for the run, since it outcompetes the candidate
+# run_eval installs as a command, so the skill is unavailable to every session on the machine until it finishes.
+#
+# Exit 0 with run_eval's JSON on stdout; 1 with nothing on stdout when a prerequisite is missing, run_eval fails, or
+# any claude run failed rather than being decided; 2 on bad usage.
+#
+# Env: SKILL_TRIGGER_EVAL_PYTHON (the only python tried), SKILL_TRIGGER_EVAL_SKILLS_DIR (default claude/skills).
+
+set -euo pipefail
+
+function usage() {
+  echo "Usage: $(basename "$0") <skill> [--description <text>] [--model <alias>]" >&2
+  exit 2
+}
+
+function die() {
+  echo "$(basename "$0"): $*" >&2
+  exit 1
+}
+
+[[ $# -ge 1 && "$1" != -* ]] || usage
+skill="$1"
+shift
+description=""
+model=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --description) [[ $# -ge 2 ]] || usage; description="$2"; shift 2 ;;
+    --model) [[ $# -ge 2 ]] || usage; model="$2"; shift 2 ;;
+    *) usage ;;
+  esac
+done
+
+: "${DOTFILES:?DOTFILES is not set}"
+skills_dir="${SKILL_TRIGGER_EVAL_SKILLS_DIR:-$DOTFILES/claude/skills}"
+skill_dir="$skills_dir/$skill"
+eval_set="$DOTFILES/test/skill-triggers/$skill.json"
+marker="$DOTFILES/caches/.skill-trigger-eval-moved"
+
+[[ -f "$skill_dir/SKILL.md" ]] || die "no skill at $skill_dir"
+[[ -f "$eval_set" ]] || die "no eval set at $eval_set"
+if [[ -e "$marker" ]]; then
+  die "an earlier run left a skill moved out ($(cat "$marker")); put it back and delete $marker"
+fi
+
+plugin="$(jq -r '.plugins["skill-creator@claude-plugins-official"][0].installPath // empty' \
+  "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null || true)"
+creator="$plugin/skills/skill-creator"
+[[ -n "$plugin" && -f "$creator/scripts/run_eval.py" ]] ||
+  die "skill-creator plugin not installed; run init/53_claude_plugins.sh"
+
+# run_eval's annotations need 3.10, which macOS's /usr/bin/python3 and RHEL 9's are not.
+python=""
+if [[ -n "${SKILL_TRIGGER_EVAL_PYTHON:-}" ]]; then
+  candidates=("$SKILL_TRIGGER_EVAL_PYTHON")
+else
+  mapfile -t candidates < <(type -ap python3)
+fi
+for p in "${candidates[@]}"; do
+  if "$p" -c 'import sys; sys.exit(sys.version_info < (3, 10))' 2>/dev/null; then
+    python="$p"
+    break
+  fi
+done
+[[ -n "$python" ]] || die "no python3 of 3.10 or later found"
+
+real_claude="$(type -P claude || true)"
+[[ -n "$real_claude" ]] || die "claude not found on PATH"
+
+# The stage skills run on the model bin/ai gives their stage, so they are scored on it.
+if [[ -z "$model" ]]; then
+  case "$skill" in
+    writing-issues) model="${AI_MODEL_ISSUE:-sonnet}" ;;
+    writing-plans) model="${AI_MODEL_PLAN:-opus}" ;;
+    implementing-plans) model="${AI_MODEL_IMPLEMENT:-sonnet}" ;;
+    reviewing-in-rounds) model="${AI_MODEL_REVIEW:-opus}" ;;
+    *) model=opus ;;
+  esac
+fi
+
+# run_eval writes its command file under the nearest .claude/ above its cwd, so it runs in a temp project.
+# The hidden skill goes beside that .claude/, not in it, where it would load as a project skill.
+tmp="$(mktemp -d)"
+mkdir -p "$tmp/project/.claude" "$tmp/bin" "$tmp/runs" "$tmp/hidden"
+hidden="$tmp/hidden/$skill"
+eval_pid=""
+
+function cleanup() {
+  [[ -n "$eval_pid" ]] && kill "$eval_pid" 2>/dev/null
+  if [[ -d "$hidden" && ! -e "$skill_dir" ]]; then
+    mv "$hidden" "$skill_dir" && rm -f "$marker"
+  fi
+  rm -rf "$tmp"
+}
+trap cleanup EXIT
+
+mkdir -p "$(dirname "$marker")"
+echo "$skill $hidden" > "$marker"
+mv "$skill_dir" "$hidden"
+
+# run_eval discards each claude's stderr and scores a failed or hung run as a non-trigger, so a broken login would
+# read as a real 0%. This wrapper, first on its PATH, keeps each run's stdout and, when the run ends on its own, its
+# exit status: run_eval SIGKILLs a run once it has decided it, so a missing status alone is normal.
+# Each line reaches run_eval before it is recorded: once run_eval has killed the run and closed the pipe, the
+# orphaned claude's later lines die on that pipe instead of making a hung run look decided.
+cat > "$tmp/bin/claude" <<EOF
+#!/usr/bin/env bash
+run="$tmp/runs/\$\$"
+: > "\$run.out"
+"$real_claude" "\$@" | while IFS= read -r line; do
+  printf '%s\\n' "\$line" || exit 1
+  printf '%s\\n' "\$line" >> "\$run.out"
+done
+echo "\${PIPESTATUS[0]}" > "\$run.status"
+EOF
+chmod +x "$tmp/bin/claude"
+
+args=(-m scripts.run_eval --eval-set "$(cd "$(dirname "$eval_set")" && pwd -P)/$skill.json" --skill-path "$hidden"
+  --runs-per-query 3 --timeout 120 --model "$model")
+[[ -n "$description" ]] && args+=(--description "$description")
+
+# In the background, so a signal reaches the trap now rather than once run_eval returns.
+(cd "$tmp/project" && exec env -u CLAUDECODE PATH="$tmp/bin:$PATH" PYTHONPATH="$creator" "$python" "${args[@]}") \
+  > "$tmp/result.json" 2> "$tmp/stderr" &
+eval_pid=$!
+wait "$eval_pid" && rc=0 || rc=$?
+eval_pid=""
+cat "$tmp/stderr" >&2
+[[ "$rc" -eq 0 ]] || die "run_eval exited $rc"
+
+# A run failed if it exited non-zero, or was killed before it printed a single stream event: a hang or a timeout.
+failed=0
+total=0
+for out in "$tmp"/runs/*.out; do
+  [[ -e "$out" ]] || continue
+  total=$((total + 1))
+  status_file="${out%.out}.status"
+  if [[ -e "$status_file" ]]; then
+    [[ "$(cat "$status_file")" == 0 ]] || failed=$((failed + 1))
+  elif ! grep -q '"type": *"stream_event"' "$out"; then
+    failed=$((failed + 1))
+  fi
+done
+grep -q 'query failed' "$tmp/stderr" && failed=$((failed > 0 ? failed : 1))
+[[ "$failed" -eq 0 ]] || die "$failed of $total claude runs failed; no score reported"
+
+cat "$tmp/result.json"

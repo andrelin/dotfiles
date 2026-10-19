@@ -27,6 +27,7 @@ jobs:
           failed=0
           for f in bin/dotfiles bin/eachdir bin/isip bin/check-md-limits \
                    bin/sync-claude-deny bin/sort-claude-settings bin/claude-settings-merge \
+                   bin/skill-trigger-eval \
                    hooks/pre-commit \
                    claude/statusline-command.sh claude/hooks/work-context.sh claude/shims/shim.sh \
                    init/*.sh source/*.sh test/*.sh \

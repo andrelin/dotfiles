@@ -13,6 +13,7 @@ fi
 
 plugins=(
   superpowers@claude-plugins-official   # brainstorming, TDD, systematic debugging, skill authoring
+  skill-creator@claude-plugins-official # run_eval, which bin/skill-trigger-eval scores descriptions with
 )
 
 installed="$("$claude_bin" plugin list 2>/dev/null)"

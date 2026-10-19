@@ -101,3 +101,23 @@ an earlier checkout's rule; it skips only that rule, and keeps an old one, when 
 Exits 1 with the file untouched when `jq` (or, for `hooks`, `~/.claude/hooks/work-context.sh`) is missing, or the file isn't valid JSON.
 
 From `bin/claude-settings-merge`.
+
+## Tip 24.7: `skill-trigger-eval` — does a skill's description fire?
+
+Scores how often a skill's description makes Claude load it, over the queries in `test/skill-triggers/<skill>.json`,
+three headless runs each, with the `skill-creator` plugin's `run_eval`.
+
+```sh
+skill-trigger-eval writing-plans                                   # score the current description
+skill-trigger-eval writing-plans --description "Read before …"     # score a candidate; the file is untouched
+skill-trigger-eval writing-plans --model sonnet                    # override the model
+```
+
+Every query is three real `claude -p` runs, so a 20-query set costs 60 runs per description.
+The skill is moved out of `claude/skills/` for the run, since the installed copy outcompetes the candidate, which
+hides it from every session on the machine until the run ends; a run killed with `-9` leaves
+`caches/.skill-trigger-eval-moved` naming where it went, and the next run refuses until it is put back.
+A failed or hung `claude` run fails the whole score rather than counting as a miss. The `tuning-skill-descriptions`
+skill says how to use the numbers.
+
+From `bin/skill-trigger-eval`.

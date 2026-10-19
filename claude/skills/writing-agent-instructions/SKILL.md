@@ -67,6 +67,7 @@ If a skill would need two unrelated triggers to be found, that's a sign it shoul
 - **Say when to read it, never what it says.** A description that summarises the skill gets followed in its place,
   and the body goes unread. No "Covers…", no pointers to sibling skills. A scope boundary ("not a method",
   "complements TDD") goes in the body; the description gets a "Not for…" only where it would otherwise misfire.
+  Be pushy about *when* — an "even when …" clause naming the trigger most easily missed — never about *what*.
 - **Under 300 characters** — every skill's description sits in every session's skill list, so like a `CLAUDE.md`
   line it is paid for on every task. `bin/check-md-limits` enforces it.
 

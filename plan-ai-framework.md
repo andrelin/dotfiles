@@ -59,7 +59,7 @@ in § *The staged workflow*. No external spec.
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
 | 5b · `reviewing-for-feedback` skill | ⏳ PENDING | |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
-| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | spike done 2026-10-19: `run_eval.py`, installed copy hidden |
+| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19; eval sets await the user's review, then the real runs |
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | ⏳ PENDING | |
 | 9 · `implementing-plans` skill | ⏳ PENDING | |
@@ -1714,6 +1714,19 @@ it and the skill. The eval set is `run_eval.py`'s format: a JSON array of
 3. `claude plugin eval` is not used: it runs hand-authored `case.yaml` suites as full graded agent runs against a
    plugin, with no way to score a candidate description without editing the file.
 4. Standard library only. Python 3.10 or later: Homebrew's 3.15 qualifies, macOS's `/usr/bin/python3` 3.9 doesn't.
+
+**Status, 2026-10-19:** script, skill, tip, both eval sets, the `writing-agent-instructions` sentence and the plugin
+install are done; `test/test_skill_trigger_eval.sh` passes (40 assertions, three mutations of the script each caught),
+ShellCheck clean. Left: the user reviews the two eval sets, then the real runs on `tuning-skill-descriptions` and
+`writing-plans`. Deviations:
+
+- The recording wrapper relays each line to `run_eval` before recording it, instead of `tee`: after a kill the
+  orphaned `claude` can print on, and a recorded late line would make a hung run look decided. The relay's write to
+  the closed pipe fails first, so the late line is never recorded.
+- No `INT`/`TERM` trap: bash runs the `EXIT` trap on `SIGTERM` itself, and a test pins the skill coming back after a
+  `kill`. `run_eval` runs in the background under `wait`, so the trap fires at once instead of after it returns.
+- The held-out third is every third query of each kind, chosen before the first run; candidates are scored on the
+  whole set and chosen on the other two thirds' results, so the split costs no extra runs.
 
 **`bin/skill-trigger-eval` requirements,** bash 5 like the rest of `bin/`:
 

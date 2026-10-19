@@ -53,7 +53,7 @@ in § *The staged workflow*. No external spec.
 | 1 · Work-context resolver and guard script | ✅ DONE | 281 assertions pass. glab finding and deviations in Task 1 |
 | 2 · Register the hooks, and run tests on `claude/` changes | ✅ DONE | merged into the real settings 2026-10-16; manual checks below |
 | 2b · Command shims for aliases, functions and scripts (spike first) | ✅ DONE | on `PATH` through `CLAUDE_ENV_FILE`, not `source/`; see Task 2b |
-| 3 · User-level settings hardening | 🚧 PARTIAL | merged into the real settings 2026-10-16; marker check with the user pending |
+| 3 · User-level settings hardening | ✅ DONE | merged into the real settings 2026-10-16; marker check 2026-10-19 |
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
@@ -93,9 +93,7 @@ working tree; commit it on its own when that session is done.
      refused by the deny rule.
    - **jq in CI:** the user prefers dotfiles installing jq through Homebrew, as `123bbeb` does (`init/31` CI recipes)
      — already in place, and the WSL job was green on `2720f36`. Nothing to do but confirm.
-2. **Task 3's marker check** with the user, in a bypass session in `~/guard-test` (still on disk; delete it after):
-   Write, `touch` and `echo >` of `~/guard-test/sub/.claude-files-issues` denied, recording whether the deny rule or
-   the guard spoke; then the user's own `!touch` works. Then mark Task 3 done.
+2. **Task 3's marker check — done 2026-10-19**, recorded under Task 3's status; delete `~/guard-test` once its session is closed.
 3. **Task 6** (`filing-learnings`), per the order line above the status table.
 
 Done in the first session: review rounds 1–5 on this plan (§ *Review log (plan)*, every round-5 finding fixed); the
@@ -1180,6 +1178,15 @@ Deviations and decisions:
 - `unique` sorts the whole deny list, as `bin/sort-claude-settings` would; existing entries keep, but not their order.
 - The `link/.ssh/keys` follow-up rule is built in Task 3b unconditionally: the auto-mode classifier refused the probe
   read, and the rule is harmless if the `~/.ssh` one already follows the link.
+
+**Marker check, 2026-10-19, Claude Code 2.1.292:** in a bypass session in a customer-origin scratch tree, the Write
+tool on the marker was refused by the deny rule ("denied by your permission settings"). On a first try the session
+declined `touch` and `echo >` itself without calling Bash, reaching neither rule nor guard; on a second it ran
+`touch` of the marker and the guard blocked it ("Only you can create .claude-files-issues"). `echo >`, `cp`,
+`printf >` and `sudo touch` rest on `test/test_work_context.sh`. The user's own `!` command created the marker.
+Lesson for later manual checks: a model that refuses on its own masks the enforcement, so a check must confirm the
+tool call was made. Also seen: the guard blocks a heredoc whose *text* quotes a marker
+`touch` (an accepted false block, like `echo top.key` in Task 3b).
 
 ## Task 3b · Keep revealed git-secret files out of Claude's reach
 

@@ -88,10 +88,11 @@ working tree; commit it on its own when that session is done.
      nothing is tracked) and the shim use `#!/usr/bin/env bash` (it inherits the session's `PATH`), then drop the
      3.2 exception from `.claude/rules/scripts.md` and Global constraints. Needs a test that the merge refuses, or
      falls back loudly, when no bash ≥ 5 is found.
-   - **No username in paths:** `hardening` wrote `Read(//Users/<name>/.dotfiles/link/.ssh/keys/**)`, expanded from
-     `$DOTFILES`. Fix: write `Read(~/<rel>/link/.ssh/keys/**)` when `$DOTFILES` is under `$HOME`, and have
-     `hardening` remove a stale owned checkout rule, so a moved checkout or renamed user can't leave one behind.
-     Then re-run it on the real settings and check the absolute rule is gone.
+   - **No username in paths — done 2026-10-19:** `hardening` wrote `Read(//Users/<name>/.dotfiles/link/.ssh/keys/**)`.
+     It now writes `Read(~/<rel>/link/.ssh/keys/**)` when `$DOTFILES` is under `$HOME` and drops any earlier
+     checkout rule first (kept when `DOTFILES` is unset, so the keys never go unguarded); 5 new assertions. Re-run
+     on the real settings: the absolute rule is gone, and a `Read` of the checkout's keys by absolute path is still
+     refused by the deny rule.
    - **jq in CI:** the user prefers dotfiles installing jq through Homebrew, as `123bbeb` does (`init/31` CI recipes)
      — already in place, and the WSL job was green on `2720f36`. Nothing to do but confirm.
 2. **Task 3's marker check** with the user, in a bypass session in `~/guard-test` (still on disk; delete it after):
@@ -1244,6 +1245,8 @@ The merge into the real `~/.claude/settings.json` is left to the main session. D
 
 - **The checkout rule is `Read(//<DOTFILES>/link/.ssh/keys/**)`:** in a permission rule `//` anchors at the
   filesystem root, while a single `/` is relative to the settings file. `DOTFILES` is used as given, not canonicalised.
+  Superseded 2026-10-19: under `$HOME` it is `Read(~/<rel>/link/.ssh/keys/**)`, so no username lands in it; the `//`
+  form remains only for a checkout outside `$HOME`.
 - **The segment split is now line by line.** Bash 3.2's `${s//x/y}` is quadratic in its matches: a 117 KB heredoc
   took 95 s in the guard as of Task 2b whenever it named git, past the 10 s timeout, so `onFailure: block` would
   have blocked it. It now takes about 1 s, and a 2000-line heredoc test pins it under 5 s.

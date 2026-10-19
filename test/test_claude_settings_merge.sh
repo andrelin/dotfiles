@@ -133,7 +133,18 @@ assert "$(jq -r "$instruction_files" "$settings")" "claude-md-and-agents-md" "in
 assert "$(deny_has 'Read(~/.ssh/config_private)')" "yes" "the revealed git-secret ssh config is denied"
 assert "$(deny_has 'Read(~/.ssh/allowed_signers)')" "yes" "the revealed git-secret allowed_signers is denied"
 # // anchors a rule at the filesystem root; a single / would be relative to the settings file.
-assert "$(deny_has "$keys_rule")" "yes" "the checkout's link/.ssh/keys is denied by its DOTFILES path"
+assert "$(deny_has "$keys_rule")" "yes" "a checkout outside HOME is denied by its absolute path"
+
+# A checkout under HOME gets a ~/ rule, so no username is written, and it replaces the rule of an earlier
+# checkout: a moved checkout or a renamed user leaves no stale rule behind.
+mkdir -p "$HOME/src/dots"
+DOTFILES="$HOME/src/dots/" harden
+assert "$(deny_has 'Read(~/src/dots/link/.ssh/keys/**)')" "yes" "a checkout under HOME is denied by a ~/ path"
+assert "$(deny_has "$keys_rule")" "no" "the earlier checkout's rule is removed"
+assert "$(jq '[.permissions.deny[] | select(contains("link/.ssh/keys"))] | length' "$settings")" "1" \
+  "one checkout rule remains"
+assert "$(jq '[.permissions.deny[] | select(contains("'"$HOME"'"))] | length' "$settings")" "0" \
+  "no rule names the home directory"
 
 echo '{}' > "$settings"
 out="$(env -u DOTFILES "$SCRIPT" hardening "$settings" 2>&1)" && rc=0 || rc=$?
@@ -142,6 +153,10 @@ assert "$(jq '.permissions.deny | length' "$settings")" "17" "without DOTFILES t
 assert "$(jq '[.permissions.deny[] | select(contains("link/.ssh/keys"))] | length' "$settings")" "0" \
   "without DOTFILES no checkout rule is written"
 assert "${out/*DOTFILES*/found}" "found" "without DOTFILES it says the checkout rule was skipped"
+
+printf '{"permissions":{"deny":["%s"]}}\n' "$keys_rule" > "$settings"
+env -u DOTFILES "$SCRIPT" hardening "$settings" 2>/dev/null
+assert "$(deny_has "$keys_rule")" "yes" "without DOTFILES an existing checkout rule is kept"
 
 printf '{"permissions":{"allow":["Bash(ls *)"],"deny":["Bash(rm -rf *)","Edit(~/.zshrc)"]}}\n' > "$settings"
 harden

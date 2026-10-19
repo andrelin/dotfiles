@@ -58,7 +58,7 @@ in § *The staged workflow*. No external spec.
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | ⏳ PENDING | |
 | 5b · `reviewing-for-feedback` skill | ⏳ PENDING | |
-| 6 · `filing-learnings` skill | 🚧 PARTIAL | written and scenario-tested 2026-10-19; fresh-session trigger check pending |
+| 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ⏳ PENDING | |
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | ⏳ PENDING | |
@@ -94,7 +94,7 @@ working tree; commit it on its own when that session is done.
    - **jq in CI:** the user prefers dotfiles installing jq through Homebrew, as `123bbeb` does (`init/31` CI recipes)
      — already in place, and the WSL job was green on `2720f36`. Nothing to do but confirm.
 2. **Task 3's marker check — done 2026-10-19**, recorded under Task 3's status; `~/guard-test` deleted.
-3. **Task 6** (`filing-learnings`) — written 2026-10-19; only the fresh-session trigger check is left, with the user.
+3. **Task 6** (`filing-learnings`) — done 2026-10-19.
 
 Done in the first session: review rounds 1–5 on this plan (§ *Review log (plan)*, every round-5 finding fixed); the
 split of Task 5 from 5b; the best-practices research, folded in as § *What the 2026-10-16 research changes* plus
@@ -1650,7 +1650,13 @@ The baselines already picked the right home, never memory, from the global `CLAU
 writing before asking, a section where a line will do, no cut. So the body is a recipe for the close-out (report,
 then the proposal in a fixed four-line shape, then the write on a yes) rather than a list of prohibitions, per
 `superpowers:writing-skills`' *Match the form to the failure*.
-Left: the trigger check above, in a fresh session where the skill must load on its own.
+**Trigger check, 2026-10-19, Claude Code 2.1.292:** run headless, not by hand — `claude -p --output-format stream-json`
+in an origin-less scratch repo, each user turn a `--resume` of the same session, the Skill calls read from the stream.
+With a correction ("every listing is newest first"), `filing-learnings` loaded on its own in that same turn and closed
+with the four-line proposal, writing nothing; a turn later it still said the line awaited a yes. A clean two-turn
+session (add a subcommand, then "thanks, that's all") made no Skill call and proposed nothing. The project's
+`memory/` directory stayed empty. It fires on a single correction, not only a repeated one: the description's "a
+wrong assumption" covers that, and is intended.
 
 ## Task 6b · `tuning-skill-descriptions` skill and trigger evals
 

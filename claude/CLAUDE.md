@@ -57,8 +57,8 @@ quote a colleague's Bokmål verbatim rather than correcting it. Default to Engli
 
 - **Every file ends with a trailing newline.** Tests, comments, imports, proving a cause and running the project's
   formatters are `~/.claude/rules/writing-code.md`, which loads when you open a source file.
-- **Gradle:** call `gradle`, not `./gradlew` — the oh-my-zsh plugin resolves the wrapper. **Docker:** if it isn't
-  running, ask the user to start it and wait; never launch it yourself.
+- **A red main branch is never okay** unless the user says it is: after any push or merge to main, watch main's own CI
+  to green, and fix a failure at once, even one the change didn't cause.
 - **Dependabot and Renovate PRs:** never close one by hand or target one with `closes #N` — `dependency-bot-prs`.
   **Skills:** a personal skill shadows a same-named project one, and **where a plugin skill covers the same ground
   as a personal one, invoke the personal one** — `writing-plans` over `superpowers:writing-plans`,

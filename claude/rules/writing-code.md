@@ -12,6 +12,7 @@ paths:
   - "**/*.kts"
   - "bin/**"
   - "hooks/**"
+  - "**/Dockerfile*"
 ---
 
 # Writing code
@@ -26,3 +27,4 @@ paths:
   the project doesn't configure, and say so rather than silently skipping a broken one. Report pre-existing
   failures in code you didn't touch rather than fixing them, and don't let them block your own work; where the user
   owns the commit their hook is no substitute, so run the tools yourself or hand over a self-rewriting diff.
+- **Gradle:** `gradle`, not `./gradlew` (oh-my-zsh resolves the wrapper). **Docker** not running: ask the user to start it and wait; never launch it.

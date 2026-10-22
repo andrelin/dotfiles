@@ -4,8 +4,9 @@ on:
   push:
     paths:
       - 'renovate/**'
-      - 'test/renovate_presets.mjs'
+      - 'test/test_renovate_presets.mjs'
       - '**.md'
+      - '**.json'
       - '.github/renovate.json'
       - '.github/workflows/renovate-presets.yml'
 
@@ -21,6 +22,7 @@ jobs:
   validate:
     name: Validate Renovate presets
     runs-on: ubuntu-latest
+    # Installs and runs a large third-party package: a time limit, and no credentials left in the checkout.
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,4 +41,4 @@ jobs:
         run: '"$RUNNER_TEMP/renovate/node_modules/.bin/renovate-config-validator" --strict --no-global renovate/*.json .github/renovate.json'
 
       - name: Preset references, enum values and resolved behaviour
-        run: RENOVATE_DIR="$RUNNER_TEMP/renovate" node test/renovate_presets.mjs
+        run: RENOVATE_DIR="$RUNNER_TEMP/renovate" node test/test_renovate_presets.mjs

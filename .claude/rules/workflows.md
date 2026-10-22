@@ -5,8 +5,9 @@ paths:
 
 # CI workflows
 
-This repo has no PRs and one user: pushes go straight to `main`, and production is whatever is on the user's
-machine. CI exists to say "this needs your attention" promptly, not to gate a merge.
+This repo has one user, and most pushes go straight to `main`, where production is whatever is on the user's
+machine. CI exists to say "this needs your attention" promptly. The exceptions are Renovate's PRs, which CI gates
+before they merge themselves, and `renovate/` presets, which other repos resolve from `main` (`renovate.md`).
 
 - **Every workflow runs on `push`** and **fails hard** on any violation.
 - **No `continue-on-error`, no informational-only modes.** Don't propose one.

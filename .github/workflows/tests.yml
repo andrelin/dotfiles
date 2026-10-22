@@ -17,7 +17,8 @@ on:
       # Renovate config: renovate-presets.yml validates it.
       - 'renovate/**'
       - '.github/renovate.json'
-      - 'test/renovate_presets.mjs'
+      - 'test/test_renovate_presets.mjs'
+      - '.github/workflows/renovate-presets.yml'
 
 permissions:
   contents: read

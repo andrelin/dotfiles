@@ -6,7 +6,7 @@
   ],
   "packageRules": [
     {
-      "description": "The renovate bump moves the version test/renovate_presets.mjs runs against; in its own PR, a release that breaks the script holds back nothing else.",
+      "description": "The renovate bump moves the version test/test_renovate_presets.mjs runs against; in its own PR, a release that breaks the script holds back nothing else.",
       "matchPackageNames": ["renovate"],
       "groupName": null
     },

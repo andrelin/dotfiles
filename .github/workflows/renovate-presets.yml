@@ -5,6 +5,7 @@ on:
     paths:
       - 'renovate/**'
       - 'test/renovate_presets.mjs'
+      - '**.md'
       - '.github/renovate.json'
       - '.github/workflows/renovate-presets.yml'
 
@@ -15,6 +16,8 @@ env:
   RENOVATE_VERSION: 44.145.1 # renovate: npm=renovate
 
 jobs:
+  # Every repo that extends these presets breaks silently on an invalid one,
+  # so a bad preset has to fail here rather than in Renovate's logs.
   validate:
     name: Validate Renovate presets
     runs-on: ubuntu-latest
@@ -28,10 +31,8 @@ jobs:
         with:
           node-version: 24.22.0
 
-      # Every repo that extends these presets breaks silently on an invalid one,
-      # so a bad preset has to fail here rather than in Renovate's logs.
       - name: Install Renovate
-        run: npm install --prefix "$RUNNER_TEMP/renovate" --no-save "renovate@$RENOVATE_VERSION"
+        run: npm install --prefix "$RUNNER_TEMP/renovate" --no-save --ignore-scripts "renovate@$RENOVATE_VERSION"
 
       # --no-global: these are repo config, so options only global config may set have to fail.
       - name: renovate-config-validator

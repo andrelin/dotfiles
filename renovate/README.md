@@ -19,12 +19,12 @@ A repo extends one merge policy, optionally a schedule, and adds its own holds i
 | --- | --- |
 | `recommended` | The base the merge policies extend: digest-pinned actions, manifest bumps, a 3-day hold on every release that has a publish date, security fixes merged at any time. |
 | `automerge-non-major` | One grouped PR of non-major updates, merged on green checks. Majors wait for review, except security fixes. |
-| `grouped-non-major` | The same grouping, with nothing merged automatically, security fixes included. Use it in a repo without CI, where automerge would merge untested. |
+| `grouped-non-major` | `automerge-non-major`'s grouping, with nothing merged automatically, security fixes included. Use it in a repo without CI, where automerge would merge untested. |
 | `automerge-all` | Two PRs, one with every non-major update and one with every major, each merged once checks pass. A failing major holds back the other majors in its PR. |
 | `weekly` | Schedule only: PRs opened Mondays before 13:00, Oslo time; open PRs are still rebased outside it. Pair it with one of the presets above, which brings the grouping and the base. |
 | `daily` | Schedule only: PRs opened weekdays before 13:00, Oslo time. Pair it as with `weekly`. |
 | `weekly-automerge-all`, `daily-automerge-all` | Shorthand for `automerge-all` plus that schedule. |
-| `renovate-comments(…)` | Opt-in: bumps a version followed by a `# renovate: github-releases=cli/cli`-style comment (datasource, then package; `//` works too), in files matching the regexes passed as arguments, e.g. `renovate-comments(\\.ya?ml$)`. Up to ten arguments, split on commas, so a regex can't contain one. |
+| `renovate-comments(…)` | Opt-in: bumps a version followed by a `# renovate: github-releases=cli/cli`-style comment (datasource, then package; `//` works too), in files matching the regexes passed as arguments, e.g. `renovate-comments(\\.ya?ml$)`. Up to ten arguments, split on commas, so a regex can't contain one, not even in a `{1,3}` quantifier. |
 
 Without a schedule, Renovate opens PRs whenever it runs.
 Public repos use `daily`; private ones use `weekly`, because their CI minutes are paid for.

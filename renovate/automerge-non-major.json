@@ -7,7 +7,7 @@
       "groupName": "all non-major dependencies",
       "groupSlug": "all-non-major",
       "matchPackageNames": ["*"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
       "automerge": true
     }
   ]

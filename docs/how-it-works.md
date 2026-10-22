@@ -55,7 +55,7 @@ the one running, and step 6 remembers your last selection.
 - The `/hooks` directory contains git hooks that are symlinked into `.git/hooks/` by [init/12_git_hooks.sh](../init/12_git_hooks.sh).
 - The `/renovate` directory holds the shared Renovate presets my other repos extend ([renovate/README.md](../renovate/README.md)).
 - The `/source` directory contains files sourced whenever a new shell opens, in alphanumeric order.
-- The `/test` directory contains unit tests for especially complicated bash functions.
+- The `/test` directory contains unit tests for especially complicated bash functions, and the checks on the `/renovate` presets.
 - The `/vendor` directory contains third-party libraries (zsh plugins as git submodules).
 - The `/website` directory is a Docusaurus site rendering the README, these guide pages and the tips for GitHub
   Pages, deployed by [.github/workflows/deploy-docs.yml](../.github/workflows/deploy-docs.yml).

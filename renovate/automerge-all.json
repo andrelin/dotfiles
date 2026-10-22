@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Every update merged once checks pass: one grouped PR for non-major updates and one for majors.",
+  "description": "Every update in one group, merged once checks pass. Renovate's default separateMajorMinor still splits the group into a non-major PR and a major PR.",
   "extends": ["github>andrelin/dotfiles//renovate/recommended"],
   "packageRules": [
     {

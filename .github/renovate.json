@@ -1,26 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    "docker:enableMajor",
-    "helpers:pinGitHubActionDigests",
-    ":configMigration"
-  ],
-  "timezone": "Europe/Oslo",
-  "schedule": ["* 0-6 * * 1"],
-  "rangeStrategy": "bump",
+  "extends": ["github>andrelin/dotfiles//renovate/automerge-minor", "github>andrelin/dotfiles//renovate/weekly"],
   "packageRules": [
-    {
-      "matchDatasources": ["npm", "maven"],
-      "minimumReleaseAge": "3 days"
-    },
-    {
-      "groupName": "all non-major dependencies",
-      "groupSlug": "all-non-major",
-      "matchPackageNames": ["*"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true
-    },
     {
       "description": "TypeScript 7 removed tsconfig 'baseUrl', which @docusaurus/tsconfig still sets, so `npm run typecheck` fails. Unhold once Docusaurus ships a TS7-compatible tsconfig.",
       "matchPackageNames": ["typescript"],
@@ -31,13 +12,5 @@
     "description": "Most security alerts here are transitive dependencies of the docs site, which no package.json bump reaches. A weekly lockfile refresh pulls their fixed versions within the existing ranges.",
     "enabled": true,
     "automerge": true
-  },
-  "vulnerabilityAlerts": {
-    "description": "Security fixes skip the weekly window and the release-age hold and merge themselves, so an advisory is remediated in hours rather than waiting for Monday.",
-    "enabled": true,
-    "schedule": ["at any time"],
-    "minimumReleaseAge": null,
-    "automerge": true
-  },
-  "osvVulnerabilityAlerts": true
+  }
 }

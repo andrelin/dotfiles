@@ -1,0 +1,5 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Open and update PRs on weekday mornings. Merging isn't windowed, as in weekly.",
+  "schedule": ["* 0-5 * * 1-5"]
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Every update merged once checks pass: one grouped PR for non-major updates and one for majors.",
+  "extends": ["github>andrelin/dotfiles//renovate/recommended"],
+  "packageRules": [
+    {
+      "groupName": "all dependencies",
+      "matchPackageNames": ["*"],
+      "automerge": true
+    }
+  ]
+}

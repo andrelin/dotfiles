@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Bump versions annotated with a renovate comment, e.g. VERSION: 1.2.3 # renovate: datasource=github-releases depName=owner/repo. Pass up to ten file-pattern regexes as arguments.",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/{{arg0}}/",
+        "/{{arg1}}/",
+        "/{{arg2}}/",
+        "/{{arg3}}/",
+        "/{{arg4}}/",
+        "/{{arg5}}/",
+        "/{{arg6}}/",
+        "/{{arg7}}/",
+        "/{{arg8}}/",
+        "/{{arg9}}/"
+      ],
+      "matchStrings": [
+        "(?<currentValue>[\\w\\.-]+)(@(?<currentDigest>sha256:\\w{64}))?['\",;]*\\s*(#|\\/\\/)\\s?renovate: (?<datasource>\\S+)=(?<depName>\\S+)\\s?(registry=(?<registryUrl>\\S+))?\\s?(versioning=(?<versioning>\\S+))?\\s?(extractVersion=(?<extractVersion>\\S+))?"
+      ]
+    }
+  ]
+}

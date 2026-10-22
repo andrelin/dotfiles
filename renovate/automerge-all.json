@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Two PRs, one with every non-major update and one with every major, each merged once checks pass.",
+  "description": "Two PRs, one with every non-major update and one with every major, each merged once checks pass. A failing major holds back the other majors in its PR until it's fixed or held.",
   "extends": ["github>andrelin/dotfiles//renovate/recommended"],
   "packageRules": [
     {

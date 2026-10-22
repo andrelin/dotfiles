@@ -1,13 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "One grouped PR of every non-major update, left for review. Majors come as their own PRs.",
+  "description": "One grouped PR of every non-major update, and nothing merged automatically, security fixes included. For repos without CI, where automerge would merge untested.",
   "extends": ["github>andrelin/dotfiles//renovate/recommended"],
   "packageRules": [
     {
       "groupName": "all non-major dependencies",
       "groupSlug": "all-non-major",
       "matchPackageNames": ["*"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"]
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": false
     }
-  ]
+  ],
+  "vulnerabilityAlerts": {
+    "automerge": false
+  }
 }

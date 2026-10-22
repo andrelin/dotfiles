@@ -1,4 +1,5 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "automerge-all on the weekly schedule.",
   "extends": ["github>andrelin/dotfiles//renovate/automerge-all", "github>andrelin/dotfiles//renovate/weekly"]
 }

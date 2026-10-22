@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Open and update PRs on Mondays before 13:00, Oslo time. Merging isn't windowed: a PR whose checks finish after the window still merges, instead of waiting a week.",
+  "description": "Opens PRs on Mondays before 13:00, Oslo time. Open PRs are still rebased outside the window, and merging isn't windowed: a PR whose checks finish after it still merges, instead of waiting a week.",
+  "timezone": "Europe/Oslo",
   "schedule": ["* 0-12 * * 1"]
 }

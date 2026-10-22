@@ -14,6 +14,9 @@ on:
       - '**.md'
       - '.md-baseline'
       - 'LICENSE'
+      # Renovate config: renovate-presets.yml validates it.
+      - 'renovate/**'
+      - '.github/renovate.json'
 
 permissions:
   contents: read

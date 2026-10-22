@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Base for every repo: digest-pinned actions, version bumps in manifests, a release-age hold on npm and Maven, and security fixes merged at any time.",
+  "description": "Base for the merge policies: digest-pinned actions, version bumps in manifests, a 3-day hold on every release that has a publish date, and security fixes merged at any time.",
   "extends": [
     "config:recommended",
     "docker:enableMajor",
@@ -9,12 +9,8 @@
   ],
   "timezone": "Europe/Oslo",
   "rangeStrategy": "bump",
-  "packageRules": [
-    {
-      "matchDatasources": ["npm", "maven"],
-      "minimumReleaseAge": "3 days"
-    }
-  ],
+  "minimumReleaseAge": "3 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "vulnerabilityAlerts": {
     "description": "Security fixes skip the schedule and the release-age hold and merge themselves, so an advisory is remediated in hours rather than at the next window.",
     "enabled": true,

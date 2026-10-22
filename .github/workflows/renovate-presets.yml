@@ -3,7 +3,8 @@ name: Renovate presets
 on:
   push:
     paths:
-      - 'renovate/*.json'
+      - 'renovate/**'
+      - 'test/renovate_presets.mjs'
       - '.github/renovate.json'
       - '.github/workflows/renovate-presets.yml'
 
@@ -20,6 +21,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -27,5 +30,12 @@ jobs:
 
       # Every repo that extends these presets breaks silently on an invalid one,
       # so a bad preset has to fail here rather than in Renovate's logs.
+      - name: Install Renovate
+        run: npm install --prefix "$RUNNER_TEMP/renovate" --no-save "renovate@$RENOVATE_VERSION"
+
+      # --no-global: these are repo config, so options only global config may set have to fail.
       - name: renovate-config-validator
-        run: npx --yes --package "renovate@$RENOVATE_VERSION" -- renovate-config-validator --strict renovate/*.json .github/renovate.json
+        run: '"$RUNNER_TEMP/renovate/node_modules/.bin/renovate-config-validator" --strict --no-global renovate/*.json .github/renovate.json'
+
+      - name: Preset references, enum values and resolved behaviour
+        run: RENOVATE_DIR="$RUNNER_TEMP/renovate" node test/renovate_presets.mjs

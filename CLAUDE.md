@@ -27,4 +27,5 @@ This is a **personal public** repo — everything committed is published, per th
 - **Docs ship with the change.** A user-facing alias, function or script under `source/` or `bin/` updates its
   tip in the same commit, as do the READMEs and this file when a convention changes — the `writing-tips` skill.
 - CI runs on `push` and fails hard. **No `continue-on-error`, no informational-only modes** — don't propose one.
-- The Renovate dependency-dashboard issue is **#3**: working state, not a task. Leave it open.
+- The Renovate dependency-dashboard issue is **#3**: working state, not a task. Leave it open. **`renovate/*.json` are
+  extended by my other repos** by name: renaming, removing or changing one changes or breaks them all — `renovate/README.md`.

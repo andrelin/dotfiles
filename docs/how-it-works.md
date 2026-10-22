@@ -53,6 +53,7 @@ the one running, and step 6 remembers your last selection.
 - The `/conf` directory stores app configuration (Sublime Text, IntelliJ), linked into place by dedicated init scripts.
 - The `/docs` directory holds the guide pages split out of the README — this one and the [installation guide](installation.md).
 - The `/hooks` directory contains git hooks that are symlinked into `.git/hooks/` by [init/12_git_hooks.sh](../init/12_git_hooks.sh).
+- The `/renovate` directory holds the shared Renovate presets my other repos extend ([renovate/README.md](../renovate/README.md)).
 - The `/source` directory contains files sourced whenever a new shell opens, in alphanumeric order.
 - The `/test` directory contains unit tests for especially complicated bash functions.
 - The `/vendor` directory contains third-party libraries (zsh plugins as git submodules).

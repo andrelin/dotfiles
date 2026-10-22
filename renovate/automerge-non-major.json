@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "One grouped PR of every non-major update, merged once checks pass. Majors come as their own PRs for review.",
+  "description": "One grouped PR of every non-major update, merged once checks pass. Majors come as their own PRs for review, except security fixes, which merge at any time.",
   "extends": ["github>andrelin/dotfiles//renovate/recommended"],
   "packageRules": [
     {

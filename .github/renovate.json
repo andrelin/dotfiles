@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>andrelin/dotfiles//renovate/weekly-automerge-all",
+    "github>andrelin/dotfiles//renovate/daily-automerge-all",
     "github>andrelin/dotfiles//renovate/renovate-comments(^\\.github/workflows/.+\\.ya?ml$)"
   ],
   "packageRules": [

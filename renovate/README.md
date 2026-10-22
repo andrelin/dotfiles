@@ -20,8 +20,8 @@ A repo extends one merge policy, optionally a schedule, and adds its own holds i
 | `recommended` | The base every other preset extends: digest-pinned actions, manifest bumps, a 3-day release-age hold on npm and Maven, security fixes merged at any time. |
 | `automerge-minor` | One grouped PR of non-major updates, merged on green checks. Majors wait for review. |
 | `automerge-all` | Two PRs, one with every non-major update and one with every major, each merged once checks pass. |
-| `weekly` | Schedule only: PRs opened Monday mornings, Oslo time. Pair it with a merge policy, which brings the grouping and the base. |
-| `daily` | Schedule only: PRs opened weekday mornings, Oslo time. Pair it with a merge policy, as with `weekly`. |
+| `weekly` | Schedule only: PRs opened Mondays before 13:00, Oslo time. Pair it with a merge policy, which brings the grouping and the base. |
+| `daily` | Schedule only: PRs opened weekdays before 13:00, Oslo time. Pair it with a merge policy, as with `weekly`. |
 | `weekly-automerge-all`, `daily-automerge-all` | Shorthand for `automerge-all` plus that schedule. |
 | `renovate-comments(…)` | Opt-in: bumps versions annotated with a `# renovate: datasource=… depName=…` comment, in files matching the regexes passed as arguments, e.g. `renovate-comments(\\.ya?ml$)`. |
 

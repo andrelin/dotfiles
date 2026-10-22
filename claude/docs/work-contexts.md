@@ -105,4 +105,6 @@ This binds hardest where a repo's own `CLAUDE.md` sets the rule being waived —
   `GH_REPO=x; export GH_REPO`; a script writing the marker; a git alias's arguments past its first word.
   A separator inside quotes blocks falsely, failing safe, and an origin-less repo outside a temp directory is customer.
   Hooks don't run before the workspace-trust prompt is accepted, in `claude -p --bare`, or in cloud routines.
+- Use literal paths, never shell variables, in the cd or git -C that precedes a git write:
+  the work-context guard can't expand variables and blocks the command as an unknown directory, along with everything else in that call.
 - **The prose still binds where no hook sees:** what goes *into* a commit, MCP tools, the platforms' web UIs.

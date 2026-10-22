@@ -1,6 +1,9 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>andrelin/dotfiles//renovate/weekly-automerge-all"],
+  "extends": [
+    "github>andrelin/dotfiles//renovate/weekly-automerge-all",
+    "github>andrelin/dotfiles//renovate/renovate-comments(^\\.github/workflows/.+\\.ya?ml$)"
+  ],
   "packageRules": [
     {
       "description": "TypeScript 7 removed tsconfig 'baseUrl', which @docusaurus/tsconfig still sets, so `npm run typecheck` fails. Unhold once Docusaurus ships a TS7-compatible tsconfig.",

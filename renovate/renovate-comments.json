@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Bump versions annotated with a renovate comment, e.g. VERSION: 1.2.3 # renovate: datasource=github-releases depName=owner/repo. Pass up to ten file-pattern regexes as arguments.",
+  "description": "Bump versions annotated with a renovate comment naming the datasource and package, e.g. `version: 2.65.0 # renovate: github-releases=cli/cli`. Pass up to ten file-pattern regexes as arguments.",
   "customManagers": [
     {
       "customType": "regex",

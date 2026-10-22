@@ -1,0 +1,31 @@
+name: Renovate presets
+
+on:
+  push:
+    paths:
+      - 'renovate/*.json'
+      - '.github/renovate.json'
+      - '.github/workflows/renovate-presets.yml'
+
+permissions:
+  contents: read
+
+env:
+  RENOVATE_VERSION: 44.145.1 # renovate: npm=renovate
+
+jobs:
+  validate:
+    name: Validate Renovate presets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.0
+
+      # Every repo that extends these presets breaks silently on an invalid one,
+      # so a bad preset has to fail here rather than in Renovate's logs.
+      - name: renovate-config-validator
+        run: npx --yes --package "renovate@$RENOVATE_VERSION" -- renovate-config-validator --strict renovate/*.json .github/renovate.json

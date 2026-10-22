@@ -10,7 +10,7 @@ on:
       - '**.md'
       - '.md-baseline'
       - 'LICENSE'
-      # Renovate config: renovate-presets.yml validates it.
+      # Renovate config and its checks: renovate-presets.yml covers them.
       - 'renovate/**'
       - '.github/renovate.json'
       - 'test/test_renovate_presets.mjs'

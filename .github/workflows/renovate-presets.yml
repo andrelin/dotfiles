@@ -1,5 +1,7 @@
 name: Renovate presets
 
+# The test scans every tracked markdown and JSON file for preset references, hence the wide triggers;
+# the docs site's npm manifests can't hold one.
 on:
   push:
     paths:
@@ -7,7 +9,8 @@ on:
       - 'test/test_renovate_presets.mjs'
       - '**.md'
       - '**.json'
-      - '.github/renovate.json'
+      - '!website/package.json'
+      - '!website/package-lock.json'
       - '.github/workflows/renovate-presets.yml'
 
 permissions:
@@ -34,7 +37,10 @@ jobs:
           node-version: 24.22.0
 
       - name: Install Renovate
-        run: npm install --prefix "$RUNNER_TEMP/renovate" --no-save --ignore-scripts "renovate@$RENOVATE_VERSION"
+        # No install scripts, except re2's: the hosted Renovate matches regexes with RE2, so the checks must too.
+        run: |
+          npm install --prefix "$RUNNER_TEMP/renovate" --no-save --ignore-scripts "renovate@$RENOVATE_VERSION"
+          npm rebuild --prefix "$RUNNER_TEMP/renovate" re2
 
       # --no-global: these are repo config, so options only global config may set have to fail.
       - name: renovate-config-validator

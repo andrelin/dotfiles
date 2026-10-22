@@ -34,15 +34,16 @@ Public repos use `daily`; private ones use `weekly`, because their CI minutes ar
 Other repos extend these by file name, so a rename or removal breaks them and a change alters them all.
 To rename or remove one, add its replacement, move every repo that extends it over, then delete it.
 `test/test_renovate_presets.mjs` checks references, enum values and what each preset does once merged, with Renovate's own code;
-the `Renovate presets` workflow runs it and the validator on every push. To run both locally, with the version the workflow pins:
+the `Renovate presets` workflow runs it and the validator on every push that touches a preset, the test, or any markdown or JSON file.
+Both match regexes with RE2, as the hosted Renovate does. To run them locally, with the version the workflow pins:
 
 ```sh
-npm install --prefix /tmp/renovate --no-save --ignore-scripts renovate@<RENOVATE_VERSION>
-/tmp/renovate/node_modules/.bin/renovate-config-validator --strict --no-global renovate/*.json .github/renovate.json
-RENOVATE_DIR=/tmp/renovate node test/test_renovate_presets.mjs
+version=$(sed -n 's/^  RENOVATE_VERSION: \([0-9.]*\).*/\1/p' .github/workflows/renovate-presets.yml)
+dir=$(mktemp -d)
+npm install --prefix "$dir" --no-save --ignore-scripts "renovate@$version" && npm rebuild --prefix "$dir" re2
+"$dir/node_modules/.bin/renovate-config-validator" --strict --no-global renovate/*.json .github/renovate.json
+RENOVATE_DIR="$dir" node test/test_renovate_presets.mjs
 ```
-
-The checks match regexes with JavaScript's engine, while Renovate uses RE2: keep `renovate-comments` arguments free of lookarounds and backreferences.
 
 This repo is public so the Renovate app can read these presets from any of my repos, private ones included.
 

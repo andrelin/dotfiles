@@ -3,7 +3,6 @@
   "description": "Base for the merge policies: digest-pinned actions, version bumps in manifests, a 3-day hold on every release that has a publish date, and security fixes merged at any time.",
   "extends": [
     "config:recommended",
-    "docker:enableMajor",
     "helpers:pinGitHubActionDigests",
     ":configMigration"
   ],

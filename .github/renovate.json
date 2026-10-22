@@ -6,6 +6,12 @@
   ],
   "packageRules": [
     {
+      "description": "The Pages actions only run on main, so no branch build exercises a major of theirs before it merges.",
+      "matchPackageNames": ["actions/configure-pages", "actions/upload-pages-artifact", "actions/deploy-pages"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
       "description": "The renovate bump moves the version test/test_renovate_presets.mjs runs against; in its own PR, a release that breaks the script holds back nothing else.",
       "matchPackageNames": ["renovate"],
       "groupName": null

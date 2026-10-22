@@ -29,7 +29,14 @@ const { replaceArgs, resolveConfigPresets } = await load('renovate/dist/config/p
 const { applyPackageRules } = await load('renovate/dist/util/package-rules/index.js');
 const { isScheduledNow } = await load('renovate/dist/workers/repository/update/branch/schedule.js');
 const { matchRegexOrGlobList } = await load('renovate/dist/util/string-match.js');
+const { regEx, regexEngineStatus } = await load('renovate/dist/util/regex.js');
 const { DateTime, Settings } = await load('luxon/build/es6/luxon.mjs');
+
+// The hosted Renovate matches regexes with RE2, which rejects lookarounds JavaScript accepts.
+if (regexEngineStatus.type !== 'available') {
+  console.log(`::error::RE2 is ${regexEngineStatus.type}; rebuild re2 in RENOVATE_DIR so the checks match regexes as Renovate does`);
+  process.exit(1);
+}
 
 const PREFIX = 'github>andrelin/dotfiles//renovate/';
 const presets = fs.readdirSync('renovate').filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)).sort();
@@ -45,12 +52,18 @@ const check = async (name, fn) => {
 
 // Every reference to these presets, in config and in the docs people copy from,
 // is in the one form Renovate resolves and names a preset that exists.
-const tracked = execFileSync('git', ['ls-files', '*.md', '*.json'], { encoding: 'utf8' }).split('\n').filter(Boolean);
+let tracked = [];
+await check('git ls-files', () => {
+  tracked = execFileSync('git', ['ls-files', '*.md', '*.json'], { encoding: 'utf8' }).split('\n').filter(Boolean);
+});
 for (const file of tracked) {
-  for (const [ref] of fs.readFileSync(file, 'utf8').matchAll(/github>andrelin\/dotfiles[^\s"`)]*/gi)) {
+  // Trailing prose punctuation isn't part of a reference; a `<name>` placeholder isn't one at all.
+  for (let [ref] of fs.readFileSync(file, 'utf8').matchAll(/github>andrelin\/dotfiles[^\s"`)]*/gi)) {
+    ref = ref.replace(/[.,;:]+$/, '');
+    if (/\/\/renovate\/(<|\.\.\.)/.test(ref)) continue;
     await check(`${file} ${ref}`, () => {
       assert.ok(ref.startsWith(PREFIX), `not in the ${PREFIX}<name> form`);
-      assert.ok(presets.includes(ref.slice(PREFIX.length).replace(/\(.*$/, '')), 'no such preset');
+      assert.ok(presets.includes(ref.slice(PREFIX.length).replace(/[(#].*$/, '')), 'no such preset');
     });
   }
 }
@@ -58,7 +71,7 @@ for (const file of tracked) {
 // The README table lists exactly the presets that exist.
 await check('README table', () => {
   const listed = [...fs.readFileSync('renovate/README.md', 'utf8').matchAll(/^\| (`.+?) \|/gm)]
-    .flatMap(([, cell]) => [...cell.matchAll(/`([a-z-]+)/g)].map(([, n]) => n));
+    .flatMap(([, cell]) => [...cell.matchAll(/`([\w-]+)/g)].map(([, n]) => n));
   assert.deepEqual([...listed].sort(), presets);
 });
 
@@ -153,13 +166,27 @@ for (const [policy, [minorMerges, majorMerges]] of Object.entries(policies)) {
     assert.equal(openAt(config, T.sat, 'automergeSchedule'), true, 'merging is windowed');
     assert.equal(value(config, 'updateNotScheduled'), true, 'open PRs not rebased outside the window');
     assert.equal(openAt(config, T.sat), true, 'a policy alone has no schedule');
-    // Security fixes are always raised, merged at any time without the hold, except where nothing merges.
+    assert.equal(value(config, 'configMigration'), true, 'config migration PRs');
+    assert.notEqual((await update(config, { updateType: 'major', datasource: 'docker', manager: 'dockerfile' })).enabled, false, 'Docker majors raised');
+    if (majorMerges) {
+      const [a, b] = await Promise.all(['one', 'two'].map(async (packageName) => (await update(config, { updateType: 'major', packageName })).groupName));
+      assert.ok(a && a === b, 'majors share one PR');
+    }
+  });
+}
+
+// Security fixes, as Renovate applies them: the vulnerabilityAlerts config merged over the matched update.
+// Raised everywhere; merged at any time and without the hold wherever anything merges, schedule or not.
+const security = async (config) => mergeChildConfig(await update(config, { updateType: 'major' }), config.vulnerabilityAlerts);
+for (const [preset, merges] of [['automerge-non-major', true], ['automerge-all', true], ['grouped-non-major', false], ['weekly-automerge-all', true], ['daily-automerge-all', true]]) {
+  await check(`${preset} security fixes`, async () => {
+    const config = await resolved(preset);
     assert.equal(value(config, 'osvVulnerabilityAlerts'), true, 'OSV alerts');
-    const alerts = config.vulnerabilityAlerts;
-    assert.equal(alerts.enabled, true, 'security fixes raised');
-    assert.equal(alerts.automerge, minorMerges, 'security fixes merge themselves');
-    assert.equal(alerts.minimumReleaseAge, null, 'security fixes skip the hold');
-    assert.equal(openAt(alerts, T.sat), true, 'security fixes ignore the schedule');
+    const fix = await security(config);
+    assert.equal(fix.enabled, true, 'security fixes raised');
+    assert.equal(fix.automerge, merges, 'security fixes merge themselves');
+    assert.equal(fix.minimumReleaseAge, null, 'security fixes skip the hold');
+    assert.equal(openAt(fix, T.sat), true, 'security fixes ignore the schedule');
   });
 }
 
@@ -181,21 +208,27 @@ for (const [schedule, expected] of Object.entries(windows)) {
 
 // renovate-comments: up to ten file patterns as arguments, `#` or `//` comments.
 await check('renovate-comments', async () => {
-  const { customManagers: [manager] } = await resolve({ extends: [`${PREFIX}renovate-comments(\\.ya?ml$,\\.toml$)`] });
-  const selected = ['a.yml', 'b.toml', 'c.json'].filter((f) => matchRegexOrGlobList(f, manager.managerFilePatterns));
-  assert.deepEqual(selected, ['a.yml', 'b.toml'], 'files selected by two arguments');
+  const ten = Array.from({ length: 10 }, (_, i) => `\\.a${i}$`).join(',');
+  const { customManagers: [manager] } = await resolve({ extends: [`${PREFIX}renovate-comments(${ten})`] });
+  const selected = ['x.a0', 'x.a9', 'x.json'].filter((f) => matchRegexOrGlobList(f, manager.managerFilePatterns));
+  assert.deepEqual(selected, ['x.a0', 'x.a9'], 'files selected by the first and tenth arguments');
   for (const line of ['version: 1.2.3 # renovate: npm=left-pad', 'const v = "1.2.3"; // renovate: npm=left-pad']) {
-    const m = new RegExp(manager.matchStrings[0]).exec(line);
+    const m = regEx(manager.matchStrings[0]).exec(line);
     assert.deepEqual(m && [m.groups.currentValue, m.groups.datasource, m.groups.depName], ['1.2.3', 'npm', 'left-pad'], line);
   }
 });
 
-// This repo's own config: daily, majors merge, TypeScript held below 7, lockfiles refreshed,
-// and the renovate bump in its own PR so a release that breaks this script holds back nothing else.
+// This repo's own config: daily, majors merge after the hold, security fixes at any time, TypeScript held
+// below 7, Pages-action majors left for review, lockfiles refreshed, and the renovate bump in its own PR
+// so a release that breaks this script holds back nothing else.
 await check('.github/renovate.json', async () => {
   const config = await resolve(read('.github/renovate.json'));
   assert.equal(openAt(config, T.tue), true, 'daily');
   assert.equal((await update(config, { updateType: 'major' })).automerge, true, 'majors merge');
+  assert.equal((await update(config, { updateType: 'patch', datasource: 'pypi' })).minimumReleaseAge, '3 days', 'hold');
+  const fix = await security(config);
+  assert.deepEqual([fix.automerge, fix.minimumReleaseAge, openAt(fix, T.sat)], [true, null, true], 'security fixes at any time');
+  assert.equal((await update(config, { updateType: 'major', datasource: 'github-tags', packageName: 'actions/deploy-pages' })).automerge, false, 'Pages-action majors wait');
   assert.equal((await update(config, { updateType: 'major', packageName: 'typescript' })).allowedVersions, '<7', 'TypeScript hold');
   assert.deepEqual([config.lockFileMaintenance.enabled, config.lockFileMaintenance.automerge], [true, true], 'lockfile maintenance');
   const renovate = await update(config, { updateType: 'minor', packageName: 'renovate' });
@@ -209,7 +242,7 @@ await check('validator pin', async () => {
   const managers = (await resolve(read('.github/renovate.json'))).customManagers ?? [];
   const manager = managers.find((m) => matchRegexOrGlobList(workflow, m.managerFilePatterns));
   assert.ok(manager, `no custom manager selects ${workflow}`);
-  const m = new RegExp(manager.matchStrings[0]).exec(fs.readFileSync(workflow, 'utf8'));
+  const m = regEx(manager.matchStrings[0]).exec(fs.readFileSync(workflow, 'utf8'));
   assert.ok(m, 'no renovate comment matched');
   assert.deepEqual({ datasource: m.groups.datasource, depName: m.groups.depName }, { datasource: 'npm', depName: 'renovate' });
   assert.match(m.groups.currentValue, /^\d+\.\d+\.\d+$/, 'the pin is a version Renovate can bump');

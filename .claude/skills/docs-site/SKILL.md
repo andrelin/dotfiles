@@ -52,5 +52,5 @@ New MDX-incompatible markdown outside code blocks means extending the rewrites.
 
 ## Deploy
 
-`.github/workflows/deploy-docs.yml` builds and publishes on push to main, when any source-of-truth doc or
-`website/` itself changes.
+`.github/workflows/deploy-docs.yml` builds on every branch and publishes from main, when any source-of-truth doc or
+`website/` itself changes. Only the deploy job holds the Pages permissions.

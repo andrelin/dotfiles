@@ -19,6 +19,7 @@ const SOURCE_DIRS = [
   'conf',
   'hooks',
   'test',
+  'renovate',
   '.github',
 ];
 const ROOT_FILES = [

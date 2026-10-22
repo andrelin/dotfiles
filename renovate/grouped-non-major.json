@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "automerge-non-major's grouping with nothing merged automatically, security fixes included. For repos without CI, where automerge would merge untested.",
+  "extends": ["github>andrelin/dotfiles//renovate/automerge-non-major"],
+  "packageRules": [
+    {
+      "matchPackageNames": ["*"],
+      "automerge": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "automerge": false
+  }
+}

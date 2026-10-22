@@ -1,25 +1,20 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended",
-    "docker:enableMajor",
-    "helpers:pinGitHubActionDigests",
-    ":configMigration"
+    "github>andrelin/dotfiles//renovate/daily-automerge-all",
+    "github>andrelin/dotfiles//renovate/renovate-comments(^\\.github/workflows/.+\\.ya?ml$)"
   ],
-  "timezone": "Europe/Oslo",
-  "schedule": ["* 0-6 * * 1"],
-  "rangeStrategy": "bump",
   "packageRules": [
     {
-      "matchDatasources": ["npm", "maven"],
-      "minimumReleaseAge": "3 days"
+      "description": "The Pages actions only run on main, so no branch build exercises a major of theirs before it merges.",
+      "matchPackageNames": ["actions/configure-pages", "actions/upload-pages-artifact", "actions/deploy-pages"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
     },
     {
-      "groupName": "all non-major dependencies",
-      "groupSlug": "all-non-major",
-      "matchPackageNames": ["*"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true
+      "description": "The renovate bump moves the version test/test_renovate_presets.mjs runs against; in its own PR, a release that breaks the script holds back nothing else.",
+      "matchPackageNames": ["renovate"],
+      "groupName": null
     },
     {
       "description": "TypeScript 7 removed tsconfig 'baseUrl', which @docusaurus/tsconfig still sets, so `npm run typecheck` fails. Unhold once Docusaurus ships a TS7-compatible tsconfig.",
@@ -31,13 +26,5 @@
     "description": "Most security alerts here are transitive dependencies of the docs site, which no package.json bump reaches. A weekly lockfile refresh pulls their fixed versions within the existing ranges.",
     "enabled": true,
     "automerge": true
-  },
-  "vulnerabilityAlerts": {
-    "description": "Security fixes skip the weekly window and the release-age hold and merge themselves, so an advisory is remediated in hours rather than waiting for Monday.",
-    "enabled": true,
-    "schedule": ["at any time"],
-    "minimumReleaseAge": null,
-    "automerge": true
-  },
-  "osvVulnerabilityAlerts": true
+  }
 }

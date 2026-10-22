@@ -1,0 +1,50 @@
+name: Renovate presets
+
+# The test scans every tracked markdown and JSON file for preset references, hence the wide triggers;
+# the docs site's npm manifests can't hold one.
+on:
+  push:
+    paths:
+      - 'renovate/**'
+      - 'test/test_renovate_presets.mjs'
+      - '**.md'
+      - '**.json'
+      - '!website/package.json'
+      - '!website/package-lock.json'
+      - '.github/workflows/renovate-presets.yml'
+
+permissions:
+  contents: read
+
+env:
+  RENOVATE_VERSION: 44.145.1 # renovate: npm=renovate
+
+jobs:
+  # Every repo that extends these presets breaks silently on an invalid one,
+  # so a bad preset has to fail here rather than in Renovate's logs.
+  validate:
+    name: Validate Renovate presets
+    runs-on: ubuntu-latest
+    # Installs and runs a large third-party package: a time limit, and no credentials left in the checkout.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.0
+
+      - name: Install Renovate
+        # No install scripts, except re2's: the hosted Renovate matches regexes with RE2, so the checks must too.
+        run: |
+          npm install --prefix "$RUNNER_TEMP/renovate" --no-save --ignore-scripts "renovate@$RENOVATE_VERSION"
+          npm rebuild --prefix "$RUNNER_TEMP/renovate" re2
+
+      # --no-global: these are repo config, so options only global config may set have to fail.
+      - name: renovate-config-validator
+        run: '"$RUNNER_TEMP/renovate/node_modules/.bin/renovate-config-validator" --strict --no-global renovate/*.json .github/renovate.json'
+
+      - name: Preset references, enum values and resolved behaviour
+        run: RENOVATE_DIR="$RUNNER_TEMP/renovate" node test/test_renovate_presets.mjs

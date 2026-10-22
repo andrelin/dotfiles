@@ -34,7 +34,7 @@ jobs:
                    bin/sync-claude-deny bin/sort-claude-settings bin/claude-settings-merge \
                    bin/skill-trigger-eval \
                    hooks/pre-commit \
-                   claude/statusline-command.sh claude/hooks/work-context.sh claude/shims/shim.sh \
+                   claude/statusline-command.sh claude/hooks/*.sh claude/shims/shim.sh \
                    init/*.sh source/*.sh test/*.sh \
                    link/.bashrc link/.bash_profile; do
             echo "--- $f ---"

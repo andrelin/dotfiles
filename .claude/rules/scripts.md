@@ -26,8 +26,8 @@ Which marker deselects where, and why `_linux_` still fires on WSL: `.claude/doc
 **Helpers stay cross-platform:** anything under `source/` or `bin/` runs on macOS, Ubuntu, WSL and RHEL unless its
 filename marker says otherwise. Everything may assume bash 5.0 except `bin/dotfiles` down to its version
 check and `init/20_homebrew.sh`, which a fresh Mac runs under Apple's 3.2 before restarting under Homebrew's bash,
-and `claude/hooks/work-context.sh` and `claude/shims/shim.sh`, which Claude Code runs under macOS's `/bin/bash`.
-**CI runs shellcheck** (`-x -s bash --severity=warning`) over globbed `init/*.sh`, `source/*.sh` and `test/*.sh`, so a
+and `claude/hooks/*.sh` and `claude/shims/shim.sh`, which Claude Code runs under macOS's `/bin/bash`.
+**CI runs shellcheck** (`-x -s bash --severity=warning`) over globbed `init/*.sh`, `source/*.sh`, `test/*.sh` and `claude/hooks/*.sh`, so a
 new script there needs no workflow edit, plus the `bin/` scripts, `hooks/pre-commit`, the linked `.bashrc`/`.bash_profile`,
-`claude/statusline-command.sh`, `claude/hooks/work-context.sh` and `claude/shims/shim.sh`, listed individually.
+`claude/statusline-command.sh` and `claude/shims/shim.sh`, listed individually.
 `source/*.zsh` is zsh and unchecked: run it before handing over.

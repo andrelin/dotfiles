@@ -39,7 +39,8 @@ the one running, and step 6 remembers your last selection.
   the statusline script — symlinked into `~/.claude/` by [init/52_macos_claude.sh](../init/52_macos_claude.sh),
   leaving machine-local state (sessions, history) alone. `settings.json` stays machine-local too; the script only
   points its `statusLine` at the linked script and, through `bin/claude-settings-merge`, registers the two hook
-  entries for the work-context guard in `hooks/work-context.sh`. Its `hardening` call adds deny rules: `Read` of
+  entries for the work-context guard in `hooks/work-context.sh`, and a `PostToolUse` one for `hooks/watch-main-ci.sh`
+  that after a push to a default branch or a PR merge tells Claude to watch that branch's CI to green. Its `hardening` call adds deny rules: `Read` of
   credential files (`~/.ssh` keys, `~/.aws/credentials`, `~/.kube/config`, git, GnuPG and `gh` credentials, this repo's
   revealed `~/.ssh` files, and the checkout's `link/.ssh/keys` by its `$DOTFILES` path), `Edit`
   of the shell rc files, and creating the `.claude-files-issues` marker, so issue filing stays the user's opt-in.

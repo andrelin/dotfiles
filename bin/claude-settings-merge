@@ -3,12 +3,13 @@
 # Merge the dotfiles-owned entries into a machine-local Claude Code settings.json, leaving everything else as is.
 #
 # Usage: claude-settings-merge hooks|hardening <settings-file>
-#   hooks      Register ~/.claude/hooks/work-context.sh for PreToolUse and SessionStart.
+#   hooks      Register ~/.claude/hooks/work-context.sh for PreToolUse and SessionStart, and
+#              ~/.claude/hooks/watch-main-ci.sh for PostToolUse.
 #   hardening  Add the credential, rc-file and issue-marker deny rules, and load AGENTS.md beside CLAUDE.md.
 #              The checkout's link/.ssh/keys rule is expanded from $DOTFILES, written ~/-relative when that is under
 #              $HOME, replaces any earlier such rule, and is skipped when $DOTFILES is unset.
 #
-# Exit 0 on success; 1 when jq is missing, the guard script is missing (hooks only) or the file isn't valid JSON,
+# Exit 0 on success; 1 when jq is missing, a hook script is missing (hooks only) or the file isn't valid JSON,
 # with the file untouched; 2 on bad usage.
 
 set -euo pipefail
@@ -22,7 +23,7 @@ function usage() {
 # canonical entry reaches machines that already ran this. A foreign hook sharing a group with ours stays.
 # shellcheck disable=SC2016 # $vars are jq's, not the shell's
 hooks_filter='
-  def owned: (.command // "") | contains("work-context.sh");
+  def owned: (.command // "") | (contains("work-context.sh") or contains("watch-main-ci.sh"));
   def merge(event; entry):
     .hooks[event] = ([(.hooks[event] // [])[]
       | .hooks = [(.hooks // [])[] | select(owned | not)]
@@ -34,6 +35,10 @@ hooks_filter='
   })
   | merge("SessionStart"; {
     hooks: [{type: "command", command: "/bin/bash ~/.claude/hooks/work-context.sh session-start", timeout: 10}]
+  })
+  | merge("PostToolUse"; {
+    matcher: "Bash",
+    hooks: [{type: "command", command: "/bin/bash ~/.claude/hooks/watch-main-ci.sh", timeout: 10}]
   })
 '
 
@@ -67,11 +72,14 @@ case "$1" in
 esac
 
 # A hook pointing at nothing either blocks every tool call (onFailure: block) or silently guards nothing.
-# hardening registers no hook, so it doesn't need the guard.
-guard="$HOME/.claude/hooks/work-context.sh"
-if [[ "$1" == hooks && ! -r "$guard" ]]; then
-  echo "$guard not found; run dotfiles first. $settings left untouched." >&2
-  exit 1
+# hardening registers no hook, so it doesn't need the scripts.
+if [[ "$1" == hooks ]]; then
+  for script in work-context.sh watch-main-ci.sh; do
+    if [[ ! -r "$HOME/.claude/hooks/$script" ]]; then
+      echo "$HOME/.claude/hooks/$script not found; run dotfiles first. $settings left untouched." >&2
+      exit 1
+    fi
+  done
 fi
 
 if ! type -P jq >/dev/null; then

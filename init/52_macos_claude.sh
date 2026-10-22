@@ -32,7 +32,7 @@ for src in "$DOTFILES"/claude/*; do
 done
 
 # settings.json stays machine-local (plugins, permissions and hooks differ per machine),
-# so only the statusLine entry, the guard's two hook entries and the hardening entries are set here.
+# so only the statusLine entry, the hook entries and the hardening entries are set here.
 settings="$HOME/.claude/settings.json"
 status_line='{"type":"command","command":"bash ~/.claude/statusline-command.sh"}'
 
@@ -52,9 +52,9 @@ else
 fi
 
 if "$DOTFILES/bin/claude-settings-merge" hooks "$settings"; then
-  e_success "Registering the work-context guard hooks."
+  e_success "Registering the work-context guard and main-CI hooks."
 else
-  e_error "Couldn't register the work-context guard hooks in $settings."
+  e_error "Couldn't register the work-context guard and main-CI hooks in $settings."
 fi
 
 if "$DOTFILES/bin/claude-settings-merge" hardening "$settings"; then

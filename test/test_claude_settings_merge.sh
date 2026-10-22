@@ -17,28 +17,30 @@ e_header "$(basename "$0" .sh)"
 workdir="$(mktemp -d)"
 trap 'rm -rf "$workdir"' EXIT
 settings="$workdir/settings.json"
-# The script refuses to register a guard that isn't there, so HOME holds a stand-in.
+# The script refuses to register a hook script that isn't there, so HOME holds stand-ins.
 export HOME="$workdir/home"
 mkdir -p "$HOME/.claude/hooks"
-touch "$HOME/.claude/hooks/work-context.sh"
+touch "$HOME/.claude/hooks/work-context.sh" "$HOME/.claude/hooks/watch-main-ci.sh"
 
-# The guard's two hook entries, exactly as the init script must register them.
+# The guard's two hook entries and the main-CI reminder's, exactly as the init script must register them.
 pre_tool_use='{"matcher":"Bash|Monitor|Read|Grep|Write|Edit|MultiEdit|NotebookEdit","hooks":[{"type":"command","command":"/bin/bash ~/.claude/hooks/work-context.sh pre-tool-use","timeout":10,"onFailure":"block"}]}'
 session_start='{"hooks":[{"type":"command","command":"/bin/bash ~/.claude/hooks/work-context.sh session-start","timeout":10}]}'
+post_tool_use='{"matcher":"Bash","hooks":[{"type":"command","command":"/bin/bash ~/.claude/hooks/watch-main-ci.sh","timeout":10}]}'
 cc_pre='{"matcher":"","hooks":[{"type":"command","command":"cc-status pre"}]}'
 cc_start='{"hooks":[{"type":"command","command":"cc-status start"}]}'
 
 function merge() { "$SCRIPT" hooks "$settings"; }
 
-# The entries for one event whose commands run the guard.
+# The entries for one event whose commands run one of our hook scripts.
 function owned() {
-  jq -c --arg e "$1" '[.hooks[$e][]? | select(any(.hooks[]?; .command | contains("work-context.sh")))]' "$settings"
+  jq -c --arg e "$1" '[.hooks[$e][]? | select(any(.hooks[]?; .command | contains("work-context.sh") or contains("watch-main-ci.sh")))]' "$settings"
 }
 
 echo '{}' > "$settings"
 merge
 assert "$(owned PreToolUse)" "[$pre_tool_use]" "{} gains the PreToolUse entry"
 assert "$(owned SessionStart)" "[$session_start]" "{} gains the SessionStart entry"
+assert "$(owned PostToolUse)" "[$post_tool_use]" "{} gains the PostToolUse entry"
 
 rm -f "$settings"
 merge
@@ -56,6 +58,7 @@ assert "$(jq -c '.hooks.SessionStart' "$settings")" "[$cc_start,$session_start]"
 merge
 assert "$(owned PreToolUse | jq length)" "1" "a second run leaves one PreToolUse entry"
 assert "$(owned SessionStart | jq length)" "1" "a second run leaves one SessionStart entry"
+assert "$(owned PostToolUse | jq length)" "1" "a second run leaves one PostToolUse entry"
 assert "$(jq -c '.hooks.PreToolUse[0]' "$settings")" "$cc_pre" "a second run still keeps the foreign entry"
 
 stale='{"matcher":"Bash","hooks":[{"type":"command","command":"/bin/bash ~/.claude/hooks/work-context.sh pre-tool-use","timeout":5}]}'
@@ -79,7 +82,7 @@ assert "$(owned PreToolUse)" "[$pre_tool_use]" "an entry with the old matcher ga
 others='{"model":"opus","autoMode":{"enabled":true},"enabledPlugins":{"superpowers@x":true},"hooks":{"Stop":[{"hooks":[{"type":"command","command":"say done"}]}]}}'
 printf '%s\n' "$others" > "$settings"
 merge
-assert "$(jq -S 'del(.hooks.PreToolUse, .hooks.SessionStart)' "$settings")" "$(jq -S . <<< "$others")" \
+assert "$(jq -S 'del(.hooks.PreToolUse, .hooks.SessionStart, .hooks.PostToolUse)' "$settings")" "$(jq -S . <<< "$others")" \
   "other keys and other hook events are untouched"
 
 printf '{"model": "opus",\n' > "$settings"
@@ -107,6 +110,11 @@ merge 2>/dev/null && rc=0 || rc=$?
 assert "$rc" "1" "a dangling link to the guard exits 1"
 rm "$HOME/.claude/hooks/work-context.sh"
 mv "$workdir/guard" "$HOME/.claude/hooks/work-context.sh"
+mv "$HOME/.claude/hooks/watch-main-ci.sh" "$workdir/reminder"
+merge 2>/dev/null && rc=0 || rc=$?
+assert "$rc" "1" "a missing main-CI reminder script exits 1"
+assert "$(cat "$settings")" "{}" "a missing main-CI reminder script leaves the file untouched"
+mv "$workdir/reminder" "$HOME/.claude/hooks/watch-main-ci.sh"
 
 "$SCRIPT" bogus "$settings" 2>/dev/null && rc=0 || rc=$?
 assert "$rc" "2" "an unknown subcommand is a usage error"

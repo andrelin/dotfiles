@@ -78,18 +78,33 @@ Task 9 starts with Task 5's pending edits and runnable-now tests; the rest wait 
 then 4 (it names Task 9's skill), then 7 so its audit covers the new skills, and 11 last, being low priority.
 12 is independent and small: any time after 0. M is by hand, any time after 3. 13 comes after every other task, M included.
 
-## Handover — where the session of 2026-10-19 stopped
+## Handover — where the session of 2026-10-23 stopped
 
-End of 2026-10-19: Tasks 3, 6 and 5 (🚧, its real runs wait for 8–10) are committed and pushed, as are the
-username-free keys rule, the bash 3.2 decision, and the company-orgs file (`~/.claude-company-orgs`, user-written;
-the work repo it was made for resolves `company`). Task 6b is built and 🚧. Task 5b's skill is committed, ⏳.
+End of 2026-10-23: Tasks 6b and 5b are done. This plan's review ran rounds 6–9 and stopped by the user's decision
+without `Done (plan):` (§ *Review log (plan)*). Tasks 8, 9 and 10 are built, committed and pushed (`c8a87de`,
+`01a69d0`, `d88e665`), CI green, each 🚧 with its as-built note; nothing in them has had a live run.
 
-**Start tomorrow here, in this order:**
+**Start next session here, in this order:**
 
-1. **Task 6b — done** (2026-10-23).
-2. **Task 5b — done** (2026-10-23).
-3. **Then Task 8, 9, 10** in the plan's order; Task 9 starts with the edits Task 5's status lists as still to make,
-   and Task 5's remaining real-run tests are listed there too.
+1. **Trigger evals:** `bin/skill-trigger-eval writing-plans` (the flipped `2.11` at most 1 of 3, the rest as in 6b)
+   and `bin/skill-trigger-eval implementing-plans` (`1.1` at least 2 of 3) — from a session that needs neither
+   skill, since a run hides the skill machine-wide.
+2. **Task 10's quick checks, by the user:** `type -a ai` in zsh prints `ai not found`; the spike in a scratch repo,
+   `claude --model sonnet "/writing-plans tidy the tip numbering"`, exit after the first reply, and confirm the
+   first turn loaded `writing-plans`. A failed spike switches `bin/ai` and `test/test_ai.sh` to `Use the <skill>
+   skill: <args>`.
+3. **Task 9's toy runs and Task 5's runnable-now list** (Task 9's first step), then Task 5b's *By number*. The toy
+   repo is set up in the session scratchpad, `build9/toy` with `build9/toy-pristine` to copy variants from; the
+   scratchpad may be gone, in which case rebuild it from Task 9 § *Tests*.
+4. **Task 8's live tests** (about 21; the first files a real public issue on `andrelin/dotfiles`).
+5. **Task 10's end-to-end run,** then Task 5's pending real runs, which flip Task 5's row.
+6. **Then 4 → 7 → 11**, with 12 and M any time, and 13 last.
+
+Also: remove the three merged agent worktrees under `.claude/worktrees/` (`git worktree list`), and run
+`filing-learnings` for this session's detours: a verifier's `mktemp -d` experiment blocked by the guard as customer
+level; `review-log.md`'s literal format has no blank line after headings where markdownlint (MD022) adds one; a
+spurious "pushed to main, watch CI" hook after read-only commands; the guard's `git -C $var` gap; run_eval's parallel
+workers stealing each other's candidate command; and round 8's fixes seeding round 9's majors.
 
 Headless test runs: `claude -p … --output-format stream-json --verbose`, with `--add-dir ~/.claude/docs` (and the
 checkout's `claude/docs`) or the skill stops for want of its docs; `--permission-mode bypassPermissions` where the
@@ -124,7 +139,7 @@ Task 2's manual verification, 2026-10-16, Claude Code 2.1.292, in a repo with or
 - `claude-settings-merge` run by hand before `~/.claude/hooks` was linked registered a hook pointing at nothing; it
   now exits 1 with the settings untouched when `~/.claude/hooks/work-context.sh` isn't readable, tested.
 
-Next: see *Start tomorrow here* at the top of this section.
+Next: see *Start next session here* at the top of this section.
 
 ## Findings and decisions
 

@@ -60,7 +60,7 @@ in § *The staged workflow*. No external spec.
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests wait for Tasks 8–10 |
 | 5b · `reviewing-for-feedback` skill | ⏳ IN PROGRESS | written and first-review tested 2026-10-19; re-review run next |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
-| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19, runs made inert 2026-10-23; both sets approved; added query 21 in `writing-plans.json` awaits approval, then the real runs |
+| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19, runs made inert 2026-10-23; both eval sets approved 2026-10-23; the real runs next |
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | ⏳ PENDING | |
 | 9 · `implementing-plans` skill | ⏳ PENDING | |
@@ -81,8 +81,7 @@ the work repo it was made for resolves `company`). Task 6b is built and 🚧. Ta
 
 **Start tomorrow here, in this order:**
 
-1. **Task 6b — the user approves query 21 in `test/skill-triggers/writing-plans.json`**
-   (both sets were otherwise approved 2026-10-23). Then the real `bin/skill-trigger-eval` runs on
+1. **Task 6b — both eval sets are approved** (2026-10-23). Next, the real `bin/skill-trigger-eval` runs on
    `tuning-skill-descriptions` and `writing-plans`, scores recorded under Task 6b, row ✅. Run them from a session
    that doesn't need either skill: the run hides it machine-wide.
 2. **Task 5b — the re-review test.** The scratch repos lived in the session scratchpad and are gone; rebuild them as
@@ -1781,10 +1780,11 @@ install are done; `test/test_skill_trigger_eval.sh` passes (37 assertions, three
 ShellCheck clean. 2026-10-23: the user approved `tuning-skill-descriptions.json`. In `writing-plans.json`, near-miss
 16 ("Implement Task 2 from plan-export-retry.md …") was replaced by a recommendation asked for in chat, because
 implementing a plan updates the plan, so `writing-plans` loading there is correct, not a misfire. The user then
-approved `writing-plans.json`, and asked for that case as a should-fire query: 21, implementing a plan task without
-saying to update the plan. 21 still awaits the user's approval. Both sets now carry stable `id`s for the user to
-name queries by. Once Task 9 lands, 21 sits on `implementing-plans`' ground, so it may need moving to that skill's
-set then. Left: 21's approval, then the real runs on `tuning-skill-descriptions` and `writing-plans`. Deviations:
+approved `writing-plans.json`, and asked for that case as a should-fire query: `1.11`, implementing a plan task
+without saying to update the plan, approved too. Both sets carry stable `id`s for the user to name queries by,
+`1.n` should-fire and `2.n` near-miss. Once Task 9 lands, `writing-plans` should no longer load there: `1.11` then
+flips to a near-miss against `implementing-plans`, becoming the next free `2.n`. Left: the real runs on
+`tuning-skill-descriptions` and `writing-plans`. Deviations:
 
 - The recording wrapper relays each line to `run_eval` before recording it, instead of `tee`: after a kill the
   orphaned `claude` can print on, and a recorded late line would make a hung run look decided. The relay's write to
@@ -2093,7 +2093,9 @@ description: Read before writing, filing or drafting an issue or ticket for any 
 
 ## Task 9 · `implementing-plans` skill
 
-**Files:** created `claude/skills/implementing-plans/SKILL.md`, aim ≤ 100 lines.
+**Files:** created `claude/skills/implementing-plans/SKILL.md`, aim ≤ 100 lines. Modified
+`test/skill-triggers/writing-plans.json`: query `1.11` (build a plan task, then commit) flips to `should_trigger: false`
+as the next free `2.n`, since this skill now owns that request; rerun `writing-plans`' score after the flip.
 
 **Interfaces:**
 

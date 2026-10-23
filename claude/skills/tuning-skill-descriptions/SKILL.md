@@ -14,8 +14,9 @@ session on the machine until it ends.
 
 ## The eval set first
 
-`test/skill-triggers/<skill>.json`, a JSON array of `{"id": <n>, "query": "...", "should_trigger": true|false}`,
-one per line. The `id` is how the user names a query, so a new one takes the next free number, never a renumbering:
+`test/skill-triggers/<skill>.json`, a JSON array of `{"id": "1.n", "query": "...", "should_trigger": true|false}`,
+one per line: should-fire queries first as `1.n`, near-misses after as `2.n`.
+The `id` is how the user names a query, so a new one takes the next free number of its kind, never a renumbering:
 
 - **About 10 should-fire queries,** each a substantive multi-step request, worded the way the user would ask. A
   one-step request triggers no skill whatever the description says, so it measures nothing.

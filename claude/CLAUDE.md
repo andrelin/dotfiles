@@ -28,7 +28,7 @@ inspection and a clean zero-conflict rebase or merge are fine; draft the message
 `~/.claude/hooks/work-context.sh` enforces this list and reports the level at session start; a block is final — draft the command for the user.
 At customer level the one platform write it allows is `issue create`, where `work-context.sh can-file-issue` prints a tool.
 
-**An approval covers one action, not a policy** — it expires with the change in front of you, so ask again.
+**An approval covers what it names, once** — never the item beside it, nor the next change: ask for each, explicitly.
 Before customer work read the `CLAUDE.md` at the root of that tree; how a level applies, why, and the guard's gaps: `~/.claude/docs/work-contexts.md`.
 
 ## Durable context lives in the repo

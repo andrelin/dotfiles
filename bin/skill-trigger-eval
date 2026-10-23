@@ -3,7 +3,7 @@
 # Score how often a skill's description triggers on its eval set, with skill-creator's run_eval.
 #
 # Usage: skill-trigger-eval <skill> [--description <text>] [--model <alias>]
-#   The eval set is test/skill-triggers/<skill>.json: [{"id": <n>, "query": "...", "should_trigger": true|false}, ...].
+#   The eval set is test/skill-triggers/<skill>.json: [{"id": "1.n", "query": "...", "should_trigger": true|false}, ...].
 #   --description  score this candidate instead of the skill's current description, without editing the file.
 #   --model        the model for every run; default the one bin/ai uses for a stage skill, else opus.
 #

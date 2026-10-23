@@ -114,9 +114,12 @@ skill-trigger-eval writing-plans --model sonnet                    # override th
 ```
 
 Every query is three real `claude -p` runs, so a 20-query set costs 60 runs per description.
+Each run has every tool call blocked by a hook, so a query is scored on the tool it reaches for without ever acting,
+and is killed with its tool shells once decided; Ctrl-C or a plain `kill` stops every run still going.
 The skill is moved out of `claude/skills/` for the run, since the installed copy outcompetes the candidate, which
 hides it from every session on the machine until the run ends; a run killed with `-9` leaves
-`caches/.skill-trigger-eval-moved` naming where it went, and the next run refuses until it is put back.
+`caches/.skill-trigger-eval-moved` naming where it went, and the next run refuses until it is put back, and leaves
+its undecided `claude` runs going: `pkill -f 'claude -p .* --include-partial-messages'`.
 A failed or hung `claude` run fails the whole score rather than counting as a miss. The `tuning-skill-descriptions`
 skill says how to use the numbers.
 

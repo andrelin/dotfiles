@@ -60,7 +60,7 @@ in § *The staged workflow*. No external spec.
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests wait for Tasks 8–10 |
 | 5b · `reviewing-for-feedback` skill | ⏳ IN PROGRESS | written and first-review tested 2026-10-19; re-review run next |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
-| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19; eval sets await the user's review, then the real runs |
+| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19, runs made inert 2026-10-23; eval sets await the user's review, then the real runs |
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | ⏳ PENDING | |
 | 9 · `implementing-plans` skill | ⏳ PENDING | |
@@ -1784,8 +1784,17 @@ ShellCheck clean. Left: the user reviews the two eval sets, then the real runs o
 - The recording wrapper relays each line to `run_eval` before recording it, instead of `tee`: after a kill the
   orphaned `claude` can print on, and a recorded late line would make a hung run look decided. The relay's write to
   the closed pipe fails first, so the late line is never recorded.
-- No `INT`/`TERM` trap: bash runs the `EXIT` trap on `SIGTERM` itself, and a test pins the skill coming back after a
-  `kill`. `run_eval` runs in the background under `wait`, so the trap fires at once instead of after it returns.
+- No `INT`/`TERM` trap: bash runs the `EXIT` trap on `SIGINT` and `SIGTERM` itself, and tests pin both. `run_eval`
+  runs in the background under `wait`, so the trap fires at once instead of after it returns. (Re-checked
+  2026-10-23: deleting both trap lines left every test green, so they were dropped again.)
+- **No eval run acts, or outlives the script** (added 2026-10-22/23, after the spike): `run_eval`'s SIGKILL hits the
+  wrapper, never `claude`, which then carried on with the query as a real task. Each `claude` now gets
+  `--settings` with a PreToolUse hook that blocks every tool (exit 2). `run_eval` decides a run from the first
+  `tool_use` that streams, before any hook runs, so the scores don't change. A watcher kills `claude` and its tool
+  shells, found by parent PID since they run in process groups of their own, once the wrapper is gone. `run_eval` runs
+  in a process group of its own (`set -m`, stdin `/dev/null`), so `cleanup` freezes and kills that group and every
+  member's tool shells. The tip names the `pkill` that cleans up after a `-9`. 46 assertions; mutations that drop the
+  hook, the watcher's kill or `cleanup`'s kill are each caught.
 - The held-out third is every third query of each kind, chosen before the first run; candidates are scored on the
   whole set and chosen on the other two thirds' results, so the split costs no extra runs.
 

@@ -37,7 +37,8 @@ done
 # The stub python passes the version probe unless STUB_PY_OLD is set. As run_eval it records what it was given and
 # whether the skill was hidden, then runs `claude -p x` twice from PATH and prints {}. STUB_PY_MODE forces a failure:
 # kill-before kills a claude before it prints, kill-after kills one after a tool_use event, each closing the pipe as
-# run_eval does; query-failed prints run_eval's warning.
+# run_eval does, and kill-after then waits past the time the killed claude would act; query-failed prints run_eval's
+# warning. Two leave a lingering claude to the script: orphan exits with one running, hang never returns.
 cat > "$stubs/python" <<'EOF'
 #!/usr/bin/env bash
 if [[ "$1" == -c ]]; then [[ -z "${STUB_PY_OLD:-}" ]]; exit; fi
@@ -55,10 +56,19 @@ case "${STUB_PY_MODE:-}" in
     kill -9 $!
     exec 3<&- ;;
   kill-after)
-    exec 3< <(claude -p x)
+    exec 3< <(STUB_CLAUDE_LINGER=1 claude -p x)
     read -r -u 3 _
     kill -9 $!
-    exec 3<&- ;;
+    exec 3<&-
+    sleep 3 ;;
+  orphan)
+    STUB_CLAUDE_LINGER=1 claude -p x > /dev/null &
+    for _ in {1..50}; do [[ -s "$STUB_LOG/pids" ]] && break; sleep 0.1; done
+    echo '{}'
+    exit ;;
+  hang)
+    exec 3< <(STUB_CLAUDE_LINGER=1 claude -p x)
+    sleep 30 ;;
   query-failed)
     echo "Warning: query failed: boom" >&2 ;;
 esac
@@ -66,13 +76,28 @@ claude -p x > /dev/null
 claude -p x > /dev/null
 echo '{}'
 EOF
-# The stub claude prints one stream event, after STUB_CLAUDE_DELAY seconds, then exits with STUB_CLAUDE_RC. With a
-# delay set it holds on afterwards, as a real run does until it is killed.
+# The stub claude keeps its arguments and settings file, prints one stream event, after STUB_CLAUDE_DELAY seconds,
+# then exits with STUB_CLAUDE_RC. With a delay set it holds on afterwards, as a real run does until it is killed.
+# With STUB_CLAUDE_LINGER it goes on with the query as a real run would: it starts a tool shell in a process group of
+# its own, logging both pids, and marks that it acted two seconds after its event, so a killed run never marks.
 cat > "$stubs/claude" <<'EOF'
 #!/usr/bin/env bash
 touch "$STUB_LOG/started"
+printf '%s\n' "$@" > "$STUB_LOG/claude-argv"
+settings="$(grep -A1 -x -- --settings "$STUB_LOG/claude-argv" | tail -1)"
+[[ -f "$settings" ]] && cp "$settings" "$STUB_LOG/settings.json"
 sleep "${STUB_CLAUDE_DELAY:-0}"
 echo '{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"tool_use","name":"Skill"}}}'
+if [[ -n "${STUB_CLAUDE_LINGER:-}" ]]; then
+  echo "$$" >> "$STUB_LOG/pids"
+  set -m
+  sleep 30 &
+  echo "$!" >> "$STUB_LOG/pids"
+  set +m
+  sleep 2
+  touch "$STUB_LOG/acted"
+  sleep 30
+fi
 [[ -n "${STUB_PY_MODE:-}" ]] && sleep 2
 exit "${STUB_CLAUDE_RC:-0}"
 EOF
@@ -82,6 +107,13 @@ PATH="$stubs:$PATH"
 
 function run() { "$SCRIPT" "$@" > "$workdir/stdout" 2> "$workdir/stderr" && rc=0 || rc=$?; }
 function arg_after() { grep -A1 -x -- "$1" "$STUB_LOG/argv" | tail -1; }
+# How many of the lingering claudes and their tool shells are still alive.
+function alive() {
+  local n=0 p
+  while read -r p; do kill -0 "$p" 2>/dev/null && n=$((n + 1)); done < "$STUB_LOG/pids"
+  echo "$n"
+}
+function fresh_linger() { : > "$STUB_LOG/pids"; rm -f "$STUB_LOG/acted"; }
 
 run fixture
 assert "$rc" "0" "a clean run exits 0"
@@ -147,6 +179,43 @@ assert "$(cat "$workdir/stdout")" "{}" "a decided run still prints the JSON"
 STUB_PY_MODE=query-failed run fixture
 assert "$rc/$(wc -c < "$workdir/stdout" | tr -d ' ')" "1/0" "run_eval's query-failed warning fails the run"
 assert "$(grep -c 'query failed' "$workdir/stderr")" "1" "run_eval's stderr is passed through"
+
+e_header "no run acts or outlives the script"
+
+run fixture
+assert "$(grep -c -x -- --settings "$STUB_LOG/claude-argv")" "1" "each claude gets a settings file"
+hook="$(jq -r '.hooks.PreToolUse[] | select(.matcher == "*") | .hooks[0].command' "$STUB_LOG/settings.json")"
+bash -c "$hook" 2>/dev/null && hook_rc=0 || hook_rc=$?
+assert "$hook_rc" "2" "its PreToolUse hook blocks every tool call"
+
+fresh_linger
+STUB_PY_MODE=kill-after run fixture
+assert "$rc" "0" "a decided run with a lingering claude still scores"
+assert "$([[ -e "$STUB_LOG/acted" ]] && echo acted || echo stopped)" "stopped" \
+  "a decided run's claude is killed when run_eval kills the run, not when the script ends"
+assert "$(alive)" "0" "nothing of a decided run is left, its tool shell included"
+
+fresh_linger
+STUB_PY_MODE=orphan run fixture
+assert "$rc" "0" "a claude still running when run_eval returns does not fail the score"
+sleep 3
+assert "$(alive)/$([[ -e "$STUB_LOG/acted" ]] && echo acted || echo stopped)" "0/stopped" \
+  "a claude still running when the script exits is killed with its tool shell"
+
+for sig in TERM INT; do
+  fresh_linger
+  # With job control on, so the script does not start with SIGINT ignored, as a background job otherwise would.
+  set -m
+  STUB_PY_MODE=hang "$SCRIPT" fixture > /dev/null 2>&1 &
+  pid=$!
+  set +m
+  for _ in {1..50}; do [[ $(wc -l < "$STUB_LOG/pids") -ge 2 ]] && break; sleep 0.1; done
+  kill "-$sig" "$pid"
+  wait "$pid" 2>/dev/null
+  sleep 3
+  assert "$(alive)/$([[ -e "$STUB_LOG/acted" ]] && echo acted || echo stopped)" "0/stopped" \
+    "SIG$sig to the script kills a running claude and its tool shell"
+done
 
 e_header "missing prerequisites"
 

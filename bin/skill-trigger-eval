@@ -92,10 +92,28 @@ fi
 tmp="$(mktemp -d)"
 mkdir -p "$tmp/project/.claude" "$tmp/bin" "$tmp/runs" "$tmp/hidden"
 hidden="$tmp/hidden/$skill"
-eval_pid=""
+eval_pgid=""
 
+# SIGKILLs each process given and all its descendants, stopping each first so it forks nothing that is missed.
+# A claude's tool shells run in process groups of their own, so they are found by parent, not by group.
+function kill_tree() {
+  local pid child
+  for pid in "$@"; do
+    kill -STOP "$pid" 2>/dev/null || continue
+    for child in $(pgrep -P "$pid"); do kill_tree "$child"; done
+    kill -KILL "$pid" 2>/dev/null || true
+  done
+}
+
+# run_eval runs in a process group of its own, which every claude it starts stays in even once orphaned, so freezing
+# and killing that group, with each member's tool shells, leaves nothing of a run alive after this script.
 function cleanup() {
-  [[ -n "$eval_pid" ]] && kill "$eval_pid" 2>/dev/null
+  if [[ -n "$eval_pgid" ]]; then
+    kill -STOP -- "-$eval_pgid" 2>/dev/null || true
+    mapfile -t members < <(pgrep -g "$eval_pgid")
+    kill_tree "${members[@]}"
+    kill -KILL -- "-$eval_pgid" 2>/dev/null || true
+  fi
   if [[ -d "$hidden" && ! -e "$skill_dir" ]]; then
     mv "$hidden" "$skill_dir" && rm -f "$marker"
   fi
@@ -107,20 +125,35 @@ mkdir -p "$(dirname "$marker")"
 echo "$skill $hidden" > "$marker"
 mv "$skill_dir" "$hidden"
 
+# Every run gets a PreToolUse hook that blocks each tool call: run_eval decides a run from the first tool the model
+# starts to call, which streams before any hook runs, so the score is unchanged, but an eval query never acts.
+cat > "$tmp/settings.json" <<'EOF'
+{"hooks": {"PreToolUse": [{"matcher": "*", "hooks": [
+  {"type": "command", "command": "echo 'skill-trigger-eval blocks every tool' >&2; exit 2"}]}]}}
+EOF
+
 # run_eval discards each claude's stderr and scores a failed or hung run as a non-trigger, so a broken login would
 # read as a real 0%. This wrapper, first on its PATH, keeps each run's stdout and, when the run ends on its own, its
 # exit status: run_eval SIGKILLs a run once it has decided it, so a missing status alone is normal.
-# Each line reaches run_eval before it is recorded: once run_eval has killed the run and closed the pipe, the
-# orphaned claude's later lines die on that pipe instead of making a hung run look decided.
+# That SIGKILL hits this wrapper, never claude, which would carry on with the query as a real task, so a watcher kills
+# claude and its tool shells as soon as the wrapper is gone.
+# Each line reaches run_eval before it is recorded: once run_eval has killed the run and closed the pipe, claude's
+# last lines before the watcher gets it die on that pipe instead of making a hung run look decided.
 cat > "$tmp/bin/claude" <<EOF
 #!/usr/bin/env bash
+$(declare -f kill_tree)
 run="$tmp/runs/\$\$"
 : > "\$run.out"
-"$real_claude" "\$@" | while IFS= read -r line; do
+"$real_claude" "\$@" --settings "$tmp/settings.json" > >(while IFS= read -r line; do
   printf '%s\\n' "\$line" || exit 1
   printf '%s\\n' "\$line" >> "\$run.out"
-done
-echo "\${PIPESTATUS[0]}" > "\$run.status"
+done) &
+claude=\$!
+(while kill -0 \$\$; do sleep 0.2; done; kill_tree "\$claude") > /dev/null 2>&1 &
+watcher=\$!
+wait "\$claude" && status=0 || status=\$?
+kill -KILL "\$watcher"
+echo "\$status" > "\$run.status"
 EOF
 chmod +x "$tmp/bin/claude"
 
@@ -128,12 +161,15 @@ args=(-m scripts.run_eval --eval-set "$(cd "$(dirname "$eval_set")" && pwd -P)/$
   --runs-per-query 3 --timeout 120 --model "$model")
 [[ -n "$description" ]] && args+=(--description "$description")
 
-# In the background, so a signal reaches the trap now rather than once run_eval returns.
+# In the background, so a signal reaches the trap now rather than once run_eval returns, and with job control on, so
+# it leads a process group of its own for cleanup to kill. Stdin is /dev/null, since a background group reading the
+# terminal would stop.
+set -m
 (cd "$tmp/project" && exec env -u CLAUDECODE PATH="$tmp/bin:$PATH" PYTHONPATH="$creator" "$python" "${args[@]}") \
-  > "$tmp/result.json" 2> "$tmp/stderr" &
-eval_pid=$!
-wait "$eval_pid" && rc=0 || rc=$?
-eval_pid=""
+  < /dev/null > "$tmp/result.json" 2> "$tmp/stderr" &
+eval_pgid=$!
+set +m
+wait "$eval_pgid" && rc=0 || rc=$?
 cat "$tmp/stderr" >&2
 [[ "$rc" -eq 0 ]] || die "run_eval exited $rc"
 

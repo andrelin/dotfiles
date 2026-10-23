@@ -60,7 +60,7 @@ in § *The staged workflow*. No external spec.
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests wait for Tasks 8–10 |
 | 5b · `reviewing-for-feedback` skill | ⏳ IN PROGRESS | written and first-review tested 2026-10-19; re-review run next |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
-| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19, runs made inert 2026-10-23; one set approved, `writing-plans`' new #16 awaits approval, then the real runs |
+| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19, runs made inert 2026-10-23; both sets approved; added query 21 in `writing-plans.json` awaits approval, then the real runs |
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | ⏳ PENDING | |
 | 9 · `implementing-plans` skill | ⏳ PENDING | |
@@ -81,8 +81,8 @@ the work repo it was made for resolves `company`). Task 6b is built and 🚧. Ta
 
 **Start tomorrow here, in this order:**
 
-1. **Task 6b — the user approves `test/skill-triggers/writing-plans.json`'s replaced query 16**
-   (`tuning-skill-descriptions.json` was approved 2026-10-23). Then the real `bin/skill-trigger-eval` runs on
+1. **Task 6b — the user approves query 21 in `test/skill-triggers/writing-plans.json`**
+   (both sets were otherwise approved 2026-10-23). Then the real `bin/skill-trigger-eval` runs on
    `tuning-skill-descriptions` and `writing-plans`, scores recorded under Task 6b, row ✅. Run them from a session
    that doesn't need either skill: the run hides it machine-wide.
 2. **Task 5b — the re-review test.** The scratch repos lived in the session scratchpad and are gone; rebuild them as
@@ -1780,9 +1780,11 @@ it and the skill. The eval set is `run_eval.py`'s format: a JSON array of
 install are done; `test/test_skill_trigger_eval.sh` passes (37 assertions, three mutations of the script each caught),
 ShellCheck clean. 2026-10-23: the user approved `tuning-skill-descriptions.json`. In `writing-plans.json`, near-miss
 16 ("Implement Task 2 from plan-export-retry.md …") was replaced by a recommendation asked for in chat, because
-implementing a plan updates the plan, so `writing-plans` loading there is correct, not a misfire. The set waits on
-the user's approval of that one query. Left: that, then the real runs on `tuning-skill-descriptions` and
-`writing-plans`. Deviations:
+implementing a plan updates the plan, so `writing-plans` loading there is correct, not a misfire. The user then
+approved `writing-plans.json`, and asked for that case as a should-fire query: 21, implementing a plan task without
+saying to update the plan. 21 still awaits the user's approval. Both sets now carry stable `id`s for the user to
+name queries by. Once Task 9 lands, 21 sits on `implementing-plans`' ground, so it may need moving to that skill's
+set then. Left: 21's approval, then the real runs on `tuning-skill-descriptions` and `writing-plans`. Deviations:
 
 - The recording wrapper relays each line to `run_eval` before recording it, instead of `tee`: after a kill the
   orphaned `claude` can print on, and a recorded late line would make a hung run look decided. The relay's write to

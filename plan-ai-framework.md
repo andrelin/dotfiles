@@ -1769,8 +1769,10 @@ it and the skill. The eval set is `run_eval.py`'s format: a JSON array of
    call naming that file counts. Any other first tool call scores the run a non-trigger on the spot (`:141`).
 2. **The installed copy competes.** On one should-fire query for `dependency-bot-prs`, in place: 0/3, and a manual run
    showed `Skill dependency-bot-prs` — the real skill — taken instead of the candidate. Moved aside: 1/3. Requirement
-   6 stays. Even uncontested a bare command file pulls less than a real skill, so scores compare candidates with each
-   other, not with any absolute bar; the skill says so.
+   6 stays. *Corrected 2026-10-23:* the low uncontested score was not a bare command pulling less than a real skill.
+   `run_eval`'s ten parallel workers each write their own copy of the candidate into the one project, so a run sees
+   several identical commands and mostly takes another's, a miss. One worker scored `writing-plans` 20 of 21 where
+   ten scored 10 of 21, so the script passes `--num-workers 1` and the skill no longer says scores are only relative.
 3. `claude plugin eval` is not used: it runs hand-authored `case.yaml` suites as full graded agent runs against a
    plugin, with no way to score a candidate description without editing the file.
 4. Standard library only. Python 3.10 or later: Homebrew's 3.15 qualifies, macOS's `/usr/bin/python3` 3.9 doesn't.

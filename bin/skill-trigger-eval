@@ -159,8 +159,10 @@ echo "\$status" > "\$run.status"
 EOF
 chmod +x "$tmp/bin/claude"
 
+# One worker: run_eval's parallel workers each write their own copy of the candidate into the one project, so a run
+# sees several identical commands, mostly takes another's, and scores a miss; ten workers scored 10 of 21, one 20.
 args=(-m scripts.run_eval --eval-set "$(cd "$(dirname "$eval_set")" && pwd -P)/$skill.json" --skill-path "$hidden"
-  --runs-per-query 3 --timeout 120 --model "$model")
+  --runs-per-query 3 --timeout 120 --num-workers 1 --model "$model")
 [[ -n "$description" ]] && args+=(--description "$description")
 
 # In the background, so a signal reaches the trap now rather than once run_eval returns, and with job control on, so

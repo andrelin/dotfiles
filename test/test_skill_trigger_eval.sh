@@ -124,6 +124,7 @@ assert "$(arg_after --eval-set)" "$(cd "$DOTFILES" && pwd -P)/test/skill-trigger
 assert "$(arg_after --skill-path | cut -c1)" "/" "the skill path is absolute"
 assert "$(arg_after --timeout)" "120" "each query gets 120 seconds"
 assert "$(arg_after --runs-per-query)" "3" "each query runs three times"
+assert "$(arg_after --num-workers)" "1" "runs go one at a time, so none sees another's candidate"
 cwd="$(cat "$STUB_LOG/cwd")"
 assert "$([[ "$cwd" != "$workdir"* && "$cwd" != "$DOTFILES"* && ! -e "$cwd" ]] && echo yes)" "yes" \
   "run_eval runs in a temp project, removed afterwards"

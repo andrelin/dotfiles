@@ -41,8 +41,7 @@ Score the current description first: that is the number to beat. Then propose tw
 - **Keep the best should-fire rate whose near-miss false triggers don't rise.** A difference of one query is noise.
 - **The bar** is `run_eval`'s own pass at 0.5: every should-fire query triggers in at least 2 of 3 runs, every
   near-miss in at most 1 of 3. Record the raw rates too.
-- **Scores compare candidates with each other.** A candidate runs as a bare command, which pulls less than an
-  installed skill, so a description that can't reach the bar is recorded with its scores, never forced.
+- **A description that can't reach the bar** is recorded with its scores, never forced.
 - **Show the user before and after,** with both scores on both halves. Write it only on a yes, and put the scores
   in the commit message.
 

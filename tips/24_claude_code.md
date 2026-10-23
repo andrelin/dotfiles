@@ -113,7 +113,8 @@ skill-trigger-eval writing-plans --description "Read before …"     # score a c
 skill-trigger-eval writing-plans --model sonnet                    # override the model
 ```
 
-Every query is three real `claude -p` runs, so a 20-query set costs 60 runs per description.
+Every query is three real `claude -p` runs, so a 20-query set costs 60 runs per description, made one at a time:
+in parallel each run sees the others' copies of the candidate and mostly takes the wrong one.
 Each run has every tool call blocked by a hook, so a query is scored on the tool it reaches for without ever acting,
 and is killed with its tool shells once decided; Ctrl-C or a plain `kill` stops every run still going.
 The skill is moved out of `claude/skills/` for the run, since the installed copy outcompetes the candidate, which

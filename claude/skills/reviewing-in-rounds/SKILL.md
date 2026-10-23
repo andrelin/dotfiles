@@ -40,9 +40,9 @@ file, resuming, closing): their formats are literal.
    session's alias (`opus`, `sonnet`, `haiku`; a full model ID passes its family's). Each prompt, and nothing more:
    > You review one lens of `<scratchpad>/reviewed-plan.md` `[and the diff from <the git diff command>]` in `<repo>`.
    > Do not invoke any skill or open `plan-*` or `00-follow-ups-*` files in the repo. Change nothing in the repo;
-   > run any experiment in a fresh `mktemp -d`. Lens: `<the lens's heading and questions>`. Severity: `<the scale>`.
-   > Report every finding you see, each with a severity, the location, and the failure scenario or requirement it
-   > breaks.
+   > run any experiment in a fresh `mktemp -d`, and delete nothing but that directory, by the path it printed.
+   > Lens: `<the lens's heading and questions>`. Severity: `<the scale>`. Report every finding you see, each with a
+   > severity, the location, and the failure scenario or requirement it breaks.
 2. **Verifiers:** one fresh Agent per lens, given that lens's findings, the artifact and the scale, told to refute
    each: drop or downgrade only with a written refutation. Same prohibitions. Unsupported findings — no failure
    scenario, no requirement — are dropped.

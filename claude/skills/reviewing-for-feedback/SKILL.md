@@ -28,8 +28,9 @@ nothing posted to the platform. Reading needs none of them:
    to this session's alias (`opus`, `sonnet`, `haiku`). Each prompt, and nothing more:
    > You review one lens of `<the diff command, or the plan copy's path>` in `<repo>`. Do not invoke any skill or
    > open `plan-*` or `00-follow-ups-*` files in the repo. Change nothing in the repo; run any experiment in a fresh
-   > `mktemp -d`. Lens: `<the lens's heading and questions>`. Severity: `<the scale>`. Report every finding you
-   > see, each with a severity, the file and line, and the failure scenario or requirement it breaks.
+   > `mktemp -d`, and delete nothing but that directory, by the path it printed.
+   > Lens: `<the lens's heading and questions>`. Severity: `<the scale>`. Report every finding you see, each with a
+   > severity, the file and line, and the failure scenario or requirement it breaks.
 2. **Verifiers:** one fresh Agent per lens — never one over every lens's findings, which skims them — same
    prohibitions, given that lens's findings, the artifact and the scale, told to refute each: drop or downgrade only
    with a written refutation. Findings naming neither a failure scenario nor a requirement are dropped.

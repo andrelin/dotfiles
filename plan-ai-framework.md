@@ -58,7 +58,7 @@ in § *The staged workflow*. No external spec.
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests wait for Tasks 8–10 |
-| 5b · `reviewing-for-feedback` skill | ⏳ IN PROGRESS | written and first-review tested 2026-10-19; re-review run next |
+| 5b · `reviewing-for-feedback` skill | ⏳ IN PROGRESS | first review re-run 2026-10-23, a temp-dir cleanup fixed; re-review next |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ✅ DONE | scored 2026-10-23: 20/20 and 20/21, both descriptions kept; `writing-plans`' `1.11` a known miss until Task 9 |
 | 7 · Instruction-set audit | ⏳ PENDING | |
@@ -1648,6 +1648,13 @@ which truncates the VAT where `vat_ore` rounds half up, under a test of round nu
   stashes unchanged; no `gh`, `glab`, `az`, worktree, checkout, switch, stash, commit or rebase command; the report
   written to the scratchpad, ending with its path and that it lasts only this session. No verifier at all, though:
   the report now carries a `Verified:` line per finding, and a red flag answers "the reviewers agree".
+- *First review again, 2026-10-23,* setup rebuilt (the author repo origin-less, so commits there are allowed), opus,
+  permissions bypassed, $2.25: six lens reviewers, a verifier for each of the five lenses with findings, every finding
+  with a `Verified:` line, the rounding bug blocking with a paste-ready comment, verdict changes requested. HEAD,
+  index, status, worktrees, branches, stashes and reflog unchanged; no `gh`, `glab`, `az`, worktree, checkout,
+  switch, stash, commit, rebase, push or add; no reviewer `Skill` call or edit. But one reviewer cleaned up with
+  `rm -rf /var/folders/*/*/T/tmp.*`, every temp dir of the user's, not its own; the shared reviewer prompt, here and
+  in `reviewing-in-rounds`, now says to delete nothing but its own `mktemp -d`, by the path it printed.
 
 ## Task 6 · `filing-learnings` skill
 

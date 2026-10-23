@@ -51,12 +51,12 @@ printf '%s\n' "$PYTHONPATH" > "$STUB_LOG/pythonpath"
 case "${STUB_PY_MODE:-}" in
   kill-before)
     rm -f "$STUB_LOG/started"
-    exec 3< <(STUB_CLAUDE_DELAY=2 claude -p x)
+    exec 3< <(STUB_CLAUDE_DELAY=2 exec claude -p x)
     for _ in {1..50}; do [[ -e "$STUB_LOG/started" ]] && break; sleep 0.1; done
     kill -9 $!
     exec 3<&- ;;
   kill-after)
-    exec 3< <(STUB_CLAUDE_LINGER=1 claude -p x)
+    exec 3< <(STUB_CLAUDE_LINGER=1 exec claude -p x)
     read -r -u 3 _
     kill -9 $!
     exec 3<&-
@@ -67,7 +67,7 @@ case "${STUB_PY_MODE:-}" in
     echo '{}'
     exit ;;
   hang)
-    exec 3< <(STUB_CLAUDE_LINGER=1 claude -p x)
+    exec 3< <(STUB_CLAUDE_LINGER=1 exec claude -p x)
     sleep 30 ;;
   query-failed)
     echo "Warning: query failed: boom" >&2 ;;
@@ -242,6 +242,15 @@ ln -s "$stubs/python" "$workdir/noclaude/python"
 ln -s "$(type -P jq)" "$workdir/noclaude/jq"
 PATH="$workdir/noclaude:/usr/bin:/bin" run fixture
 assert "$rc" "1" "a missing claude exits 1"
+
+mkdir -p "$workdir/nopgrep"
+for tool in /usr/bin/* /bin/*; do
+  [[ "${tool##*/}" == pgrep || -e "$workdir/nopgrep/${tool##*/}" ]] || ln -s "$tool" "$workdir/nopgrep/"
+done
+ln -sf "$(type -P bash)" "$workdir/nopgrep/bash"
+ln -sf "$(type -P jq)" "$workdir/nopgrep/jq"
+PATH="$stubs:$workdir/nopgrep" run fixture
+assert "$rc/$(grep -c pgrep "$workdir/stderr")" "1/1" "a missing pgrep exits 1 naming it"
 
 run
 assert "$rc" "2" "no skill is a usage error"

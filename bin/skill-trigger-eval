@@ -75,6 +75,8 @@ done
 
 real_claude="$(type -P claude || true)"
 [[ -n "$real_claude" ]] || die "claude not found on PATH"
+# kill_tree finds a run's tool shells with it, and without it would leave them running.
+type -P pgrep > /dev/null || die "pgrep not found on PATH (procps-ng on RHEL)"
 
 # The stage skills run on the model bin/ai gives their stage, so they are scored on it.
 if [[ -z "$model" ]]; then

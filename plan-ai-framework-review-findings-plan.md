@@ -1392,3 +1392,726 @@ Task 5's closed names: say `-<n>`.
 ### R7-115 · nit · data flow
 
 Task 10: quote `"${AI_CLAUDE:-claude}"`.
+
+## Round 8
+
+Lenses: scope, clarify, data flow, test matrix, consistency, work context. Opus reviewers and verifiers;
+scoped to Tasks 8–10 (user decision after round 7).
+
+### R8-1 · blocking · clarify
+
+Task 9's toy run names the suite `sh test/run.sh`, but the initial commit holds only `README` and `old.txt` and no task
+adds `test/run.sh`: the baseline exits 127 as a red baseline before task 1.
+
+Fixed: Task 9's toy run commits `test/run.sh` (runs each `test/*/test_*.sh`, non-zero on the first failure); task 2's test in `test/b/`.
+
+### R8-2 · blocking · clarify
+
+Task 8's missing-CLI test needs `command -v glab` failing, but Task 2b's `glab` shim is first on `PATH` in Claude's
+shell, so it always succeeds.
+
+Fixed: Task 8's *One rule per group* test checks `glab --version` exits 127, naming the shim.
+
+### R8-3 · major · scope
+
+Task 8's search and `label list` lack the `-R` the create passes with several remotes; gh picks `upstream` or fails,
+so the duplicate check is skipped or checks the wrong repo and labels come from the wrong repo; untested.
+
+Fixed: Task 8 § *The guard decides*: one target rule for every gh and glab call (no `-R` with one remote, origin's with
+several), all calls from the repo's root; the search names it; the multi-remote tests assert it on search, `label list` and create.
+
+### R8-4 · major · scope
+
+Task 8: company-elsewhere and customer repos on hosts neither CLI files on (Azure DevOps, Bitbucket) and Jira get a
+drafted `!` line specified only as `gh` or `glab`; an executor emits `! gh issue create -R dev.azure.com/…`.
+
+Fixed: Task 8 § *Filing*: a target neither CLI files on gets the title and body only, no command; a Bitbucket test, and
+the Jira test asserts no `!` line.
+
+### R8-5 · major · clarify
+
+Task 8's search and `label list` lack the create's `-R` with a second remote; gh prefers `upstream`. Same defect as R8-3.
+
+Fixed: with R8-3.
+
+### R8-6 · major · clarify
+
+Task 8 never names the body file; the likely guess `issue-draft-<n>.md` holds the interview answers and would be published.
+
+Fixed: Task 8 § *Filing*: the body alone goes to `<scratchpad>/issue-body-<n>.md`, never the draft file;
+the first test asserts `--body-file` names it.
+
+### R8-7 · major · clarify
+
+Task 8 double-quotes `--title "…"` with only `; | &`, backticks and `$(` banned: `$DOTFILES` expands, the filed title
+differs from the heading, and the lookup fails.
+
+Fixed: Task 8: every title in a command (search, create, `!` line) single-quoted with `'\''`, as for `ai plan`; the lookup
+clause says so; the *Shell characters* test adds `$HOME isn't "expanded"`.
+
+### R8-8 · major · clarify
+
+Task 9: whether a retry starts from the failed attempt's tree or reverts first is unsaid; a revert on a resumed run
+discards the leftovers the user left for that task.
+
+Fixed: Task 9 § *Models*: each new attempt starts from the failed one's tree, told what failed; nothing is reverted.
+
+### R8-9 · major · data flow
+
+Task 8's search and `label list` lack origin's `-R` with several remotes: an upstream match offers a comment on the
+wrong repo, upstream labels fail the create; the multi-remote test checks only the create. Same defect as R8-3.
+
+Fixed: with R8-3.
+
+### R8-10 · major · data flow
+
+Task 8's titles sit in `--title "…"`, so `$PATH` expands and `"` ends the argument; the altered title never matches the
+heading. Same defect as R8-7.
+
+Fixed: with R8-7.
+
+### R8-11 · major · data flow
+
+Task 9's listing: exclude pathspecs resolve against the cwd, so from a subdirectory the plan file shows as untracked:
+a fresh start refuses, a checkpoint stops; Task 5 requirement 9 inherits it.
+
+Fixed: Task 9 § *The listing* uses `:(top,glob,exclude)`; the toy run is rerun from `test/` to the same end state.
+
+### R8-12 · major · data flow
+
+Task 9 runs the baseline after the branch and `Base:` exist: a red baseline leaves both, the rerun takes the resume
+path and skips the baseline, and a user's test-fix commit joins the plan's range.
+
+Fixed: Task 9's steps: baseline is step 3, before the branch (now step 4); the red-baseline test asserts no branch and no `Base:`.
+
+### R8-13 · major · test matrix
+
+Task 9 resume after an interrupt during task 1 (branch and `Base:`, no task ✅ DONE, no ref): "the ✅ DONE task that
+comes last" is undefined; untested.
+
+Fixed: Task 9 step 1: the last checkpoint is the last task with a ref, `HEAD^{tree}` with none; a resume variant seeded
+with only the branch and `Base:`.
+
+### R8-14 · major · test matrix
+
+Task 9: "a task with nothing to stage stops the run" has no test; an implementer reporting success with no change gets ✅ DONE.
+
+Fixed: Task 9 *Nothing to stage* test: told to change nothing → stops naming the task, nothing staged, row not ✅ DONE.
+
+### R8-15 · major · test matrix
+
+Task 9: of the three parallel-dispatch conditions, disjoint Files lists is untested.
+
+Fixed: Task 9 *Overlapping Files* test: both tasks naming `README`, no interface → separate messages.
+
+### R8-16 · major · test matrix
+
+Task 8's draft-file lifecycle is untested: resume from the highest `<n>` unless `Ended:`, a new session starting over,
+`Ended: drafted` and `Ended: not filed`; `/compact` can force compaction.
+
+Fixed: Task 8's Interview test adds `/compact` and a new session; the Search match test asserts `Ended: not filed`, the
+won't-work-on test `Ended: drafted`.
+
+### R8-17 · major · consistency
+
+Task 8's search and label reads lack the create's target rule with two remotes. Same defect as R8-3.
+
+Fixed: with R8-3.
+
+### R8-18 · major · work context
+
+Task 8's search and `gh label list` run without `-R`; in a fork whose upstream is a customer's or third party's repo, an
+upstream match drafts a comment on someone else's tracker. Same defect as R8-3.
+
+Fixed: with R8-3.
+
+### R8-19 · major · work context
+
+Task 8 never says how the customer-tree root is found for `## Issues` or the marker; a guessed shared parent (`~/code`)
+lets the guard allow `issue create` on every customer's repos there.
+
+Fixed: Task 8 § *A `## Issues` section*: the root is the user's answer, never inferred; `$HOME` or a directory holding
+another owner's repos is refused; the customer-tree test names `$HOME` first.
+
+### R8-20 · major · work context
+
+Task 8: "the level's bar on content" and the red flag "a public issue naming a customer" have no test that can fail;
+`grep -Fxf` catches only verbatim lines.
+
+Fixed: Task 8 *Content bar* test: an item naming `example--client` and `git.example.com` → the body file holds neither.
+
+### R8-21 · major · work context
+
+Task 8's Lookup test has the tester create `andrelin/issue-lookup-scratch`, file two issues and delete it: platform
+writes on the user's account with no ask; `gh repo delete` needs the `delete_repo` scope.
+
+Fixed: Task 8's Lookup test hands each step to the user as a `!` line, each asked for, naming `gh auth refresh -s delete_repo`.
+
+### R8-22 · minor · scope
+
+Task 8's assignees "only from those the repo already uses": no requirement, no read named, no test.
+
+Fixed: Task 8 § *Labels*: no assignee unless the user names one.
+
+### R8-23 · minor · scope
+
+Refuted: the Jira bullet only proposes the section the customer rule already writes, then drafts, as § *Not in this plan* allows.
+
+### R8-24 · minor · scope
+
+Refuted: the "comment there instead?" match only drafts a `!` line; no platform write is built.
+
+### R8-25 · minor · scope
+
+Task 8: whether Claude writes a company `## Issues` into the repo's committed `CLAUDE.md`, on which branch, and that it
+is a change to commit, is unsaid.
+
+Fixed: Task 8: at company level Claude prints the section for the user to add in a change of their own, never writing
+it; the company-elsewhere test names the answer and asserts `git status` unchanged.
+
+### R8-26 · minor · scope
+
+Refuted: a missing glab returns no issue, so the item keeps `(issue to file)`, the failure test's outcome.
+
+### R8-27 · minor · scope
+
+Refuted: only `issue create` is named, and the guard allows nothing else at customer level.
+
+### R8-28 · minor · scope
+
+Task 9's first step folds in Task 5's edits; Task 9's Files and the File map omit the three SKILL.md files; no word on
+Task 5/5b's rows; "run their tests" ambiguous.
+
+Fixed: Task 9's first step names the runnable tests and the PARTIAL row; its Files and the File map rows add the three SKILL.md files.
+
+### R8-29 · minor · scope
+
+Task 9's suite is "the command the plan names", but Task 5's `writing-plans` edits never ask a plan to name it, or where.
+
+Fixed: Task 9 step 3 reads it from § *Global constraints*; Task 5's still-to-make list adds that rule to `writing-plans`.
+
+### R8-30 · minor · scope
+
+`/implementing-plans` with no argument or a missing file: unspecified, untested.
+
+Fixed: Task 9 § *Start*: either → stop, listing the root's `plan-*.md`; a Refusal case.
+
+### R8-31 · minor · scope
+
+Nothing stops `ai` running inside a Claude session, which nests an interactive claude; `CLAUDECODE` reaches Claude's shell.
+
+Fixed: Task 10: `CLAUDECODE` set → message, exit 2, `claude` never run; a test.
+
+### R8-32 · minor · scope
+
+Task 5 stays 🚧 PARTIAL until Task 10, but Task 10 doesn't say to run Task 5's remaining real-run tests or update its row.
+
+Fixed: Task 10's last test runs them (e2e steps 2 and 4 count) and flips Task 5's row; the order line says so.
+
+### R8-33 · minor · clarify
+
+Task 9: a task's "scoped tests" undefined. Refuted as major: each task carries a **Tests** section and the toy tasks
+each add a test; the pinned-failure test behaves the same under either reading.
+
+Fixed: Task 9: scoped tests are the tests each task's **Tests** section names.
+
+### R8-34 · minor · clarify
+
+Task 9's pinned-failure test has no reachable pass and no stated end. Refuted as major: its assertions are checkable
+at the first return to the fix loop; only the final state is missing.
+
+Fixed: Task 9 *Pinned failure* ends as in *Failing task*: stopped naming task 1, nothing staged.
+
+### R8-35 · minor · clarify
+
+Task 8: the search runs before or after the last "anything to change?" turn is unsaid.
+
+Fixed: Task 8 § *Search before filing*: ahead of the last turn, so a match is shown there.
+
+### R8-36 · minor · clarify
+
+Task 8's "*Proposed direction* (marked optional)": a heading labelled "(optional)" or an omittable section.
+
+Fixed: Task 8 § *The issue's shape*: `##` headings named exactly so, *Proposed direction*'s first line `Optional:`; the first test asserts it.
+
+### R8-37 · minor · clarify
+
+Task 8's code-reference format and commit are unsaid; a local unpushed SHA in a public issue points nowhere.
+
+Fixed: Task 8: path plus line at a commit origin has (`git branch -r --contains`); the first test checks it.
+
+### R8-38 · minor · clarify
+
+Task 8: what `**Tracker:** none` does is unsaid.
+
+Fixed: Task 8 § *The guard decides*: `none` drafts, like any tracker not this repo's own.
+
+### R8-39 · minor · clarify
+
+Task 8: a company-elsewhere answer written into the committed `CLAUDE.md` or not; the tester's answer not given. Same defect as R8-25.
+
+Fixed: with R8-25.
+
+### R8-40 · minor · clarify
+
+Task 8's lookup clause: legacy `(issue to file)` items without `Target:` are unhandled.
+
+Fixed: Task 8's `maintaining-follow-up-trackers` clause: an item with no `Target:` is listed for the user, unchanged.
+
+### R8-41 · minor · clarify
+
+Task 8: no source for assignees. Same defect as R8-22.
+
+Fixed: with R8-22.
+
+### R8-42 · minor · clarify
+
+Task 8: the personal scratch repos' origin is unnamed; with none, `can-file-issue` prints `none` and drafts.
+
+Fixed: Task 8's *Filing tests* bullet: a personal scratch repo's origin is `git@github.com:andrelin/x.git` unless named.
+
+### R8-43 · minor · clarify
+
+Refuted: later tests depend on "that first one", and every other test answers "don't file".
+
+### R8-44 · minor · clarify
+
+Task 8's No-tracker test contradicts "every scratch-repo test tree holds its own tracker".
+
+Fixed: Task 8: every scratch-repo test tree bar *No tracker*'s.
+
+### R8-45 · minor · clarify
+
+Task 8's Interview test: the draft file "unchanged" since when.
+
+Fixed: byte-identical to its content before the second request.
+
+### R8-46 · minor · clarify
+
+Task 9: `Base:` present, branch missing is undefined.
+
+Fixed: Task 9 step 1: stop and ask; a resume variant.
+
+### R8-47 · minor · clarify
+
+Task 9: one task of a parallel batch fails: whether the passing one is staged and the run stops is unsaid.
+
+Fixed: Task 9 § *Checkpoint*: a batch is staged only when every task passes; otherwise the run stops with it unstaged.
+
+### R8-48 · minor · clarify
+
+Task 9: a full model ID → alias; Task 5 requirement 2 has the rule, Task 9 doesn't cite it.
+
+Fixed: Task 9 § *Models* passes the Agent tool's alias, citing Task 5 requirement 2.
+
+### R8-49 · minor · clarify
+
+Task 9's first step: which Task 5 tests cover the still-to-make edits. Same defect as R8-28.
+
+Fixed: with R8-28.
+
+### R8-50 · minor · clarify
+
+`ai implement ""`: whether empties are dropped before or after validation is unsaid.
+
+Fixed: Task 10: empty args are dropped first; `ai implement ""` and `ai review plan ""` in the exit-2 list.
+
+### R8-51 · minor · clarify
+
+Task 10's spike checks a bare `/writing-plans` only; whether arguments reach the skill is untested.
+
+Fixed: Task 10's spike passes `tidy the tip numbering` in a scratch repo, checks the skill loaded and the reply is about it, then exits.
+
+### R8-52 · minor · clarify
+
+Task 10's e2e "moved to in-flight" assumes an in-flight half.
+
+Fixed: the e2e's scratch tracker is the backlog / in-flight pair.
+
+### R8-53 · minor · data flow
+
+Task 8: nothing says the reads and create share a cwd; `can-file-issue [dir]` invites checking repo B while the create
+runs in A. Refuted as major: the guard line already runs in the repo the issue is for.
+
+Fixed: with R8-3: every call from that repo's root, `can-file-issue` with no `[dir]`.
+
+### R8-54 · minor · data flow
+
+Task 8: after a timed-out create, `Ended:` has no "unknown" value. Refuted as major: no item is written, the rest needs
+a timeout plus compaction, and the search would surface the new issue.
+
+Fixed: Task 8: `Ended: unknown <issues URL>` for a create whose outcome is unknown.
+
+### R8-55 · minor · data flow
+
+Task 8: a create failing because the repo doesn't exist still drafts a `!` line and an item whose `Target:` never resolves.
+
+Fixed: Task 8 § *A failed create*: not found → say the target looks wrong and ask first; the filing tests answer "keep it", as does Task 10's e2e.
+
+### R8-56 · minor · data flow
+
+Task 8's lookup `--search "<title>"` is fuzzy and capped at 100; qualifiers in the title can exclude it.
+
+Fixed: the lookup clause uses gh `--search 'in:title "<title>"'` and glab `--in title`.
+
+### R8-57 · minor · data flow
+
+Task 8: on the user-files path the user may change the title after the item was written; the lookup never matches.
+
+Fixed: Task 8 § *Filing*: the user is told the lookup matches the title exactly, so a changed title means reporting the number.
+
+### R8-58 · minor · data flow
+
+Task 9: nothing catches a subagent's own git write at personal level: a self-staged path bypasses the leftovers check, a
+commit moves HEAD. Refuted as major: every brief says "no git writes"; what remains needs explicit disobedience.
+
+Fixed: Task 9 § *Checkpoint*: before staging, `HEAD` unchanged and the index tree the last checkpoint's, else stop; *Subagent git* test.
+
+### R8-59 · minor · data flow
+
+Task 9's `-z` listing reads ambiguously in the Bash tool (NULs render as spaces).
+
+Fixed: the listing pipes through `tr '\0' '\n'`.
+
+### R8-60 · minor · data flow
+
+Task 9: `Base:` present but branch gone undefined. Same defect as R8-46.
+
+Fixed: with R8-46.
+
+### R8-61 · minor · data flow
+
+Task 9: an interrupt between `update-ref` and the ✅ DONE edit makes the resume compare against the previous ref, and
+the named `git read-tree <ref>^2` drops the finished task's index.
+
+Fixed: Task 9 step 1: a task with a ref matching the index becomes ✅ DONE first; a resume variant.
+
+### R8-62 · minor · data flow
+
+Task 9: a full model ID or variant vs the Agent tool's aliases: mapping unstated. Same defect as R8-48.
+
+Fixed: with R8-48.
+
+### R8-63 · minor · data flow
+
+Task 10: `implement` / `review plan` don't check the file exists; a typo launches a session.
+
+Fixed: Task 10: a named plan file that isn't a file → `ai: no such plan file: <f>`, exit 2; tests run in a temp dir with `p.md`.
+
+### R8-64 · minor · data flow
+
+Refuted: the e2e is gated on `andrelin/x` being absent, and `andrelin` is the user's own account.
+
+### R8-65 · minor · test matrix
+
+Task 9: no refusal test has a staged stray file. Refuted as major: "any entry" is the full listing, defined apart from
+leftovers; the test gap is real but cheap.
+
+Fixed: Task 9 step 2 says "staged or not"; a Refusal case with a staged stray file.
+
+### R8-66 · minor · test matrix
+
+Task 9: the branch-naming rule has no exact test; the toy plan's filename is never given.
+
+Fixed: the toy plan is `plan-toy.md`, the branch `toy`.
+
+### R8-67 · minor · test matrix
+
+Task 9: the exclude line is tested only from absent.
+
+Fixed: the company/customer resume variant: once, also when it was there before.
+
+### R8-68 · minor · test matrix
+
+Task 9: a plan with `Base:` but no branch — no spec, no test. Same defect as R8-46.
+
+Fixed: with R8-46.
+
+### R8-69 · minor · test matrix
+
+Task 9's pinned-failure test's terminal outcome is unnamed. Same defect as R8-34.
+
+Fixed: with R8-34.
+
+### R8-70 · minor · test matrix
+
+Task 9: "any deviation inline" untested.
+
+Fixed: Task 9 *Deviation* test: a spec editing `README`'s line 3 of one → stops; "append it" → a deviation line, spec unchanged.
+
+### R8-71 · minor · test matrix
+
+Task 8's first test: "every acceptance criterion" and "every code reference" pass vacuously with none.
+
+Fixed: at least one of each, the item being about code here.
+
+### R8-72 · minor · test matrix
+
+Task 8: *Proposed direction*'s literal heading unstated. Same defect as R8-36.
+
+Fixed: with R8-36.
+
+### R8-73 · minor · test matrix
+
+Task 8: no negative test for a search hit on a different problem.
+
+Fixed: Task 8 *No match* case: the first one's title words, a different problem → no "comment there instead?".
+
+### R8-74 · minor · test matrix
+
+Task 8: "never passing `-R`" with one remote is never asserted.
+
+Fixed: Task 8's company GitHub test: no `-R` on the create, search or `label list`.
+
+### R8-75 · minor · test matrix
+
+Task 8: the "file it before the session ends" warning and `--body-file` are untested.
+
+Fixed: Task 8's won't-work-on test asserts both, the path existing.
+
+### R8-76 · minor · test matrix
+
+Task 8: customer level with the marker on `github.com` is untested.
+
+Fixed: Task 8 *One rule per group*: a third repo `example--client/c` on github.com → an unblocked `gh issue create`.
+
+### R8-77 · minor · test matrix
+
+Task 8's chore test doesn't assert the `ai plan '<title>'` line.
+
+Fixed: it does now.
+
+### R8-78 · minor · test matrix
+
+Task 10: "the stub's whole output, compared exactly" contradicts shorthand expectations (`ai issue` → `sonnet`).
+
+Fixed: Task 10's Tests: an expectation naming model and prompt is the whole output; one naming one checks that line.
+
+### R8-79 · minor · test matrix
+
+Task 10: an empty arg in the middle is untested.
+
+Fixed: `ai issue a "" b` → `/writing-issues a b`.
+
+### R8-80 · minor · test matrix
+
+Task 10: `ai implement ""` and `ai review plan ""` unspecified. Same defect as R8-50.
+
+Fixed: with R8-50.
+
+### R8-81 · minor · test matrix
+
+Task 10: "empty variable counts as unset" tested only for `AI_MODEL_PLAN`, not the others or `AI_CLAUDE=`.
+
+Fixed: tests for `AI_MODEL_ISSUE=`, `AI_MODEL_IMPLEMENT=`, `AI_MODEL_REVIEW=` and `AI_CLAUDE=`.
+
+### R8-82 · minor · test matrix
+
+Task 10: no test for the Files edits; its Tests omit `bin/check-md-limits` on the touched docs.
+
+Fixed: Task 10 *Files edits* test: limits on the tip, `tips.md` and `README.md`, the ShellCheck entry, the README and tips lines.
+
+### R8-83 · minor · test matrix
+
+Task 10's spike names no observable evidence that the first turn loads the skill. Same defect as R8-51.
+
+Fixed: with R8-51.
+
+### R8-84 · minor · consistency
+
+Task 9's first step says to run the pending edits' tests, which need Tasks 8–10; neither Task 9 nor 10 flips Task 5's
+row. Refuted as major: the order line says Task 5's real-run tests wait for 10, and its e2e exercises intake and
+completion. Same defect as R8-32.
+
+Fixed: with R8-28 and R8-32.
+
+### R8-85 · minor · consistency
+
+Task 8's Lookup test runs in an origin-less scratch repo, but `maintaining-follow-up-trackers` step 1 fetches and
+checks `HEAD == origin/main`. Refuted as major: step 1 doesn't say to abort; a test-setup fix.
+
+Fixed: the Lookup repo's origin is a local bare clone.
+
+### R8-86 · minor · consistency
+
+Task 9's Files and the File map omit the SKILL.md files the first step edits. Same defect as R8-28.
+
+Fixed: with R8-28.
+
+### R8-87 · minor · consistency
+
+Task 10 "produces nothing later tasks use", but 6b copies its defaults and Task 5's tests drive `ai`.
+
+Fixed: Task 10's Interfaces name both, to change together.
+
+### R8-88 · minor · consistency
+
+Task 8's Interview test is the first `example--client` test but doesn't mention the where-issues-live question; "both answers" ambiguous.
+
+Fixed: it is named the first, the where-issues-live exchange comes first, and "both interview answers".
+
+### R8-89 · minor · consistency
+
+Task 8's first test files an existing backlog item, but the body only says how to write a new item; a duplicate results.
+
+Fixed: Task 8 § *Two questions*: an issue filed from an existing item numbers that item, never a second; the first test asserts it.
+
+### R8-90 · minor · consistency
+
+Task 8: compaction resume and new-session restart have no test. Same defect as R8-16.
+
+Fixed: with R8-16.
+
+### R8-91 · minor · consistency
+
+Task 9: "the next task" on resume when the remaining tasks are a parallel batch.
+
+Fixed: Task 9 step 1: leftovers inside the Files list of any task not ✅ DONE go to its implementer.
+
+### R8-92 · nit · scope
+
+Task 8's skill is about 88 dense lines plus a table against aim ≤ 100. Refuted as minor: a skill's hard cap is 150,
+blank lines and headings free; past 100 is advisory.
+
+### R8-93 · nit · scope
+
+Task 9's automatic opus retry is an escalation no requirement asks for. Refuted as minor: it replaces SDD's own
+escalation, a substitution, not new scope.
+
+### R8-94 · nit · scope
+
+Refuted: Task 10 already calls the README lines "the missing".
+
+### R8-95 · nit · clarify
+
+Task 8's `Ended:` value for a drafted comment, a failed create handed over, an unknown outcome. Refuted as minor: any
+`Ended:` ends the resume; only the label differs. Same root as R8-54.
+
+### R8-96 · nit · clarify
+
+Task 8's marker flow: draft now or wait for the `touch`; a tree outside `$HOME`. Refuted as minor: the tests settle
+draft now plus the `touch` line; outside `$HOME` costs a wasted touch.
+
+### R8-97 · nit · clarify
+
+Task 9: a run where every task is already ✅ DONE. Refuted as minor: none left falls through to the hand-over.
+
+### R8-98 · nit · clarify
+
+Task 9: how a shared build directory is detected. Refuted as minor: the test shows the signal is § *Global constraints* text.
+
+### R8-99 · nit · clarify
+
+Task 10: "whole output, compared exactly" vs `ai issue` → `sonnet`. Refuted as minor: both readings give a working
+test. Same defect as R8-78.
+
+### R8-100 · nit · clarify
+
+Task 8: quoting of `ai plan owner/repo#n`.
+
+### R8-101 · nit · clarify
+
+Task 9: renumbering after `1.11` moves; `1.1`'s `should_trigger`.
+
+### R8-102 · nit · clarify
+
+Task 8 § *The guard decides*: nested asides.
+
+### R8-103 · nit · clarify
+
+Task 8: "in the second repo" in the *One rule per group* test.
+
+### R8-104 · nit · clarify
+
+Task 10: `--model=x` and `--help`.
+
+### R8-105 · nit · clarify
+
+Refuted: `recipes_optional` is alphabetical, so glab goes right after gh.
+
+### R8-106 · nit · data flow
+
+Task 8's duplicate search `--state open` misses a recently closed duplicate. Refuted as minor: the search offers a
+comment on live work; no requirement asks for closed duplicates.
+
+### R8-107 · nit · data flow
+
+Task 8's drafted `gh issue comment` has no `--body-file`.
+
+### R8-108 · nit · data flow
+
+Task 9: a suite failure pinned to two tasks. Refuted as minor: both go back on the natural reading.
+
+### R8-109 · nit · data flow
+
+Task 9: appending to `info/exclude` assumes `.git/info/` exists. Refuted as minor: the default template makes it, and
+a missing one fails loudly.
+
+### R8-110 · nit · data flow
+
+Task 10: whitespace-only and newline args unspecified.
+
+### R8-111 · nit · test matrix
+
+Task 9: a red baseline from suite `false` must list failing tests, but `false` names none. Refuted as minor: that test
+only asserts a red-baseline stop; listing failing tests is tested by *Red baseline*.
+
+### R8-112 · nit · test matrix
+
+Task 9: "a `model` on every Agent call" passes with a wrong value. Refuted as minor: *Failing task* asserts the value.
+
+### R8-113 · nit · test matrix
+
+Task 9: `implementing-plans.json` has one positive query and no negatives. Refuted as minor: Task 7 extends it, and
+the flipped `writing-plans` query acts as a negative.
+
+### R8-114 · nit · test matrix
+
+Task 9: the ref name from a heading like `2b` is untested.
+
+### R8-115 · nit · test matrix
+
+Task 8: the No-tracker, Unsure and Shell-characters tests name no origin. Refuted as minor: those are filing tests, so
+the absence check aborts on a real repo.
+
+### R8-116 · nit · test matrix
+
+Task 8 and 10: "fails on the network" vs gh's `Could not resolve to a Repository`.
+
+### R8-117 · nit · consistency
+
+Task 5 requirement 9 cites "Task 9 § *The listing*", a bold bullet, not a section. Refuted as minor: a text search finds it at once.
+
+### R8-118 · nit · consistency
+
+Task 8: `**Tracker:** none` behaviour unstated. Refuted as minor: the guard line drafts for any tracker but this
+repo's, `none` included. Same defect as R8-38.
+
+### R8-119 · nit · consistency
+
+Task 8's Files: the third `writing-follow-up-items` section is buried mid-paragraph.
+
+### R8-120 · nit · consistency
+
+Task 8's Lookup test: `#<n>` vs Task 5's `andrelin/dotfiles#<n>` in headings.
+
+### R8-121 · nit · consistency
+
+The order line's "each builds on the one before" is not true for 8 after 5b.
+
+### R8-122 · nit · consistency
+
+Refuted: Task 10 owns the README catch-up lines and the File map agrees.
+
+### R8-123 · nit · consistency
+
+Task 8's Interfaces omit Task 3's denial and Task 5's use of `ai plan '<title>'`.
+
+### R8-124 · nit · work context
+
+Task 10's spike runs in this public repo and may create a `plan-*.md` past the first turn. Refuted as minor: the spike
+stops at the first turn; an untracked plan file publishes nothing.
+
+### R8-125 · nit · work context
+
+Task 8: `brew unlink glab` leaves glab unlinked on abort.

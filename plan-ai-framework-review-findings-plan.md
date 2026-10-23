@@ -725,3 +725,670 @@ Task 8's unquoted `<path>` in `$(cat <path>)`.
 ### R6-145 · nit · data flow
 
 "Every review" regenerating `reviewed-plan.md`: once per run or per round.
+
+## Round 7
+
+Lenses: scope, clarify, data flow, test matrix, consistency, work context. Opus reviewers and verifiers.
+
+### R7-1 · minor · work context
+
+Task 1's level rules and its as-built note omit `~/.claude-company-orgs`; Task M's classifier text calls listed owners
+customer. Refuted as major: Task 1 is built and its own tests cover the lookup; Task M's wording errs stricter.
+
+Fixed: Task 1's rule 3 and a new as-built bullet name `~/.claude-company-orgs`; Task M's environment text lists those owners as company.
+
+### R7-2 · nit · work context
+
+Global constraints say `example-client` for fixtures while Task 8 says live sessions use `example--client`. Refuted as
+major: none of the cited live sessions reaches the network; only wording for future tasks remains.
+
+### R7-3 · minor · work context
+
+Task 4's `writing-skills` and `diagnosing-superpowers` rows read as fine at personal level, but an upstream issue or a
+fork-to-parent PR is a third-party target the guard blocks at every level.
+
+Fixed: Task 4's `writing-skills` and `diagnosing-superpowers` rows say to draft the upstream PR or issue, which the guard blocks at every level.
+
+### R7-4 · minor · work context
+
+Task 5 req 9 with no plan offers a commit on whatever branch is checked out, `main` included, with no default-branch
+check against the company bar.
+
+Fixed: Task 5 req 9: with no plan on the default branch at company level no commit is offered; Completion test added.
+
+### R7-5 · minor · work context
+
+Task 5b req 1 covers a branch only though the interface accepts an MR or PR number; no test with a number.
+
+Fixed: Task 5b req 1 fetches a PR or MR number's head ref into `FETCH_HEAD`; a *By number* test, built in Task 9's first step.
+
+### R7-6 · minor · work context
+
+Task 8's first pressure test files a real public issue from the gitignored tracker; nothing checks the body quotes
+nothing from it beyond the title.
+
+Fixed: Task 8's first pressure test asserts no non-empty body line is also a tracker-item line, bar the title.
+
+### R7-7 · nit · work context
+
+Task 10's end-to-end step 1 lacks Task 8's absence check for `andrelin/x`.
+
+### R7-8 · minor · scope
+
+The file map row "`test/skill-triggers/*.json`, the rest | 7" and Task 6b's "(Task 7 writes the rest)" contradict
+Task 7's four-stage-skills scope. Refuted as major: Task 7's own text and test are explicit.
+
+Fixed: File map row and Task 6b's Files now name only the stage skills' eval sets Task 7 writes.
+
+### R7-9 · major · scope
+
+Task 7's "fix findings that fit the global constraints" is unbounded and clashes with `tuning-skill-descriptions`, which
+needs an eval set before any description change, while non-stage skills get the audit only; body rewrites and renames
+aren't ruled out.
+
+Fixed: Task 7 fixes in place only limit breaches, broken references, front matter and stage-skill descriptions; *Bounded fixes* test.
+
+### R7-10 · minor · scope
+
+Refuted: `1.11` already scores 0/3 for `writing-plans`, which meets the flipped bar, so Task 9 needs no description edit.
+
+### R7-11 · major · scope
+
+No task closes out this plan: nothing folds § Findings and decisions and the four-stage workflow into a durable doc and
+deletes the plan and its findings file, as `writing-plans` § Plans are temporary requires.
+
+Fixed: New Task 13 folds the decisions into `claude/docs/staged-workflow.md` and `work-contexts.md` and deletes both plan files, last.
+
+### R7-12 · minor · scope
+
+`README.md` § Scripts lists `bin/` scripts; Tasks 10 and 12 don't add `ai` or `check-hidden-unicode`, and
+`claude-settings-merge` and `skill-trigger-eval` are already missing.
+
+Fixed: Tasks 10 and 12 add `README.md` § *Scripts* lines for `ai`, `check-hidden-unicode` and the two missing scripts.
+
+### R7-13 · minor · scope
+
+Task 12's hook passes staged paths, so it must copy the default-set filter; run `bin/check-hidden-unicode --cached` with
+no paths instead.
+
+Fixed: Task 12's hook runs `bin/check-hidden-unicode --cached` with no paths, the default set defined only in the script.
+
+### R7-14 · minor · scope
+
+Task 12 misses variation selectors (U+FE00–U+FE0E, U+E0100–U+E01EF), U+2061–U+2064, U+180E and U+00AD; keep U+FE0F
+passing.
+
+Fixed: Task 12 flags U+2061–U+2064, U+180E, U+00AD and variation selectors U+FE00–U+FE0E and U+E0100–U+E01EF, U+FE0F passing; tests added.
+
+### R7-15 · minor · scope
+
+Task 8's "comment there instead?" yes path is a platform write no requirement asks for and is untested; say why.
+
+Fixed: Task 8's yes to "comment there instead?" now drafts the comment as a `!` line at every level and files nothing.
+
+### R7-16 · minor · scope
+
+Task 10's end-to-end step 1 lacks the absence check. Same as R7-7.
+
+Fixed: with R7-21.
+
+### R7-17 · minor · scope
+
+Refuted: the `claude/CLAUDE.md` line is a general rule pointing at the precedence doc, which names both counterparts.
+
+### R7-18 · nit · scope
+
+The handover's opening sentence is stale against the table.
+
+### R7-19 · minor · test matrix
+
+Task 12: `viacode` is undef for U+E0000, so the name field is unspecified. Refuted as major: the hit is still flagged
+with exit 1, code point and line.
+
+Fixed: Task 12 prints `(no name)` where `viacode` is undefined; U+E0000 test added.
+
+### R7-20 · major · test matrix
+
+Task 12 pre-commit: no test stages no default-set path, and none stages an out-of-set file holding U+200B (exit 0).
+
+Fixed: Task 12 pre-commit test: only an out-of-set `docs/d.md` with U+200B staged → 0.
+
+### R7-21 · major · test matrix
+
+Task 10 end-to-end step 4 expects "one commit"; Task 5 req 9 makes one per task with disjoint Files lists.
+
+Fixed: Task 10 end-to-end step 4 expects the commits Task 5's requirement 9 prescribes; step 1 gains Task 8's absence check.
+
+### R7-22 · major · test matrix
+
+Task 9's toy run never says where the suite command comes from; plan-named against `CLAUDE.md`-named is untested.
+
+Fixed: Task 9's toy plan names its suite in § *Global constraints*; *Suite source* test covers plan against `CLAUDE.md`.
+
+### R7-23 · major · test matrix
+
+Task 9's rule pinning a batch's suite failure by rerunning scoped tests has no test.
+
+Fixed: Task 9 *Pinned failure* test: a pinned suite failure sends the task back to its fix loop, an unpinned one stops.
+
+### R7-24 · major · test matrix
+
+Task 8's lookup with several equal titles, and the glab `--all --per-page 100` path, are untested.
+
+Fixed: Task 8 *Lookup* adds a glab `--all --per-page 100` case and a two-equal-titles case in a tester-made private repo.
+
+### R7-25 · major · test matrix
+
+Task 8's search match answered yes is untested at every level.
+
+Fixed: Task 8 *Search match* adds the yes answer (a drafted comment, no call).
+
+### R7-26 · major · test matrix
+
+Task 8's printed `ai plan` line: stripping and `'\''` quoting are never exercised.
+
+Fixed: Task 8 adds an apostrophe-title test with the exact printed `ai plan '…'\''…'` line, stripped of ref, badge, branch and `(issue to file)`.
+
+### R7-27 · major · test matrix
+
+Task 5's verification test passes vacuously if nothing is dropped; nothing seeds a refutable or unsupported finding.
+
+Fixed: Task 5 *Verification* seeds a safe-but-suspicious `rm -rf -- "${tmp:?}"/*` and fails when nothing is dropped or downgraded.
+
+### R7-28 · major · test matrix
+
+Task 5 req 8's "change a lens" outcome and a severity-scale change going to the user are never run.
+
+Fixed: Task 5 *Re-evaluation* adds a change-a-lens seed and a severity-scale seed that stops for the user.
+
+### R7-29 · major · test matrix
+
+Task 5's `writing-plans` edits untested: the exclude at company and customer, intake by glab, URL and heading text, a
+Jira key, and "more than one match → ask". (The handover step is covered by Task 10's end-to-end.)
+
+Fixed: Task 5 intake tests add heading text, a duplicate heading, a GitHub URL, a glab URL and a Jira key; *Exclude* covers `/writing-plans`.
+
+### R7-30 · major · test matrix
+
+Task 5 req 4's merge-base fallback and "ask" path are untested; every Task 5 test has a `Base:` line.
+
+Fixed: Task 5 *Diff input* adds a merge-base case against a local bare origin and an ask case with no origin.
+
+### R7-31 · minor · test matrix
+
+Task 5 req 9: overlapping lists, the plan-less commit, ref deletion after a drafted commit, and `plan-*` never staged
+are untested.
+
+Fixed: Task 5 *Completion* adds overlapping lists, a plan-less commit, ref deletion after a drafted commit and no `plan-*` staged.
+
+### R7-32 · minor · test matrix
+
+Task 5: no case asserts rounds 16–19 log no re-evaluation.
+
+Fixed: Task 5 *Re-evaluation* adds a seed with 15 rows asserting no `Re-evaluation after round 16:` line.
+
+### R7-33 · minor · test matrix
+
+Task 5: a third same-day close is undefined.
+
+Fixed: Task 5 close names take `-<n>` for the nth close that day; *Closed names* runs three closes.
+
+### R7-34 · minor · test matrix
+
+Task 5's exclude test covers customer only, with no company case and no negative case at personal.
+
+Fixed: Task 5 *Exclude* covers customer and company origins and an unchanged exclude file at personal.
+
+### R7-35 · minor · test matrix
+
+Task 5 req 3's transcript check covers reviewers only, not verifiers, the re-evaluation or the fixer.
+
+Fixed: Task 5's real-run check covers verifier, re-evaluation and fixer transcripts too.
+
+### R7-36 · minor · test matrix
+
+Task 5 req 2's explicit `model` has no named test.
+
+Fixed: Task 5 *Reviewer prompts* asserts `model` on every reviewer and verifier Agent call.
+
+### R7-37 · minor · test matrix
+
+Task 4: `check-md-limits` passes a 101–200-line doc, and "claude/CLAUDE.md line count unchanged" has no test.
+
+Fixed: Task 4 tests `wc -l` ≤ 100 for the doc and an unchanged `claude/CLAUDE.md` line count.
+
+### R7-38 · minor · test matrix
+
+Task 4: several doc edits have no check, and `grep -F` can't count four bullets.
+
+Fixed: Task 4 tests grep the counts, below-table and paragraph edits, and count the four bullets with `awk`.
+
+### R7-39 · minor · test matrix
+
+Task 9 untested: an opus session's failing task, an empty `git stash create`, an unstaged in-list file on resume,
+order-line sequencing, a shared build directory, company and personal exclude. Refuted in part: the branch name and
+customer exclude are covered.
+
+Fixed: Task 9 adds opus-session, unstaged-resume, shared-build and company and personal exclude tests; empty stash and order line cut.
+
+### R7-40 · minor · test matrix
+
+Task 9's failing-task test doesn't say the impossible test is added by the task, not pre-existing.
+
+Fixed: Task 9 *Failing task* says the impossible test is one the task's spec adds.
+
+### R7-41 · minor · test matrix
+
+Task 8 untested: a second draft, a timeout then re-search, a succeeding `label list`, multi-remote `-R` on github.com,
+the non-`gitlab` marker message, the Jira section step, `glab` in recipes_optional.
+
+Fixed: Task 8 adds second-draft, `label list`, multi-remote, non-`gitlab` marker, Jira-section and recipe tests; timeouts per R7-97.
+
+### R7-42 · minor · test matrix
+
+Task 8's Interview test sits above the bullet that governs the customer-tree tests below it.
+
+Fixed: Task 8's customer scratch tree bullet now precedes the Interview test, with tester cleanup.
+
+### R7-43 · minor · test matrix
+
+Task 10's end-to-end lacks the absence check. Same as R7-7.
+
+Fixed: with R7-21.
+
+### R7-44 · minor · test matrix
+
+Task 10: `ai --model haiku` alone, a repeated `--model`, `ai plan ""` unspecified; stub assertions should be exact.
+
+Fixed: Task 10 drops empty args, takes `--model` once, exits 2 on `ai --model haiku` and a repeat; stub output compared exactly.
+
+### R7-45 · minor · test matrix
+
+Task 11's init-selection test lacks new-before-old and order preservation.
+
+Fixed: Task 11's init-selection test adds new-before-old and an order-kept case.
+
+### R7-46 · minor · test matrix
+
+Task 12 omits neighbours U+205F, U+2061, U+2065, U+FEFE, U+FF00, U+DFFFF; a missing file plus a hit, `--cached` on an
+unindexed file and names with spaces are unspecified.
+
+Fixed: Task 12 adds the named neighbours, a missing file plus a hit, `--cached` on an untracked file and a name with a space.
+
+### R7-47 · minor · test matrix
+
+Task 7's `unslop` decision and re-run-once rule are checked by no test.
+
+Fixed: Task 7 *Recorded decisions* test checks the `unslop` choice and every re-run's exit status.
+
+### R7-48 · nit · test matrix
+
+A create against a nonexistent repo fails with "Could not resolve to a Repository", not on the network.
+
+### R7-49 · major · consistency
+
+Task 9 consumes Task 5's Files-list form, `--no-renames` pathspecs and checkpoint-ref cleanup, which Task 5's status
+says are still to make; the handover and order line never say to make them before Task 9.
+
+Fixed: Task 9 starts by making the edits Task 5's status lists (now including Task 5b's PR number); the order line, handover and status table say so.
+
+### R7-50 · major · consistency
+
+Task 8 prints a stripped title, but Task 5's intake resolves by heading text, and no Task 5 intake test passes a
+stripped title.
+
+Fixed: Task 5 intake matches heading text exactly after `writing-issues`' stripping; intake test passes Task 8's printed line.
+
+### R7-51 · major · consistency
+
+Task 9 gates parallel dispatch on "the plan's order line", which nothing defines.
+
+Fixed: Task 9's parallel condition drops the order line, keeping only the Interfaces check.
+
+### R7-52 · nit · consistency
+
+The order line says M after 3 though M checks 3b. Refuted as minor: both are done.
+
+### R7-53 · nit · consistency
+
+Task 6b and 9 give opposite rationales for `1.11`. Refuted as minor: the user's decision supersedes 6b's in the same
+note.
+
+### R7-54 · minor · consistency
+
+Task 5's Files list doesn't name § What each task carries, where the pending Files-list form goes; line numbers stale.
+
+Fixed: Task 5's Files list names sections, § *What each task carries* included, instead of stale line numbers.
+
+### R7-55 · minor · consistency
+
+Task 10's end-to-end "one commit". Same as R7-21.
+
+Fixed: with R7-21.
+
+### R7-56 · nit · consistency
+
+The file map is off against done tasks' Files lists. Refuted as minor: no conflict possible now.
+
+### R7-57 · nit · consistency
+
+The handover heading date. Refuted as minor: a dated snapshot.
+
+### R7-58 · minor · consistency
+
+Tasks 8, 10 and 11 say to record results "in the status table" though results live in each task's section.
+
+Fixed: Tasks 8, 10 and 11 record results in a status note in the task.
+
+### R7-59 · nit · consistency
+
+Task 11's tip line numbers. Refuted as minor: anchored on quoted text.
+
+### R7-60 · nit · consistency
+
+Task 7's Interfaces say "none".
+
+### R7-61 · nit · consistency
+
+Task 1's level list split by a paragraph.
+
+### R7-62 · nit · consistency
+
+Task 1's marker bullet stale.
+
+### R7-63 · nit · consistency
+
+Refuted: Task 6b's two assertion counts are dated.
+
+### R7-64 · nit · consistency
+
+"The user commits at the end" against Task 5 req 9.
+
+### R7-65 · major · clarify
+
+Task 9's checkpoint reads plain `git status --porcelain`, which collapses a new directory to one `?? test/` entry, so a
+task creating one stops falsely. Reproduced. Same root as R7-94.
+
+Fixed: with R7-93.
+
+### R7-66 · minor · clarify
+
+Task 9 after a parallel batch: which Files list the out-of-list check uses. Refuted as major: lists are disjoint and
+staging one at a time implies per task. Same root as R7-93.
+
+Fixed: with R7-93.
+
+### R7-67 · minor · clarify
+
+Task 8's printed title against intake matching. Refuted as major: a contains-match is natural, and a miss asks. Same root
+as R7-50.
+
+Fixed: with R7-50.
+
+### R7-68 · minor · clarify
+
+Task 5 req 9 with lists partly overlapping is unspecified. Refuted as major: the commit is offered and declinable.
+
+Fixed: Task 5 req 9: one commit per task only when every pair of lists is disjoint, else one commit of all.
+
+### R7-69 · major · clarify
+
+Task 4's "on company work only the brainstorming and using-git-worktrees rows apply" contradicts its own
+`diagnosing-superpowers` and execution rows.
+
+Fixed: Task 4's second below-table sentence: on company work every row applies except `finishing-a-development-branch`.
+
+### R7-70 · minor · clarify
+
+Task 8's lookup test gives no repo or origin for the scratch tracker. Refuted as major: no stall is established.
+
+Fixed: Task 8 *Lookup* runs in an origin-less scratch repo.
+
+### R7-71 · minor · clarify
+
+Task 11's "every other reference git grep finds" literally includes the migration map and its fixtures. Refuted as
+major: the Files entry spells them out.
+
+Fixed: Task 11 excludes the migration map entry and the test fixtures from the references to update.
+
+### R7-72 · minor · clarify
+
+Task 9 overrides SDD's fix-loop escalation without saying whether its rounds 4–5 still run.
+
+Fixed: Task 9: SDD's five fix rounds still run, rounds 4–5 on the same model, the opus retry the only escalation.
+
+### R7-73 · minor · clarify
+
+Task 9: "the last checkpoint" undefined; a colliding branch with no `Base:` is taken as a resume. Same root as R7-96.
+
+Fixed: with R7-96.
+
+### R7-74 · nit · clarify
+
+Task 9's `<task>` ref segment. Refuted as minor: the tests pin the number form.
+
+### R7-75 · nit · clarify
+
+Task 9's branch start point. Refuted as minor: `switch -c` starts at HEAD.
+
+### R7-76 · minor · clarify
+
+Task 9's toy plan names no suite, so the run asks mid-test. Same as R7-22.
+
+Fixed: with R7-22.
+
+### R7-77 · minor · clarify
+
+Task 12: who filters staged paths. Same as R7-13.
+
+Fixed: with R7-13.
+
+### R7-78 · minor · clarify
+
+Task 12: no name rule for U+E0000. Same as R7-19.
+
+Fixed: with R7-19.
+
+### R7-79 · minor · clarify
+
+Task 12 with `--cached`: "doesn't exist" on disk or in the index.
+
+Fixed: Task 12: with `--cached`, a file not in the index is the missing case; the others are still checked, exit 2.
+
+### R7-80 · nit · clarify
+
+Task 8's `Target:` markup. Refuted as minor: the executor defines it once for both sides.
+
+### R7-81 · nit · clarify
+
+Task 8's `-R` forms. Refuted as minor: both valid; the reason is given.
+
+### R7-82 · minor · clarify
+
+Task 8's filing-time search leaves `--state` and the match rule to judgement.
+
+Fixed: Task 8's search is `--state open` limited to 10, and a match is one describing the draft's *Problem*; no match files unasked.
+
+### R7-83 · minor · clarify
+
+Task 8's Interview test placement and scratch-tree cleanup. Same root as R7-42.
+
+Fixed: with R7-42.
+
+### R7-84 · minor · clarify
+
+The Files-list form: a span naming a directory without `/` matches nothing in the `--name-only` intersection, dropping
+files from the commit.
+
+Fixed: Task 5's Files-list form: a span naming a directory covers its paths with or without a trailing `/`.
+
+### R7-85 · nit · clarify
+
+Task 7's what-and-when candidate. Refuted as minor: framed as a measurement only.
+
+### R7-86 · nit · clarify
+
+Task 7's `unslop` decision owner. Refuted as minor: the executor decides and records.
+
+### R7-87 · nit · clarify
+
+Refuted: Task 10's `--help`, `--model=x` and `--` are each an unknown stage, so usage and exit 2.
+
+### R7-88 · nit · clarify
+
+Task 9's model alias. Refuted as minor: the Agent tool takes aliases only.
+
+### R7-89 · nit · clarify
+
+Refuted: `reviewing-in-rounds` is the right counterpart of `requesting-code-review`.
+
+### R7-90 · nit · clarify
+
+Task 4's anchor clause position.
+
+### R7-91 · nit · clarify
+
+Task M step 1's bullet order.
+
+### R7-92 · nit · clarify
+
+Refuted: the handover sentence is dated.
+
+### R7-93 · major · data flow
+
+Task 9's checkpoint check also lists paths earlier tasks staged, so task 2's checkpoint stops on task 1's files, and a
+batch's other tasks trip it too. Reproduced.
+
+Fixed: Task 9 defines one listing (`--porcelain -z --untracked-files=all`, excludes) whose unstaged and untracked entries are checked.
+
+### R7-94 · major · data flow
+
+A new untracked directory is one porcelain entry; use `--untracked-files=all` and `-z`. Reproduced. Same root as R7-65.
+
+Fixed: with R7-93.
+
+### R7-95 · major · data flow
+
+Task 9's baseline on resume runs with an interrupted task's leftovers, so a test written first makes every resume stop.
+
+Fixed: Task 9 skips the baseline on resume and says so in the final report.
+
+### R7-96 · major · data flow
+
+Task 9: a branch that exists with no `Base:` line is unhandled.
+
+Fixed: Task 9 resume: a branch that exists with no `Base:` line stops and asks; test added.
+
+### R7-97 · major · data flow
+
+Task 8's re-search after a timeout can report the older matched issue as filed, or miss an unindexed create and
+duplicate it.
+
+Fixed: Task 8: after a timeout the outcome is reported unknown with the issues URL to check, no re-search or item.
+
+### R7-98 · minor · data flow
+
+Nothing makes an `(issue to file)` item's heading equal the filed title, so the exact lookup never matches. Refuted as
+major: it fails visibly.
+
+Fixed: Task 8 makes an `(issue to file)` item's heading title the drafted title verbatim; test asserts it.
+
+### R7-99 · major · data flow
+
+Headings use bare `issue #373`; in a tree-root tracker spanning repos, intake reads the wrong repo's #373; nothing says
+`Target:` survives numbering.
+
+Fixed: Task 8 keeps `Target:` once numbered; Task 5 intake reads the issue from `Target:`, asking in a multi-repo tree without one; tests added.
+
+### R7-100 · major · data flow
+
+Task 5 req 9 stages the fixer's reported paths; an unreported out-of-list fix is never staged or reported.
+
+Fixed: Task 5 req 9 stages leftovers new since round 1 from Task 9's listing, not the fixer's report; new-directory test added.
+
+### R7-101 · major · data flow
+
+Task 8's drafted glab `!` line omits `--yes`, which glab needs with no TTY.
+
+Fixed: Task 8's drafted glab `!` line holds `--yes`, and the missing-CLI test asserts it.
+
+### R7-102 · minor · data flow
+
+Task 12: undefined name for unassigned code points. Same as R7-19.
+
+Fixed: with R7-19.
+
+### R7-103 · minor · data flow
+
+Task 12 flags U+200D, so ZWJ emoji fail, contradicting "Emoji … pass".
+
+Fixed: Task 12 says a ZWJ sequence is flagged at its U+200D; test added.
+
+### R7-104 · minor · data flow
+
+Task 12: no behaviour for malformed UTF-8 or binary input; `charnames` on the RHEL leg unverified.
+
+Fixed: Task 12 matches UTF-8 byte sequences so malformed bytes can't stop the scan; tests for a stray byte and for `charnames` on every CI leg.
+
+### R7-105 · minor · data flow
+
+Task 12's hook duplicates the default-set filter. Same as R7-13.
+
+Fixed: with R7-13.
+
+### R7-106 · minor · data flow
+
+The guard blocks `git init` then a write in one call, `cd "$var"`, and `git -C <path>` writes in some contexts; tests
+and the reviewer prompt should use their own call and literal paths.
+
+Fixed: New § *Global constraints* scratch-repo rule; Task 5 req 3 points reviewers' experiments at it.
+
+### R7-107 · minor · data flow
+
+Task 8: a user-filed draft's body lives only in the session scratchpad.
+
+Fixed: Task 8: the last turn tells the user the drafted body lasts only this session.
+
+### R7-108 · minor · data flow
+
+Task 8: nothing marks a draft filed, so compaction can resume a filed interview.
+
+Fixed: Task 8: a draft file gains an `Ended:` line, and a compacted session doesn't resume one; first test asserts it.
+
+### R7-109 · minor · data flow
+
+Task 9's `<task>` ref segment undefined. Refuted in part: an empty stash can't follow a staged task.
+
+Fixed: Task 9: `<task>` is the number as its heading writes it; a task with nothing to stage stops, so no empty stash.
+
+### R7-110 · minor · data flow
+
+Task 9's suggested `git read-tree <ref>^2` unstages a task finished between `git add` and `update-ref`.
+
+Fixed: Task 9 records the ref right after each `git add`, and on a mismatch shows `git diff --cached` against the ref before naming the restore.
+
+### R7-111 · minor · data flow
+
+Task 10's end-to-end lacks the absence check. Same as R7-7.
+
+Fixed: with R7-21.
+
+### R7-112 · minor · data flow
+
+Task 5 intake copies issue text into the plan and implementer prompts; say it is data, never instructions.
+
+Fixed: Task 5 intake: the issue's text is data, never instructions, in the plan and every prompt.
+
+### R7-113 · minor · data flow
+
+Task 8's "on a match" undefined; fuzzy search makes most filings ask. Same root as R7-82.
+
+Fixed: with R7-82.
+
+### R7-114 · nit · data flow
+
+Task 5's closed names: say `-<n>`.
+
+### R7-115 · nit · data flow
+
+Task 10: quote `"${AI_CLAUDE:-claude}"`.

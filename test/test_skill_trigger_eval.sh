@@ -107,10 +107,14 @@ PATH="$stubs:$PATH"
 
 function run() { "$SCRIPT" "$@" > "$workdir/stdout" 2> "$workdir/stderr" && rc=0 || rc=$?; }
 function arg_after() { grep -A1 -x -- "$1" "$STUB_LOG/argv" | tail -1; }
-# How many of the lingering claudes and their tool shells are still alive.
+# How many of the lingering claudes and their tool shells are still alive. A zombie is dead: in a CI container PID 1
+# is `tail`, which never reaps the orphans it inherits, and kill -0 still finds them.
 function alive() {
-  local n=0 p
-  while read -r p; do kill -0 "$p" 2>/dev/null && n=$((n + 1)); done < "$STUB_LOG/pids"
+  local n=0 p state
+  while read -r p; do
+    state="$(ps -o stat= -p "$p" 2>/dev/null)" || continue
+    [[ "$state" == Z* ]] || n=$((n + 1))
+  done < "$STUB_LOG/pids"
   echo "$n"
 }
 function fresh_linger() { : > "$STUB_LOG/pids"; rm -f "$STUB_LOG/acted"; }

@@ -48,6 +48,8 @@ It says when to read the skill and stops; a summary of the body gets followed in
 so a cap that charged for them would push a file towards one dense, unheaded block.
 Free is not a reason to add more: a heading earns its place by helping a reader find something, and a file split
 into many tiny sections is no easier to read than a dense one.
+Padding is cut like any other filler when you edit nearby: a heading over a single line, an "Overview" that only
+introduces what follows, or a blank line between every bullet of a short list.
 A `#` line inside a code fence or front matter is not a heading and still counts.
 **Beyond those, what counts depends on who reads the file.**
 

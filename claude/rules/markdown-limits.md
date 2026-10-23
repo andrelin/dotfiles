@@ -20,8 +20,9 @@ paths:
 | A skill | 100 | 150 |
 | Anything else | 100 | 200 |
 
-- **Readability that costs next to no tokens is wanted, never padding.** Blank lines and headings don't count,
-  so use them where they help a reader find their way, not to fill the room they free: the goal is still a small, concise file.
+- **Readability that costs next to no tokens is wanted, but only where it helps.** Blank lines and headings don't
+  count, so use them to help a reader find their way, never just because they are free, and remove one that helps
+  no one when you edit nearby: the goal is still a small, concise file.
   Beyond those, every line of an agent-loaded file (`CLAUDE.md`, `SKILL.md`, `claude/`, `.claude/`) counts, because it is loaded whole;
   a human-facing page counts the content a reader gets through, so comments, badge blocks and a doctoc ToC are free.
   **Past the aim, look for the seam** rather than trimming words.

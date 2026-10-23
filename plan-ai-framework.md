@@ -60,13 +60,13 @@ in § *The staged workflow*. No external spec.
 | 3 · User-level settings hardening | ✅ DONE | merged into the real settings 2026-10-16; marker check 2026-10-19 |
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
-| 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests pending, and edits made in Task 9's first step |
-| 5b · `reviewing-for-feedback` skill | ✅ DONE | first review, re-review and hand-over tested 2026-10-23; the PR-number case is added in Task 9's first step |
+| 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests pending; Task 9's first-step edits made 2026-10-23 |
+| 5b · `reviewing-for-feedback` skill | ✅ DONE | first review, re-review and hand-over tested 2026-10-23; the PR-number case written 2026-10-23, its *By number* test pending |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ✅ DONE | scored 2026-10-23: 20/20 and 20/21, both descriptions kept; `writing-plans`' `1.11` a known miss until Task 9 |
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | 🚧 PARTIAL | built 2026-10-23, automated checks pass; the user's live tests pending; deviations in Task 8 |
-| 9 · `implementing-plans` skill | ⏳ PENDING | |
+| 9 · `implementing-plans` skill | 🚧 PARTIAL | built 2026-10-23 with its first step; trigger evals and every toy run pending; deviations in Task 9 |
 | 10 · `bin/ai` stage launcher | 🚧 PARTIAL | built 2026-10-23, `test/test_ai.sh` passes; the spike, `type -a ai` and the end-to-end run are the user's |
 | 11 · Claude config on Linux and WSL | ⏳ PENDING | |
 | 12 · Hidden-Unicode check on agent-loaded files | ⏳ PENDING | |
@@ -1689,7 +1689,7 @@ the tracker-ref intake cases bar `B1.2`, and this plan's next review to `Done (p
 Untested behaviours rounds 6 and 7 found, also runnable now: a review that drops a seeded refutable finding, a lens
 change applied by a re-evaluation, a severity-scale change going to the user, rounds 16 and 21 logging no
 re-evaluation, the explicit `model` on each subagent, and overlapping Files lists making one commit.
-Still to make, as Task 9's first step: in `writing-plans`, the Files-list form, the intake's `Target:`, title-match
+Made 2026-10-23, as Task 9's first step: in `writing-plans`, the Files-list form, the intake's `Target:`, title-match
 and data rules, and that a plan names its test suite in § *Global constraints* as `Suite: <command>` or `Suite: none`;
 in `reviewing-in-rounds`, requirement 9 as written now, the `-<n>` close names, requirement 3's experiment rule and
 requirement 4's `top` pathspecs;
@@ -1772,7 +1772,8 @@ which truncates the VAT where `vat_ore` rounds half up, under a test of round nu
 - *Hand-over,* Task 5's *Whose work* test: `/reviewing-in-rounds plan migration.md`, Kari's commit, asked first;
   resumed with "It's a colleague's." it loaded this skill and reviewed a scratchpad copy, verifier per lens, $2.74 in
   all. `git status` and the index unchanged, no `plan-migration.md`.
-- *Still to make,* with Task 9's first step: requirement 1's MR or PR number, and its *By number* test.
+- *Made* 2026-10-23 with Task 9's first step: requirement 1's MR or PR number (fetched as `refs/pull/<n>/head` or
+  `refs/merge-requests/<n>/head` into `FETCH_HEAD`); its *By number* test is still to run.
 
 ## Task 6 · `filing-learnings` skill
 
@@ -2622,6 +2623,13 @@ description: Read before implementing any plan file, or any part of one - in thi
   and the run stops before it, naming what the user runs.
 - **Suite artifacts:** `test/run.sh` also writing an untracked `test/out.log` → the run completes, `test/out.log`
   unstaged and named in the final report.
+
+**As built (2026-10-23):** the skill is 100 lines, so most SDD line citations and the "`git switch -c` at every
+level" sentence went; it also overrides SDD's "rulings, not stalls", which would argue past the stops here.
+`reviewing-in-rounds` records the leftovers as a `Leftovers before round 1:` line in the findings file, now in
+`claude/docs/review-log.md` with the `-<n>` close names; its reviewer prompt gains the scratch-repo rule.
+`writing-plans`' intake omits "the tracker item then holds the link", which no list asked for.
+`check-md-limits`, markdownlint, `jq` and the `grep` checks pass; the toy setup is ready for the user's runs.
 
 ## Task 10 · `bin/ai` stage launcher
 

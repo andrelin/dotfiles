@@ -9,7 +9,6 @@
   {"id": "1.8", "query": "Draft a migration.md for upgrading the app from Spring Boot 2.7 to 3.3, covering the javax-to-jakarta rename, the security config changes and how we roll it out per module.", "should_trigger": true},
   {"id": "1.9", "query": "The README should explain how the guard script decides the work context. Can you add that and link it to the section in plan-ai-framework.md where we worked it out?", "should_trigger": true},
   {"id": "1.10", "query": "Mark Task 3 done in the plan with what the manual check showed, and update the status table and the order line to match.", "should_trigger": true},
-  {"id": "1.11", "query": "Build Task 3 from plan-export-retry.md, the dead-letter topic for exports that exhaust their retries, and commit it once its tests pass.", "should_trigger": true},
   {"id": "2.1", "query": "Add a follow-up item to the tracker for the flaky Kafka consumer test we saw today, with the issue number and a next step.", "should_trigger": false},
   {"id": "2.2", "query": "Review the follow-ups: delete what's resolved, renumber the rest and check each open PR is still listed against the right item.", "should_trigger": false},
   {"id": "2.3", "query": "Write the PR description for this branch: it adds the retry to the invoice export job and the integration test for it.", "should_trigger": false},
@@ -19,5 +18,6 @@
   {"id": "2.7", "query": "The pipeline fails intermittently on the Kafka consumer test. Find out why before we touch anything.", "should_trigger": false},
   {"id": "2.8", "query": "Write the commit message for the staged changes, which rename exportAll to exportPending across the module.", "should_trigger": false},
   {"id": "2.9", "query": "Create a new skill for writing Gradle build logic, with a description that makes it load when someone edits build.gradle.kts.", "should_trigger": false},
-  {"id": "2.10", "query": "Write the tests for the new retry wrapper: backoff timing, the max-attempts cut-off and the exception that ends retries early.", "should_trigger": false}
+  {"id": "2.10", "query": "Write the tests for the new retry wrapper: backoff timing, the max-attempts cut-off and the exception that ends retries early.", "should_trigger": false},
+  {"id": "2.11", "query": "Build Task 3 from plan-export-retry.md, the dead-letter topic for exports that exhaust their retries, and commit it once its tests pass.", "should_trigger": false}
 ]

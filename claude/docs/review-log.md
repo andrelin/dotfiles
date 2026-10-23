@@ -38,6 +38,8 @@ Done (code): round 16; nits: R16-3, R16-4
 
 ## The findings file
 
+A code review's file opens with `Leftovers before round 1: <paths, or none>`, the unstaged and untracked paths
+when round 1 started, which completion compares against.
 One `## Round <n>` heading per round, then one entry per verified finding:
 
 ```text
@@ -74,7 +76,7 @@ Read the open section of the kind being run — one whose heading has no `, clos
 A fresh run after `Done (<kind>):` first closes the old one, on the day it does so:
 
 - the heading becomes `## Review log (<kind>, closed <YYYY-MM-DD>)`;
-- the findings file becomes `…-review-findings-<kind>-closed-<YYYY-MM-DD>.md`, `-2` before `.md` for a second close
-  that day.
+- the findings file becomes `…-review-findings-<kind>-closed-<YYYY-MM-DD>.md`, `-<n>` before `.md` from the
+  second close that day, `<n>` that close's count.
 
 Resuming and every count ignore closed sections.

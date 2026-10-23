@@ -16,7 +16,9 @@ nothing posted to the platform. Reading needs none of them:
 
 - **A branch:** `git fetch <remote>` from the remote holding it — ask if more than one could — then
   `git diff <remote>/<default>...<remote>/<branch>`, `git log` and `git show <ref>:<path>` for whole files.
-- **An MR or PR number:** ask for its branch, or match it in `git branch -r`; never look it up on the platform.
+- **An MR or PR number `<n>`:** after that fetch, `git fetch <remote> refs/pull/<n>/head` (GitHub) or
+  `refs/merge-requests/<n>/head` (GitLab; a host you can't tell, try both) into `FETCH_HEAD` only, no local ref,
+  and review `<remote>/<default>...FETCH_HEAD`. Never look it up on the platform.
 - **A plan:** copy it to `<scratchpad>/reviewed-plan.md` with every `## Review log (` section removed.
 - **Running code:** `git show <ref>:<path>` into a fresh `mktemp -d` and run it there.
 

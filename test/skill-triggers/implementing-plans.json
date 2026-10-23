@@ -1,0 +1,3 @@
+[
+  {"id": "1.1", "query": "Build Task 3 from plan-export-retry.md, the dead-letter topic for exports that exhaust their retries, and commit it once its tests pass.", "should_trigger": true}
+]

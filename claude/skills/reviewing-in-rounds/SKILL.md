@@ -22,7 +22,12 @@ file, resuming, closing): their formats are literal.
    already starting `plan-` kept as is): `mv` when untracked; when tracked, a copy, and tell the user the original is
    theirs to remove — a staged rename trips `implementing-plans`' clean-tree check.
 4. **Resume or start**, per `review-log.md` § *Resuming*: an open question first, an interrupted round finished, a
-   due re-evaluation run. A finished open section: say so and ask; on a yes, close it and start at round 1.
+   due re-evaluation run. A finished open section: say so and ask; on a yes, close it and start at round 1 — from the
+   second close that day, the closed names gain `-<n>` before `.md`, `<n>` being that close's count for the day.
+5. **Code only, the leftovers:** before round 1 of a fresh run, record the entries of
+   `git status --porcelain -z --no-renames --untracked-files=all --` with the two pathspecs below (`| tr '\0' '\n'`)
+   whose worktree column isn't blank — unstaged or untracked — as a `Leftovers before round 1:` line at the top of
+   the findings file, so a resumed session has it too. Completion compares against it.
 
 ## The inputs
 
@@ -31,7 +36,7 @@ file, resuming, closing): their formats are literal.
   never the text: a pasted plan is one more thing to get wrong.
 - **The diff,** for code, from the local clone at every level, never the platform: the working tree (staged, unstaged,
   untracked) against the base — the plan's `Base:` line, else the merge-base with a freshly fetched default branch,
-  else ask. Always with `':(glob,exclude)plan-*' ':(glob,exclude)**/00-follow-ups-*'`; untracked files listed with
+  else ask. Always with `':(top,glob,exclude)plan-*' ':(top,glob,exclude)**/00-follow-ups-*'`; untracked files listed with
   `git ls-files --others --exclude-standard` under the same pathspecs.
 
 ## A round
@@ -41,6 +46,7 @@ file, resuming, closing): their formats are literal.
    > You review one lens of `<scratchpad>/reviewed-plan.md` `[and the diff from <the git diff command>]` in `<repo>`.
    > Do not invoke any skill or open `plan-*` or `00-follow-ups-*` files in the repo. Change nothing in the repo;
    > run any experiment in a fresh `mktemp -d`, and delete nothing but that directory, by the path it printed.
+   > A scratch repo there: `git init` in a Bash call of its own, then literal paths, never `cd "$var"` or `git -C`.
    > Lens: `<the lens's heading and questions>`. Severity: `<the scale>`. Report every finding you see, each with a
    > severity, the location, and the failure scenario or requirement it breaks.
 2. **Verifiers:** one fresh Agent per lens, given that lens's findings, the artifact and the scale, told to refute
@@ -65,15 +71,20 @@ the spec requires, and stopping because the remaining findings don't affect corr
 
 ## Completion of a code review
 
-1. **Stage** the paths the fixes changed, never `plan-*`.
-2. **Pathspecs:** each task's Files list, `:line` ranges and remarks stripped, intersected with
-   `git diff --cached --name-only`. One commit, or one per task where the lists are disjoint, a fix outside every
-   list going with the last task. No plan: one commit of `git diff --cached --name-only`.
+1. **Stage** the paths the fixes changed: the leftovers now that weren't leftovers before round 1, never `plan-*`.
+   One that was a leftover both times stays unstaged, and the report names it.
+2. **Pathspecs:** each task's Files list (`writing-plans` § *What each task carries*) intersected with
+   `git diff --cached --name-only --no-renames`, so a rename's deletion is kept. One commit per task when every pair
+   of lists is disjoint, a fix outside every list going with the last task; else one commit of them all. No plan:
+   one commit of `git diff --cached --name-only --no-renames`.
 3. **If `git diff -- <paths>` is non-empty, stop** and list those paths: `git commit -- <paths>` would take their
    unstaged edits too.
 4. **Personal and company:** offer the commit, run it only on a yes. **Customer:** draft it for the user.
-5. **The report** names the changed files no verified finding touched — where the user's own read should start.
-6. Then `filing-learnings`, before reporting the review done.
+   **Company, no plan, on the default branch:** offer none, and say the company bar wants a branch.
+5. **After the commit runs** — yours on a yes, or the drafted one once the user says it ran — delete every
+   `refs/checkpoints/<branch>/*` with `git update-ref -d`. A declined commit keeps them, and the report says so.
+6. **The report** names the changed files no verified finding touched — where the user's own read should start.
+7. Then `filing-learnings`, before reporting the review done.
 
 ## Red flags
 

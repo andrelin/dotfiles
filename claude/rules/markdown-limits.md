@@ -20,9 +20,10 @@ paths:
 | A skill | 100 | 150 |
 | Anything else | 100 | 200 |
 
-- **Counting differs by audience.** Every line of an agent-loaded file (`CLAUDE.md`, `SKILL.md`, `claude/`,
-  `.claude/`) counts, because it is loaded whole; a human-facing page counts the content a reader gets through, so
-  comments, badge blocks and a doctoc ToC are free. **Past the aim, look for the seam** rather than trimming words.
+- **Blank lines and headings never count**, so space a file out and give it headings freely: they cost next to no tokens.
+  Beyond those, every line of an agent-loaded file (`CLAUDE.md`, `SKILL.md`, `claude/`, `.claude/`) counts, because it is loaded whole;
+  a human-facing page counts the content a reader gets through, so comments, badge blocks and a doctoc ToC are free.
+  **Past the aim, look for the seam** rather than trimming words.
 
 **A file over its warn line can be pinned** at a length you decided not to shorten; growing past a pin is then
 an error, and the hard cap still applies. **A directory holding a `VENDORED.md` is exempt from all of it**, its

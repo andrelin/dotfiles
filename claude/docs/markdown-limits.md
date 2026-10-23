@@ -44,7 +44,10 @@ Both numbers tighten with how easily the file loads.
 description sits in the skill list of every session, so it is paid for on every task like a `CLAUDE.md` line.
 It says when to read the skill and stops; a summary of the body gets followed in its place.
 
-**What counts depends on who reads the file.**
+**Blank lines and headings never count.** Each costs next to no tokens, and both make a file easier to read,
+so a cap that charged for them would push a file towards one dense, unheaded block.
+A `#` line inside a code fence or front matter is not a heading and still counts.
+**Beyond those, what counts depends on who reads the file.**
 
 - **Claude-loaded** — `CLAUDE.md`, any `SKILL.md`, anything under `claude/` or `.claude/`: **every line counts**,
   because the file is loaded whole and every line of it is tokens on every task that trips its trigger.

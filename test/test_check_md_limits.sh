@@ -295,6 +295,27 @@ $(repeat_lines 18)
 
 $(repeat_lines 90)")" "clean/0" "a real doctoc block is still discounted"
 
+# 181 lines, 91 of them non-blank: clean only if blank lines are free.
+assert "$(check_file spaced.md "# T
+$(for _ in {1..90}; do printf '\n\nfiller'; done)")" "clean/0" "blank lines do not count toward the length"
+
+# 411 lines, 205 of them one-line badge rows: over the cap only if each row counts, not one run of them.
+assert "$(check_file badge-rows.md "# T
+$(for _ in {1..205}; do printf '\n![b](https://example.com/y.svg)\n'; done)")" "ERROR/1" \
+  "a blank line still ends a badge row, so spaced-out badges are not one row"
+
+# 181 lines, 90 of them content: clean only if headings are free.
+assert "$(check_file headings.md "# T
+$(for _ in {1..90}; do printf '\n## H\nfiller'; done)")" "clean/0" "headings do not count toward the length"
+
+# 252 lines, all but the title shell comments in a fence: a # line there is code, not a heading.
+assert "$(check_file fenced-hash.md "# T
+
+\`\`\`
+$(for _ in {1..250}; do echo '# x'; done)
+\`\`\`
+")" "ERROR/1" "a # line inside a fence still counts"
+
 # Fenced code is content: it is exempt from the line cap, never from the length.
 assert "$(check_file fenced-count.md "# T
 
@@ -338,6 +359,20 @@ assert "$(check_file human.md "# T
 $(repeat_lines 15)
 -->
 $(repeat_lines 90)")" "clean/0" "the same file is clean when it is human-facing"
+
+# 181 raw lines, 91 non-blank, every other one holding only spaces.
+assert "$(check_file claude/spaced.md "# T
+$(for _ in {1..90}; do printf '\n   \nfiller'; done | sed 1d)")" "clean/0" \
+  "blank and whitespace-only lines do not count in a Claude-loaded file either"
+
+assert "$(check_file claude/headings.md "# T
+$(for _ in {1..90}; do printf '\n## H\nfiller'; done)")" "clean/0" "headings do not count in a Claude-loaded file either"
+
+# 122 lines of front matter: its # lines are YAML comments, not headings.
+assert "$(check_file claude/front-matter.md "---
+$(for _ in {1..120}; do echo '# c'; done)
+---
+# T")" "NOTE/0" "a # line in front matter still counts"
 
 e_header "skill descriptions"
 
@@ -485,7 +520,7 @@ assert "$(pinned_state)" "ERROR/1" "growing past a pin is an error, not an advis
 # pin there would silently raise the file's ceiling to the cap.
 printf '# T\n\n%s' "$(repeat_lines 250)" > "$workdir/pinned.md"
 (cd "$workdir" && bin/check-md-limits --update-baseline >/dev/null 2>&1)
-assert "$(awk -F'\t' '$2 == "pinned.md" { print $1 }' "$workdir/.md-baseline")" "152" \
+assert "$(awk -F'\t' '$2 == "pinned.md" { print $1 }' "$workdir/.md-baseline")" "150" \
   "a pin survives the file outgrowing its hard cap"
 
 printf '# T\n\n%s' "$(repeat_lines 20)" > "$workdir/pinned.md"
@@ -507,7 +542,7 @@ git -C "$workdir" add -A >/dev/null 2>&1
 (cd "$workdir" && bin/check-md-limits --update-baseline pinned.md >/dev/null 2>&1)
 printf '# T\n\n%s' "$(repeat_lines 170)" > "$workdir/pinned.md"
 (cd "$workdir" && bin/check-md-limits --update-baseline >/dev/null 2>&1)
-assert "$(awk -F'\t' '$2 == "pinned.md" { print $1 }' "$workdir/.md-baseline")" "152" \
+assert "$(awk -F'\t' '$2 == "pinned.md" { print $1 }' "$workdir/.md-baseline")" "150" \
   "a pin is not raised when the file grows but stays under its hard cap"
 
 # A baseline nobody can parse must not be silently rewritten: the ratchet's own

@@ -14,7 +14,9 @@
 #   * File length — per type <aim/hard>: a rule or project CLAUDE.md 30/50, the
 #     global CLAUDE.md 60/75, a skill 100/150, anything else 100/200. The aim is
 #     also the advisory line.
-#     What counts depends on who reads the file:
+#     Blank lines and headings never count: they cost next to no tokens and make
+#     a file easier to read, so a cap must not discourage them. Beyond those, what
+#     counts depends on who reads the file:
 #       - Claude-loaded (CLAUDE.md, SKILL.md, claude/, .claude/): every line,
 #         because every line is tokens on every task that loads it.
 #       - Human-facing (README, tips.md, tips/, docs/, the READMEs under init/ and
@@ -205,7 +207,9 @@ is_claude_file() {
   esac
 }
 
-# raw: every line, including a last one with no trailing newline.
+# Both modes leave out blank lines and headings; a line that only looks like a
+# heading, inside a fence or front matter, still counts.
+# raw: every other line, including a last one with no trailing newline.
 # rendered: what a reader gets through — no HTML comments, no generated doctoc
 # block, and a run of badge lines counted as the one row it draws.
 count_lines() {
@@ -216,12 +220,9 @@ count_lines() {
     my $MAX_COMMENT_LINES = 20;
     open my $fh, "<", $file or die "$file: $!\n";
     my @lines = map { my $l = $_; $l =~ s/\r?\n\z//; $l } <$fh>;
-    if ($mode eq "raw") { print scalar(@lines), "\n"; exit }
 
-    # Only elide a doctoc block that is actually closed; an unterminated START
-    # marker is a broken file, not licence to stop counting.
-    # Fenced code holds example markup, not real markers or badges. Computed
-    # first because every region scan below has to consult it.
+    # Fenced code holds example markup, not real markers, badges or headings.
+    # Computed first because every region scan below has to consult it.
     my %fenced;
     my ($fence_open, $fence_char, $fence_len);
     for my $i (0 .. $#lines) {
@@ -238,7 +239,21 @@ count_lines() {
         ($fence_open, $fence_char, $fence_len) = ($i, $char, $len);
       }
     }
+    if (@lines && $lines[0] eq "---") {
+      for my $j (1 .. $#lines) {
+        next unless $lines[$j] eq "---";
+        $fenced{$_} = 1 for 0 .. $j;
+        last;
+      }
+    }
+    my $is_free = sub {
+      my $i = shift;
+      $lines[$i] !~ /\S/ || (!$fenced{$i} && $lines[$i] =~ /^ {0,3}#{1,6}(?:\s|$)/);
+    };
+    if ($mode eq "raw") { print scalar(grep { !$is_free->($_) } 0 .. $#lines), "\n"; exit }
 
+    # Only elide a doctoc block that is actually closed; an unterminated START
+    # marker is a broken file, not licence to stop counting.
     my %skip;
     for my $i (0 .. $#lines) {
       next if $fenced{$i};
@@ -271,6 +286,10 @@ count_lines() {
     for my $i (0 .. $#lines) {
       next if $skip{$i};
       my $line = $lines[$i];
+      if ($is_free->($i)) {
+        ($in_badges, $badge_run) = (0, 0);
+        next;
+      }
       next if $line =~ /\S/ && $stripped[$i] !~ /\S/;
       if ($line =~ /^\s*(?:\[?!\[[^\]]*\]\([^)]*\)\]?(?:\([^)]*\))?\s*)+$/) {
         $badge_run = $in_badges ? $badge_run + 1 : 1;

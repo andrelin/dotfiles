@@ -74,7 +74,7 @@ in § *The staged workflow*. No external spec.
 | 13 · Fold the plan into durable docs and delete it | ⏳ PENDING | |
 
 Order: 1 → 2 → 2b → 3 → 3b, then 6 → 6b, then 5 → 5b → 8 → 9 → 10 (each builds on the one before;
-Task 9 starts with Task 5's pending edits; Task 5's real-run tests wait for the end of 10, which flips its row),
+Task 9 starts with Task 5's pending edits and runnable-now tests; the rest wait for the end of 10, which flips its row),
 then 4 (it names Task 9's skill), then 7 so its audit covers the new skills, and 11 last, being low priority.
 12 is independent and small: any time after 0. M is by hand, any time after 3. 13 comes after every other task, M included.
 
@@ -353,6 +353,7 @@ Research into Anthropic's docs and engineering posts, practitioner writing and s
 | `claude/skills/filing-learnings/SKILL.md` (new) | 6 |
 | any `claude/skills/*/SKILL.md` description | 7 |
 | `claude/skills/writing-issues/SKILL.md` (new) | 8 |
+| `claude/docs/issue-commands.md` (new, only if the skill passes 100 lines) | 8 |
 | `init/31_homebrew_recipes.sh` | 8 |
 | `claude/skills/writing-follow-up-items/SKILL.md` | 8 |
 | `claude/skills/maintaining-follow-up-trackers/SKILL.md` | 8 |
@@ -1480,8 +1481,8 @@ description: Read before reviewing your own plan or a branch this workflow built
    section whose heading starts `## Review log (` removed — for a code review too, since the plan-conformance lens
    checks the diff against it. A code review reads the local clone at every level, never the platform:
    the working tree (staged, unstaged and untracked) against the base — the `Base:` line, else the merge-base with
-   the freshly fetched default branch, else ask — with the pathspecs `':(glob,exclude)plan-*'` and
-   `':(glob,exclude)**/00-follow-ups-*'`, the same two Task 9's clean-tree check uses.
+   the freshly fetched default branch, else ask — with the pathspecs `':(top,glob,exclude)plan-*'` and
+   `':(top,glob,exclude)**/00-follow-ups-*'`, the same two Task 9's clean-tree check uses.
 5. **Verify, then fix.** A fresh verifier per lens tries to refute its findings; it drops or downgrades one only with
    a written refutation, kept beside it in the findings file. A finding that names neither a concrete failure
    scenario nor the requirement it violates is dropped as unsupported. Every surviving finding but a nit is fixed that round.
@@ -1680,16 +1681,18 @@ want of the lens file — which it did, rightly, rather than invent lenses):
 - *Whose work* (1): a `migration.md` committed by another author → asked before writing anything, `git status`
   clean. The hand-over half passed with Task 5b, 2026-10-23.
 
-Still to run, needing Tasks 8–10: intake against Task 8's issue, the code review to `Done (code):` after Task 9's toy
-run, diff input, and completion.
-Runnable now, in scratch repos: re-evaluation, verification, closed names, no plan, exclude, tests after fixes, test
-tampering, the remaining whose-work cases, the tracker-ref intake cases bar `B1.2`, and this plan's next review to `Done (plan):`.
+Still to run, needing Tasks 8–10 (Task 10's end runs them): intake against Task 8's issue, the code review to
+`Done (code):` after Task 9's toy run, diff input, and completion.
+Runnable now, in scratch repos (Task 9's first step runs them, and the next list): re-evaluation, verification,
+closed names, no plan, exclude, tests after fixes, test tampering, the remaining whose-work cases,
+the tracker-ref intake cases bar `B1.2`, and this plan's next review to `Done (plan):`.
 Untested behaviours rounds 6 and 7 found, also runnable now: a review that drops a seeded refutable finding, a lens
 change applied by a re-evaluation, a severity-scale change going to the user, rounds 16 and 21 logging no
 re-evaluation, the explicit `model` on each subagent, and overlapping Files lists making one commit.
 Still to make, as Task 9's first step: in `writing-plans`, the Files-list form, the intake's `Target:`, title-match
-and data rules, and that a plan names its test suite in § *Global constraints*; in `reviewing-in-rounds`,
-requirement 9 as written now, the `-<n>` close names and requirement 3's experiment rule;
+and data rules, and that a plan names its test suite in § *Global constraints* as `Suite: <command>` or `Suite: none`;
+in `reviewing-in-rounds`, requirement 9 as written now, the `-<n>` close names, requirement 3's experiment rule and
+requirement 4's `top` pathspecs;
 in `reviewing-for-feedback`, Task 5b's requirement 1 for an MR or PR number.
 
 ## Task 5b · `reviewing-for-feedback` skill
@@ -2054,16 +2057,20 @@ description: Read before writing or changing any skill's description, even a one
 
 **Files:**
 
-- Created: `claude/skills/writing-issues/SKILL.md`, aim ≤ 100 lines
+- Created: `claude/skills/writing-issues/SKILL.md`, aim ≤ 100 lines; past that, the gh and glab command forms and the
+  target rule move to `claude/docs/issue-commands.md` (new), which the skill names by path
 - Modified: `claude/skills/writing-follow-up-items/SKILL.md` § *What belongs in it* (one sentence, below) and
   § *Issue and PR references* (one sentence: `(issue to file)` holds the number's place until the user reports it);
   `claude/skills/maintaining-follow-up-trackers/SKILL.md` § *The run, in order* step 2 (one clause: an
-  `(issue to file)` heading is checked with `gh issue list -R … --search 'in:title "<title>"' --state all --limit 100`
-  or `glab issue list -R … --in title --search '<title>' --all --per-page 100`, the target repo being the one the item
-  records, the title single-quoted as `writing-issues` says; it gets the number only from the one issue whose title
-  equals the item's title, several equal titles → ask, and an item with no `Target:` is listed for the user, unchanged).
+  `(issue to file)` heading is checked with
+  `gh issue list -R … --search 'in:title "<title>"' --author @me --state all --limit 100`
+  or `glab issue list -R … --in title --search '<title>' --all --per-page 100 --output json`, the target repo being the
+  one the item records, the title single-quoted as `writing-issues` says, each `"` in it dropped from the search
+  string; it gets the number only from the one issue whose title equals the item's title, and on glab whose
+  `author.username` is `glab api user`'s `username`; several equal titles → ask, and an item with no `Target:` is
+  listed for the user, unchanged).
   `writing-issues` writes that target into
-  every `(issue to file)` item as `Target: <host>/<project path>` (a GitLab path may hold subgroups),
+  every `(issue to file)` item as `Target: <host>/<project path>`, its own line right below the heading (a GitLab path may hold subgroups),
   since a tracker at a tree root spans several repos, and makes the item's heading title the drafted issue title verbatim.
   `writing-follow-up-items` § *The shape of a section and an item* defines that line (one sentence: it stays when the
   number replaces `(issue to file)`), and the search passes the host on:
@@ -2102,15 +2109,16 @@ description: Read before writing, filing or drafting an issue or ticket for any 
   user's own and never shared. Issue only, item only, or both: the tracker item carries
   the issue number in its heading (`writing-follow-up-items`) — `(issue to file)` in its place while the user still
   has to file it, replaced when they report the number or at the next tracker review. An issue filed from an existing
-  item puts the number in that item's heading, never in a second item. No tracker in the tree and an
-  item is needed → ask whether to set one up (`setting-up-follow-up-trackers`).
+  item puts the number in that item's heading, never in a second item. No tracker (a `00-follow-ups-*` file in the
+  repo's root or a directory above it, up to `$HOME`) and an item is needed → ask whether to set one up (`setting-up-follow-up-trackers`).
 - **Interview before drafting,** in the brainstorming style: first read the code and the existing issues to answer
   what you can yourself, then ask the user one question at a time, multiple choice where the options are knowable,
   until every section below can be written without a guess — above all the acceptance criteria and what is out of
   scope. Ask at least one question that challenges the premise: is this the real problem, and is it this repo's to
   fix? Stop asking the moment that holds; a concise issue needs few answers. The last turn shows the title and body
-  and asks only "anything to change?" — the user's last look, which matters most for a world-readable issue — then
-  files. When the user will work on it, finish by printing `ai plan <owner/repo#n>` for a fresh session — for an
+  and asks only "anything to change, or file it?" — the user's last look, which matters most for a world-readable
+  issue — and files only on an explicit yes.
+  When the user will work on it, finish by printing `ai plan <owner/repo#n>` for a fresh session — for an
   issue on `github.com`; the issue URL on any other host — or `ai plan "<tracker item title>"` while the user has yet
   to file it, or when there is no issue at all: the heading's title only, with its `N.M ·` ref, status badge, branch
   and `(issue to file)` stripped (a ref like `B2.3` is reassigned by the next tracker review). That title is printed
@@ -2119,7 +2127,9 @@ description: Read before writing, filing or drafting an issue or ticket for any 
   number in the session, so a second issue never overwrites the first; a compacted session resumes from the highest
   `<n>` unless that file ends in an `Ended:` line, and a new session starts the interview over.
   Once the issue is filed, handed to the user or dropped, the draft file gains a last line
-  `Ended: <URL | drafted | not filed | unknown <issues URL>>`, the last for a create whose outcome is unknown.
+  `Ended: <URL | drafted | not filed | unknown <issues URL>>`, the last for a create whose outcome is unknown, and
+  `drafted` also after a drafted comment or a failed create's `!` line. Just before running a create, the file gains
+  `Ended: unknown <issues URL>`, replaced once the call returns, so a compaction mid-create never resumes into a second one.
   The drafted body lives only in the scratchpad: when the user files, the last turn says to file it before the session ends.
 - **Where the issue lives and who files it** — a rule per group of repos, defaulting by level:
 
@@ -2133,10 +2143,12 @@ description: Read before writing, filing or drafting an issue or ticket for any 
   **The guard decides, not the table:** `cd` to the root of the repo the issue is for and make every call there —
   `~/.claude/hooks/work-context.sh can-file-issue` with no `[dir]`, the search, `label list` and the create.
   Claude files with the tool it prints, and drafts when it prints `none` or when the `## Issues` section says the
-  tracker is anything but this repo's own issues (`none` included), or that the user files.
+  tracker is anything but this repo's own issues — `each repo's own`, or a `host/owner/repo` naming this repo's
+  origin — (`none` included), or that the user files.
   **One target rule for every gh and glab call:** with one remote, no `-R`; with more than one, origin's target —
   gh `-R <owner>/<repo>` on `github.com` and `-R <host>/<owner>/<repo>` elsewhere, glab `GITLAB_HOST=<host>` plus
-  `-R <project path>` — which the guard still checks on the create.
+  `-R <project path>` — which the guard still checks on the create. Several remotes and no `origin` → ask which; no
+  remote → nothing to file on: the title and body only, no command, and an item gets no `Target:` line.
   A section can tighten the guard's answer, never loosen it. The session-start line is only a hint: it
   was computed once, for the starting directory.
 
@@ -2145,29 +2157,35 @@ description: Read before writing, filing or drafting an issue or ticket for any 
   machine), never inside their repo; for a company repo, that repo's own committed `CLAUDE.md`; never this public
   one — and names the tracker (a repo, a GitLab project,
   a Jira project key) and who files. Asked at customer level with no section, write the user's answer into one so
-  the next issue doesn't ask; the customer-tree root is the user's answer, never inferred, and `$HOME` or a directory
-  holding repos whose origins name another owner is refused and asked again. At company level, print the section for
+  the next issue doesn't ask; the customer-tree root is the user's answer, never inferred, and `$HOME`, or a directory
+  that is or whose direct subdirectories are a repo whose origin names another owner, is refused and asked again.
+  At company level, print the section for
   the user to add to the repo's `CLAUDE.md` in a change of their own; Claude never writes it.
   Where it says Claude may file through `gh` or `glab`, on `github.com` or a host whose name contains `gitlab`,
   ask the user to run `! touch <tree>/.claude-files-issues` once; below it the guard allows `issue create` to each
   repo's own issues. On any other host (GitHub Enterprise, Azure DevOps, a self-hosted GitLab without `gitlab` in its
   hostname) say the marker won't help, and draft.
   A tracker shared across repos stays draft-and-paste — a deliberate limit until a project needs more.
-- **Jira, the first time one appears:** propose the project's `## Issues` section, and draft for pasting. Filing
+- **Jira, the first time one appears:** its `## Issues` section is set up as for any tracker above — written at
+  customer level, printed at company level — and the issue drafted for pasting. Filing
   through a Jira connector is out of scope until then — the Task 1 guard sees Bash only.
 - **Search before filing,** ahead of the last turn so a match is shown there:
   `gh issue list --state open --limit 10 --search '<title>'`, `glab issue list --per-page 10 --search '<title>'`,
-  with the target rule above, or ask the user for the tracker.
+  with the target rule above; on a tracker neither CLI reads (Jira, Azure DevOps, Bitbucket), no search: ask the
+  user whether it already holds one.
   A match is a result whose title and body, once read, describe the same problem as the draft's *Problem*; sharing
   words is not a match, and no match files without asking.
-  On a match, show it and ask "comment there instead?" — on a yes Claude drafts the comment as a `!` line for the user
-  at every level and files nothing, since a comment is a platform write no requirement needs; on a no it files as planned.
+  On a match, show it and ask "comment there instead?" — on a yes Claude writes the comment to
+  `<scratchpad>/issue-body-<n>.md` and drafts it for the user at every level, as
+  `! gh issue comment <number> -R <target> --body-file <path>` or
+  `! GITLAB_HOST=<host> glab issue note <number> -R <project path> --message "$(cat <path>)"`, and files nothing,
+  since a comment is a platform write no requirement needs; on a no it files as planned.
   A failed search or `label list` is reported and filing still goes ahead; never create a repo, remote or label to make filing work.
 - **The issue's shape**, written for a reader who never saw the conversation: a title under 70 characters naming the
   problem; then the `##` sections *Problem* (observed versus expected), *Why it matters*, *Proposed direction* (its
   first line `Optional:`), *Acceptance criteria* as checkboxes each a test could check, *Out of scope*, each heading
-  named exactly so; and code references as path plus line at a named commit that origin has
-  (`git branch -r --contains <sha>` lists a branch). English; the level's bar on content — a personal public repo's
+  named exactly so; and code references as `<path>:<line> @ <short sha>`, a commit origin has
+  (`git branch -r --contains <sha>` lists a branch); with none there, `<path>` alone. English; the level's bar on content — a personal public repo's
   issues are world-readable.
 - **Filing:** Claude writes the body alone to `<scratchpad>/issue-body-<n>.md`, `<n>` its draft's — never the draft
   file, which holds the answers — never inline, and files with
@@ -2182,8 +2200,9 @@ description: Read before writing, filing or drafting an issue or ticket for any 
   In these `!` lines the target is always named: the bare `owner/repo` on `github.com`, never
   with a `github.com/` prefix; `<host>/<owner>/<repo>` (gh) or `GITLAB_HOST=<host>` (glab) anywhere else — a bare
   `owner/repo` resolves to `github.com` or glab's default host, not to the cwd's remote.
-  **A failed create** — a network error, a repo that doesn't exist, a missing CLI — is reported with its error, never
-  as filed; after a timeout or a dropped connection the outcome is unknown: Claude says so, gives the repo's issues URL
+  **A failed create** — one that failed before the request went out (DNS, connection refused, auth), a repo that
+  doesn't exist, issues disabled, a missing CLI — is reported with its error, never as filed; after any other error
+  (a timeout, a dropped connection, `EOF`, a reset) the outcome is unknown: Claude says so, gives the repo's issues URL
   to check, and neither re-runs the create nor writes an item until the user reports. A repo not found (gh's
   `Could not resolve to a Repository`, glab's `404`) → say the target looks wrong and ask before giving the `!` line
   or writing the item. Otherwise Claude gives the user's
@@ -2191,8 +2210,9 @@ description: Read before writing, filing or drafting an issue or ticket for any 
 - **Keep `;`, `|`, `&`, backticks and `$(` out of titles and any other inline argument** — bar the
   `$(cat <path>)` the glab form needs: the guard splits commands without honouring quotes, so they can cause a false
   block. Every title in a command — the search, the create, a drafted `!` line — is single-quoted, each `'` written
-  `'\''`, as for `ai plan`, so `$` and `"` stay literal.
-- **Labels** only from those the repo already uses (`gh label list`, `glab label list`); never create one. No
+  `'\''`, as for `ai plan`, so `$` and `"` stay literal; a search string drops each `"` of the title.
+- **Labels** only from those the repo already uses (`gh label list --limit 1000`, `glab label list --per-page 100`);
+  never create one. No
   assignee unless the user names one.
 - **Red flags:** filing on a customer tracker because the CLI is authenticated; creating the marker yourself; a
   tracker item for an issue the user only reported for someone else; an issue body that quotes the follow-up tracker;
@@ -2207,8 +2227,17 @@ description: Read before writing, filing or drafting an issue or ticket for any 
 **Tests:**
 
 - `bin/check-md-limits` on all touched files; the description is under 300 characters.
-- **Pressure tests in fresh sessions,** per `superpowers:writing-skills`, each recorded in a status note in this task:
-  - In this repo, file one real `00-follow-ups-backlog.md` item about code here, which the user names, as an issue on
+- **Follow-up skill edits:** `grep -cF` prints 1 for `An issue filed only for someone else gets no item` and at least
+  1 for `(issue to file)` and `Target: <host>/<project path>` in `writing-follow-up-items`, and at least 1 for
+  `--state all` and `--author @me` in `maintaining-follow-up-trackers`.
+- **Pressure tests in fresh sessions,** per `superpowers:writing-skills`, each recorded in a status note in this task.
+  **The user runs each one,** in an interactive `claude` started in a terminal, never `-p` or a subagent — as for every
+  interactive or fresh-session test in Tasks 9 and 10 and Task 5's real runs: the executor stops, gives the user the
+  setup, the prompt and the scripted answers, and once the user reports back with the session ID checks that
+  session's transcript (`~/.claude/projects/<the repo's path, each / and . as ->/<session id>.jsonl`) and the files
+  the test names.
+  - In this repo, file one real `00-follow-ups-backlog.md` item about code here, which the user names, having checked
+    it names no customer or customer host, as an issue on
     `andrelin/dotfiles`. This files a real, world-readable issue. Expected: an interview of at most five questions,
     then `gh issue create` holding `--body-file <scratchpad>/issue-body-<n>.md`, then the number in that item's
     heading with no second item, and the printed line `ai plan andrelin/dotfiles#<n>`.
@@ -2218,14 +2247,17 @@ description: Read before writing, filing or drafting an issue or ticket for any 
     and line at a SHA that `git branch -r --contains` lists a branch for.
     No non-empty line of the body is also a line of the tracker item (`grep -Fxf`), bar the title.
     The transcript holds `gh label list`, and every `--label` value is in its output; the newest
-    `issue-draft-<n>.md` ends in `Ended: <the issue URL>`.
-  - **Search match:** in this repo, ask for an issue on the same problem as that first one → the search finds it, the
+    `issue-draft-<n>.md` ends in `Ended: <the issue URL>`. The create holds no `--assignee`, and the transcript no
+    `gh label create`.
+  - **Search match:** in this repo, ask for an issue on the same problem as that first one, in a sentence reusing its
+    title's words → the search finds it, the
     skill shows it and asks "comment there instead?"; answered no ("don't file" to the next turn) → no
     `gh issue comment` and no `gh issue create` in the transcript, and the draft file ends `Ended: not filed`.
-    Answered yes instead → a drafted `! gh issue comment <n> -R andrelin/dotfiles` line, and no `gh issue comment` or
+    Answered yes instead → a drafted `! gh issue comment <n> -R andrelin/dotfiles` line holding
+    `--body-file <scratchpad>/issue-body-<m>.md`, the draft file ending `Ended: drafted`, and no `gh issue comment` or
     `gh issue create` call.
     **No match:** ask for an issue using the first one's title words for a different problem → the skill doesn't ask
-    "comment there instead?" and reaches the "anything to change?" turn.
+    "comment there instead?" and reaches the "anything to change, or file it?" turn.
   - **Lookup:** in a scratch repo whose origin is a local bare clone (so the tracker run's fetch and
     `HEAD == origin/main` hold), a scratch tracker holding an `(issue to file)` item with that first
     issue's exact title and `Target: github.com/andrelin/dotfiles`, then "review the follow-ups" → the transcript holds
@@ -2234,21 +2266,26 @@ description: Read before writing, filing or drafting an issue or ticket for any 
     An item with `Target: gitlab.example.com/example--client/a` → the transcript holds
     `GITLAB_HOST=gitlab.example.com glab issue list -R example--client/a` with `--all --per-page 100`, the failure is
     reported, and the item keeps `(issue to file)`.
+    A third item with no `Target:` → listed for the user, unchanged, and no `gh` or `glab` call holds its title.
+    An item titled `Say "hi"` with the first item's `Target:` → its search holds `in:title "Say hi"` and `--author @me`.
     Several equal titles: the tester hands the user these `!` lines, each asked for separately (setup, not the skill):
     `! gh repo create andrelin/issue-lookup-scratch --private`, then twice
     `! gh issue create -R andrelin/issue-lookup-scratch --title 'Same title' --body x`; an item with that title and
     that `Target:` → the skill asks which, and the heading is unchanged. Afterwards, again each asked for:
     `! gh auth refresh -s delete_repo` (the scope `gh repo delete` needs), then
-    `! gh repo delete andrelin/issue-lookup-scratch --yes`.
-  - **Only the first test may file in this repo.** Every other test run here answers the last "anything to change?"
-    turn with "don't file", and every scratch-repo test tree bar *No tracker*'s holds its own scratch
+    `! gh repo delete andrelin/issue-lookup-scratch --yes`, then `! gh auth refresh -r delete_repo`.
+  - **Only the first test may file in this repo.** Every other test run here answers the last "anything to
+    change, or file it?" turn with "don't file", and every scratch-repo test tree bar *No tracker*'s holds its own scratch
     `00-follow-ups-backlog.md`, so the skill never asks to set a tracker up mid-test.
   - **The customer scratch tree:** every `example--client/x` test below runs with the repo at `<tree>/x`, `<tree>`
     under `$HOME`. The first starts with no `CLAUDE.md` anywhere above the repo: the skill asks where issues live
-    (the tester names `$HOME` first → refused and asked again; then `<tree>` as the tree root), and the answer
-    "drafts, the user files" lands in `<tree>/CLAUDE.md` as
+    (the tester names `$HOME` first → refused and asked again; then `<other>`, a scratch directory under `$HOME`
+    holding a repo `<other>/p` with origin `git@github.com:andrelin/p.git` → refused and asked again; then `<tree>` as
+    the tree root), and the answer "drafts, the user files" lands in `<tree>/CLAUDE.md` as
     `## Issues` with **Tracker:** each repo's own and **Files:** the user, from Claude's draft. Later ones don't ask.
-    The tester deletes every scratch tree after the last test that uses it.
+    `$HOME/CLAUDE.md` is byte-identical before and after (or absent both times), and `<other>/CLAUDE.md` absent.
+    The tester deletes every scratch tree after the last test that uses it, bar this customer tree: Task 5's intake
+    test at Task 10's end uses its apostrophe item, then deletes it.
   - Interview, the first `example--client/x` test, in a scratch repo holding two passing tests,
     `test/test_a.sh` and `test/test_b.sh`, and no CI history: ask for "an issue about the flaky test" with nothing
     else; after the where-issues-live exchange above, the skill asks which of the two before drafting, naming both,
@@ -2267,19 +2304,24 @@ description: Read before writing, filing or drafting an issue or ticket for any 
     that the user won't work on: a draft, the `! gh issue create -R example--client/x …` line holding
     `--body-file <path>` with that file present, the last turn saying to file it before the session ends, no tracker
     item, the draft file ending `Ended: drafted`, and no
-    blocked `gh` call in the transcript. The repo can't exist on GitHub, so the search and `label list` fail on the
-    network; the skill says so and carries on, and the transcript holds no `gh repo create` or `git remote add`.
+    blocked `gh` call in the transcript. The repo can't exist on GitHub, so the search and `label list` fail with
+    `Could not resolve to a Repository`; the skill says so and carries on, and the transcript holds no `gh repo create` or `git remote add`.
+    Then `/compact` and "carry on" → no resumed interview, since that draft file ends in `Ended:`: the skill asks what
+    the next issue is about.
   - Jira: a scratch tree under `$HOME`, holding a repo with origin `git@github.com:example--client/j.git` (customer
     level), below a `CLAUDE.md` whose `## Issues` names a Jira key → a draft to paste with no `!` line, and no `gh` or
     `glab` write.
-    The same repo with no `## Issues` above it, the tester answering "Jira, project ABC" → the skill proposes an
-    `## Issues` section with **Tracker:** `ABC`, and drafts.
+    The same repo with no `## Issues` above it, the tester answering "Jira, project ABC" and naming that scratch tree
+    as the root → its `CLAUDE.md` holds `## Issues` with **Tracker:** `ABC` and **Files:** the user, from Claude's
+    draft, and the skill drafts with no `!` line.
   - In the `example--client/x` repo again, ask for an issue the user *will* work on: the draft, plus an
     `(issue to file)` tracker item with `Target: github.com/example--client/x` in a scratch tracker, whose heading title
     equals the drafted line's `--title` value, and the printed line `ai plan '<that item's title>'`.
     Asked for one titled "The user's cache isn't cleared" → the printed line is exactly
     `ai plan 'The user'\''s cache isn'\''t cleared'`: no ref, badge, branch or `(issue to file)` (Task 5's intake test
     takes it from here).
+    An existing scratch-tracker item `B2.3`, titled "Fix the cache" with a 🐛 badge and the branch `fix/cache` in its
+    heading, filed from in this repo → the printed line is exactly `ai plan 'Fix the cache'`.
   - **Section says Claude files, no marker:** a second scratch tree whose `CLAUDE.md` `## Issues` says **Files:**
     Claude, with no `.claude-files-issues`, and a repo with origin `git@github.com:example--client/y.git` → a draft,
     the line asking the user to run `! touch <tree>/.claude-files-issues`, and no blocked call in the transcript.
@@ -2289,11 +2331,14 @@ description: Read before writing, filing or drafting an issue or ticket for any 
     user will work on → the skill asks whether to set up a tracker; answered no → no tracker file is created.
   - **Unsure:** in a personal scratch repo, "maybe file this, maybe just note it: the cache key ignores the locale" →
     the skill asks whether it belongs in the task tracker, as one question, before drafting.
-  - **Shell characters:** in a personal scratch repo, ask for an issue titled "the `$(date)` call; a | b breaks" → the
+  - **Shell characters:** in a personal scratch repo, ask for an issue titled "the `$(date)` call; a | b & c breaks" → the
     `gh issue create` title holds none of `;`, `|`, `&`, a backtick or `$(`. One titled `$HOME isn't "expanded"` →
     the call's title argument is exactly `'$HOME isn'\''t "expanded"'`.
   - **Content bar:** in a personal scratch repo, a tracker item naming `example--client` and `git.example.com`, filed
-    as an issue → the issue body file holds neither (`grep -c` prints 0 for each).
+    as an issue → neither the issue body file nor the create's `--title` value holds either (`grep -c` prints 0 for
+    each).
+  - **No remote:** a personal scratch repo with no remote, an issue the user will work on → no `gh issue create`
+    call, the title and body with no `!` line, and an `(issue to file)` item with no `Target:` line.
   - In this repo, ask to "note that I should tidy up the tip numbering later" — a small chore of the user's own: a
     tracker item in `00-follow-ups-backlog.md`, no interview beyond what the item needs, no `gh issue` call in
     the transcript, and the printed line `ai plan '<that item's title>'`. Copy the tracker aside before the test and
@@ -2308,8 +2353,9 @@ description: Read before writing, filing or drafting an issue or ticket for any 
     `git@github.com:andrelin/x.git` unless its test names another.
   - In a personal scratch repo with origin `git@github.com:andrelin/x.git`, ask for "a bug:
     the sync script drops files with spaces in their names, I'll fix it" — substantial, nobody else involved: an
-    unblocked `gh issue create`, its network failure reported, and an `(issue to file)` tracker item with its
-    `Target:` set, since no number can come back.
+    unblocked `gh issue create`, its failure reported, after the tester's "keep it" the drafted
+    `! gh issue create -R andrelin/x --title '…' --body-file <path>` line, and an `(issue to file)` tracker item with
+    its `Target:` set, since no number can come back.
   - Company on GitHub: a scratch repo with origin `git@github.com:uptimeconsulting/x.git`. Expected: the skill calls
     `gh issue create` itself, not a draft, and neither it, the search nor `label list` holds `-R`.
   - On that company repo and on a personal scratch repo with origin `git@github.com:andrelin/x.git`: one
@@ -2332,7 +2378,8 @@ description: Read before writing, filing or drafting an issue or ticket for any 
   - Tightening: the company GitHub fixture whose own `CLAUDE.md` has an `## Issues` saying **Files:** the user → a
     draft, no `gh issue create`.
   - Company on a GitLab host: a scratch repo with origin `git@gitlab.example.com:uptimeconsulting/x.git` → an unblocked
-    `glab issue create` holding `--yes`, its network failure reported.
+    `glab issue create` holding `--yes`, its network failure reported, and the drafted line starting
+    `! GITLAB_HOST=gitlab.example.com glab issue create -R uptimeconsulting/x`.
     With a second remote `upstream` at `git@gitlab.example.com:uptimeconsulting/y.git` → the search, `label list` and
     the create each hold `GITLAB_HOST=gitlab.example.com` and `-R uptimeconsulting/x`, the create with no `--label`
     since `label list` failed.
@@ -2343,15 +2390,18 @@ description: Read before writing, filing or drafting an issue or ticket for any 
     With origin `git@bitbucket.org:uptimeconsulting/x.git` and the answer "Bitbucket issues, the user files" → the
     title and body, and no `!` line.
   - The printed line's URL form (`ai plan <issue URL>`, off `github.com`) and a timed-out create have no live test: no
-    filing off `github.com` can succeed in a test, and a timeout can't be forced.
+    filing off `github.com` can succeed in a test, and no fixture here forces a timeout — an accepted gap.
 - **Recipe:** `awk '/^recipes_optional=\(/,/^\)/' init/31_homebrew_recipes.sh | grep -cw glab` prints 1, and
   `grep -cw glab init/31_homebrew_recipes.sh` prints 1, so it is in no other list.
 
 ## Task 9 · `implementing-plans` skill
 
-**First, before building this skill:** make the edits Task 5's status lists as still to make, then run those of
-their tests runnable now — Task 5's closed-names and tracker-ref intake cases and Task 5b's *By number* — and mark the
-list made there; Task 5's completion test runs after this task's toy run, and its row stays 🚧 PARTIAL until Task 10.
+**First, before building this skill:** make the edits Task 5's status lists as still to make, among them `top` in
+`claude/skills/reviewing-in-rounds/SKILL.md:34`'s pathspecs (`':(top,glob,exclude)plan-*'`, as in *The listing*) and,
+in `writing-plans` § *Structure*, one sentence: the global constraints name the test suite on a line of its own,
+`Suite: <command>` or `Suite: none`. Then run every test Task 5's status lists as runnable now, in scratch repos (this
+plan's own next review counts once it ends in `Done (plan):`), and Task 5b's *By number*, and mark the list made
+there; Task 5's completion test runs after this task's toy run, and its row stays 🚧 PARTIAL until Task 10.
 This skill consumes them.
 
 **Files:** created `claude/skills/implementing-plans/SKILL.md`, aim ≤ 100 lines; and
@@ -2377,11 +2427,14 @@ description: Read before implementing any plan file, or any part of one - in thi
 
 **Body:**
 
-- **The listing**, used throughout: `git status --porcelain -z --untracked-files=all -- ':(top,glob,exclude)plan-*'
-  ':(top,glob,exclude)**/00-follow-ups-*' | tr '\0' '\n'` (`top`, so it holds from a subdirectory); its *leftovers*
+- **The listing**, used throughout: `git status --porcelain -z --no-renames --untracked-files=all --
+  ':(top,glob,exclude)plan-*' ':(top,glob,exclude)**/00-follow-ups-*' | tr '\0' '\n'` (`top`, so it holds from a
+  subdirectory; `--no-renames`, so a staged rename is a `D` and an `A`, never an old path on a line of its own); its *leftovers*
   are the entries whose worktree column isn't blank (unstaged or untracked), so paths already staged are ignored.
 - **Start only from a reviewed plan:** no plan file given, or one that doesn't exist → stop, listing the root's
-  `plan-*.md` to choose from. Its open `## Review log (plan)` section (not a `closed` one) ends in a
+  `plan-*.md` to choose from. The plan file is a path from the repo root (`git rev-parse --show-toplevel`), whatever
+  the cwd, as in `bin/ai`. Task numbers after it (`/implementing-plans plan-x.md 3 4`) limit the run to those tasks;
+  on any start, a task already ✅ DONE is skipped. Its open `## Review log (plan)` section (not a `closed` one) ends in a
   `Done (plan):` line (Task 5); otherwise stop and say so. At company and customer level, add `/plan-*.md` to
   `$(git rev-parse --git-path info/exclude)` if it isn't there. Then, in this order:
   1. **Resuming:** if the branch (named as in 4) exists and the plan has no `Base:` line, or the plan has one and the
@@ -2395,9 +2448,11 @@ description: Read before implementing any plan file, or any part of one - in thi
      Leftovers inside the Files list of a task not ✅ DONE go to its implementer as its starting point; any other
      leftover → stop and ask. The baseline is skipped on resume, and the final report says so.
   2. **A fresh start needs a clean tree:** if the listing shows any entry, staged or not, stop and list the files for
-     the user to stash or commit, since review would otherwise take their work for the plan's.
-  3. **Baseline,** on a fresh start, before the branch exists: run the test suite. The suite is the command the
-     plan's § *Global constraints* names, else the one the repo's `CLAUDE.md` names, else ask once. A failure stops
+     the user to stash or commit, since review would otherwise take their work for the plan's. Likewise stop and ask
+     if `git for-each-ref refs/checkpoints/<branch>/` lists an earlier run's ref, naming `git update-ref -d` for each.
+  3. **Baseline,** on a fresh start, before the branch exists: run the test suite. The suite is the `Suite:` line in
+     the plan's § *Global constraints*, else the command the repo's `CLAUDE.md` names, else ask once. Every suite run
+     uses the Bash tool's `timeout: 600000`; a timeout stops the run as a timeout, never as failing tests. A failure stops
      the run, listing the failing tests, with no branch or `Base:` made. No suite → say so in the final report and
      continue, each task's own tests being its gate.
   4. Create the branch, named after the plan file minus `plan-` and `.md` (`plan-42-login.md` → `42-login`), so a
@@ -2405,22 +2460,30 @@ description: Read before implementing any plan file, or any part of one - in thi
      and write `Base: <git rev-parse HEAD>` as Task 5's interface defines it: its own line, after a blank line, under
      the plan's status table.
 - **The level** comes from `~/.claude/hooks/work-context.sh level`, run at the start.
-- **Technique from superpowers, rules from here:** use `superpowers:subagent-driven-development` for its loop — not its
-  `scripts/task-brief`, which creates the `sdd-workspace` ledger; the session writes each brief itself — a fresh
+- **Work only the user or a fresh session can do** — a task done by hand, a spike the user judges, a test needing an
+  interactive or fresh session or a `!` line — never goes to a subagent, which would simulate it: the run stops for the
+  user before that task's batch, gives the commands, and once the user reports back checks what its **Tests** name.
+- **Technique from superpowers, rules from here:** use `superpowers:subagent-driven-development` for its loop — a fresh
   implementer subagent per task, given that task's text, § *Global constraints* and the interfaces it consumes, then a
-  review by a fresh subagent (`task-reviewer-prompt.md`, and `re-review-prompt.md` after a fix, in 7.0.0), whose
-  `scripts/review-package` input is replaced
+  review by a fresh subagent (`task-reviewer-prompt.md`, and `re-review-prompt.md` after a fix, in 7.0.0, each given
+  the whole task's input re-captured, never a fix-only diff), whose `scripts/review-package` input is replaced
   by `git diff -- <paths>` plus the full content of the task's new files (`git ls-files --others --exclude-standard
   -- <paths>`), since nothing is committed and `BASE..HEAD` is empty — and `superpowers:dispatching-parallel-agents`
-  for tasks that touch disjoint Files lists with no order between them (neither's **Interfaces** consumes the other's),
-  and whose scoped tests — the tests each task's **Tests** section names — share no build directory
-  (Gradle's `build/`, `node_modules`) — otherwise run those tests one at a time. **Override** its commit steps — never
-  commit, whatever `skill-precedence.md` says at the time — every implementer and fixer prompt says "no git writes;
-  never delete or loosen an existing test; report the paths you changed",
-  since the guard blocks nothing at personal level — § *Setup* (worktree, branch and its `sdd-workspace` ledger
-  — resume from the plan's status table instead), § *Model Selection*, its fix-loop escalation (all five rounds still
-  run, rounds 4–5 with a fresh implementer on the same model, since the retry below is the only escalation), § *Final
-  Review* and § *Finish* (`finishing-a-development-branch`) with the rules below.
+  for tasks that touch disjoint Files lists with no order between them (neither's **Interfaces** names the other task
+  or a path in its Files list; unsure → in order) and whose scoped tests — the tests each task's **Tests** section
+  names — share no build directory (Gradle's `build/`, `node_modules`); otherwise one task at a time.
+  Every implementer and fixer prompt says "no git writes; never delete or loosen an existing test; report the paths
+  you changed", since the guard blocks nothing at personal level. An existing test is any test in the tree when that
+  subagent starts, its own task's included; the reported paths go in the final report, the listing deciding what is staged.
+- **Overridden in SDD 7.0.0:** its commit steps — never commit, whatever `skill-precedence.md` says at the time; its
+  ban on parallel implementers (SKILL.md:282), replaced by the batch rule above; `scripts/task-brief` and § *Setup*
+  (worktree, branch and the `sdd-workspace` ledger, :136-139) — resume from the plan's status table, and the session
+  writes each brief, report and review package to `<scratchpad>/impl-<task>-*.md`; the ledger's deferred minors
+  (:361, :473-480) — a minor a review defers goes in that task's section as a `Deferred:` line, which the final report
+  lists; § *Model Selection*; its fix-loop escalation — all five rounds still run, rounds 4–5 with a fresh implementer
+  on the same model, since the retry below is the only escalation; its breaker (:411-429), which parks open findings
+  at round 5 and marks the task complete — here that is a failed attempt, per **Models**; and § *Final Review* and
+  § *Finish* (`finishing-a-development-branch`), replaced by the rules below.
 - **Models:** pass `model` explicitly on every dispatch — the model this session runs on, which `bin/ai implement`
   chose, as the Agent tool's alias (Task 5 requirement 2: a full model ID passes its family's) — never the cheapest
   that might do. An attempt fails when the implementer reports itself blocked, or the
@@ -2439,6 +2502,9 @@ description: Read before implementing any plan file, or any part of one - in thi
   task; any other leftover, a Files-list path that is gitignored, or a task with nothing to stage stops the run for
   the user, unstaged, with the path or task named. The user then adds the path to that task's **Files** (so Task 5's
   commit pathspecs include it) or undoes the change. Never `-A`.
+  Not leftovers, never staged, and named in the final report: untracked paths outside every Files list that a suite
+  run creates (the listing taken just before and after it), and gitignored paths a batch created
+  (`git ls-files --others --ignored --exclude-standard`, before and after).
   Parallel subagents never run git or the full test suite, only tests scoped to their own task; the session runs the
   suite once they have all returned — a failure is pinned to a task by rerunning each one's scoped tests, that task
   goes back to its fix loop, and one pinned to none stops for the user.
@@ -2450,7 +2516,8 @@ description: Read before implementing any plan file, or any part of one - in thi
   `git checkout <ref> -- <paths>` the tree. Then the task's row becomes ✅ DONE.
   The plan file is never staged. The final report lists the refs; Task 5's completion deletes them after the commit.
 - **Keep the plan in sync per task**, per `writing-plans` § *Keeping it in sync*: status, and any deviation inline.
-  Never edit a task's spec to match what was built without saying so in that task.
+  Never edit a task's spec to match what was built without saying so in that task. A task review that flags a
+  deviation from the plan stops the run for the user, the batch unstaged; the user's ruling goes in that task's section.
 - **Finish by handing over, not reviewing:** print `ai review code <plan-file>` for a fresh session, since a review in
   the implementing session anchors on its own reasoning. (A plan review can run in the planning session because its
   reviewers are fresh subagents and only the fixer is the author; code review gets a fresh session for the same
@@ -2471,24 +2538,29 @@ description: Read before implementing any plan file, or any part of one - in thi
 - **Toy run, personal:** a scratch repo under the guard's scratch prefix, with one initial commit holding `README`,
   `old.txt` and `test/run.sh`, which runs each `test/*/test_*.sh` with `sh` and exits non-zero on the first failure
   (so `git rev-parse HEAD` resolves and the baseline passes); a two-task plan `plan-toy.md` whose § *Global
-  constraints* name the suite `sh test/run.sh`, with no order between the tasks — task 1 adds `a.sh` with a test in a
-  new `test/a/` directory and edits `README`, task 2 adds `b.sh` with a test in `test/b/` and deletes `old.txt` — and
+  constraints* hold `Suite: sh test/run.sh`, with no order between the tasks — task 1 adds `a.sh` with a test
+  `test/a/test_a.sh` and edits `README`, task 2 adds `b.sh` with a test `test/b/test_b.sh` and deletes `old.txt` — and
   a finished review log.
-  After `/implementing-plans plan-toy.md`: the branch is `toy`; `git diff --cached --name-status` shows `A` for both
-  scripts and tests, `M README` and
-  `D old.txt`; nothing committed; both rows ✅ DONE; the `Base:` line, after a blank line under the status table, equals
-  the initial commit's SHA; the final message names `ai review code`, lists both refs; the
+  After `/implementing-plans plan-toy.md`: the branch is `toy`; `git diff --cached --name-status` prints exactly
+  `M README`, `A a.sh`, `A b.sh`, `D old.txt`, `A test/a/test_a.sh` and `A test/b/test_b.sh`, in that order;
+  nothing committed; both rows ✅ DONE; the `Base:` line, after a blank line under the status table, equals
+  the initial commit's SHA; the final message holds the line `ai review code plan-toy.md` exactly and lists both refs; the
   transcript shows both implementers dispatched in one message, a `model` on every Agent call, every implementer and
-  fixer prompt holding "no git writes; never delete or loosen an existing test; report the paths you changed", and
-  `filing-learnings` invoked before the final message; `git diff --cached -- <task-1 files>` captured after task 1 is
-  byte-identical at the end; task 1's task-review prompt contains its new file's content; and the exclude file holds no
-  `/plan-*.md`. Run once from the repo's `test/` directory → the same end state.
+  fixer prompt holding "no git writes; never delete or loosen an existing test; report the paths you changed",
+  `filing-learnings` invoked before the final message, no `task-brief` or `sdd-workspace`, no Agent call with
+  `isolation`, no `git add -A`, and the `git add --` calls in plan order; `git diff --cached -- <task-1 files>` at the
+  end equals `git diff HEAD refs/checkpoints/toy/1^2 -- <task-1 files>`; task 1's task-review prompt contains its new
+  file's content; and the exclude file holds no `/plan-*.md`. Run again in a fresh toy repo, from its `test/`
+  directory, with the same `/implementing-plans plan-toy.md` → the same end state.
+- **Every variant below** starts from a fresh toy repo built the same way, its own fixture files (a `CLAUDE.md`, a
+  test, a `.gitignore`) in that initial commit and the plan untracked; only a file a case names as stray, staged or
+  left over stays out of it.
 - **Suite source:** the toy repo's `CLAUDE.md` naming the suite `false` → the baseline runs `sh test/run.sh` (the plan
-  wins); the same plan with no suite named → the baseline runs `false` and stops as a red baseline.
+  wins); the same plan with no `Suite:` line → the baseline runs `false` and stops as a red baseline.
 - **Pinned failure:** a toy plan whose task 1 test asserts `a.sh` is the only `*.sh` at the root and whose task 2 adds
   `b.sh` → the suite fails after the batch, task 1 goes back to its fix loop with that test named, and, since its fix
   can neither loosen that test nor touch `b.sh`, the run ends as in *Failing task*: stopped naming task 1, nothing
-  staged. With instead an existing `test/test_pair.sh` that fails only when both scripts
+  staged. With instead an existing `test/pair/test_pair.sh` that fails only when both scripts
   exist → the run stops for the user, nothing staged.
 - **Shared build directory:** the toy plan's § *Global constraints* saying both tasks' tests write `build/` → the
   implementers are dispatched in separate messages.
@@ -2502,12 +2574,14 @@ description: Read before implementing any plan file, or any part of one - in thi
   DONE, its ref recorded, the branch and `Base:` line in place, task 2 untouched, then start a new session on the same
   plan: it switches to the existing branch, keeps `Base:`, runs no baseline and says so, and does only task 2.
   Variants, each from that seed: an untracked file in task 2's Files list → task 2's implementer prompt names it, as
-  does an unstaged edit to a tracked task-2 file; an untracked file in no Files list → it stops naming that file;
+  does an unstaged edit to a tracked task-2 file; an unstaged edit to `a.sh` (task 1, ✅ DONE) → it stops naming
+  `a.sh`; an untracked file in no Files list → it stops naming that file;
   `git stash` run first → it stops naming `git read-tree refs/checkpoints/<branch>/1^2`; `Base:` set to a SHA not an
   ancestor of `HEAD` → it stops and asks; the `Base:` line deleted → it stops and asks, before switching; the branch
   deleted, `Base:` kept → it stops and asks; task 1's row not ✅ DONE, its ref and staged files kept → the row becomes
   ✅ DONE and only task 2 runs; only the branch and `Base:` (no row ✅ DONE, no ref, nothing staged) → it starts at
-  task 1 with no baseline; at customer and at company level (origin `git@github.com:uptimeconsulting/x.git`) →
+  task 1 with no baseline; the same plus a staged stray file → it stops, showing that file and naming
+  `git read-tree HEAD`; at customer and at company level (origin `git@github.com:uptimeconsulting/x.git`) →
   `/plan-*.md` appears once in the exclude file, also when it was there before the run.
 - **Out-of-list path:** a task whose implementer is told to also touch a file outside its Files list → the run stops
   naming that path, and it is not staged; likewise when the implementer is told not to report it.
@@ -2520,11 +2594,13 @@ description: Read before implementing any plan file, or any part of one - in thi
   the user; answered "append it" → that task's section gains a line naming the deviation, its spec text unchanged.
 - **Failing task:** a sonnet session, a task whose spec says to add a test requiring `test -f /nonexistent/x` and
   forbids creating it → two failed attempts with `model: "sonnet"`, a third with `model: "opus"`, then the run stops,
-  prints no `ai review code` line and names that task as not ✅ DONE. The same in an opus session → two failed attempts
-  with `model: "opus"`, no third, then the same stop.
+  prints no `ai review code` line and names that task as not ✅ DONE; each fix is followed by a review holding
+  `re-review-prompt.md`'s text, and the opus attempt's implementer prompt names the failing test. The same in an opus
+  session → two failed attempts with `model: "opus"`, no third, then the same stop.
 - **Red baseline:** the toy repo with one already-failing test `test/c/test_c.sh` → the run stops before task 1,
   naming that test, with no `toy` branch and no `Base:` line.
-- **Save points:** after the toy run, `refs/checkpoints/<branch>/1` and `/2` exist; after `git stash` drops the
+- **Save points,** in a `cp -R` copy of the toy repo after its run, so Task 5's tests get the untouched one:
+  `refs/checkpoints/<branch>/1` and `/2` exist; after `git stash` drops the
   index, `git read-tree refs/checkpoints/<branch>/2^2` restores `git diff --cached` to its captured state.
 - **Toy run, customer:** the same plan in a repo with origin `git@github.com:example-client/x.git`: the same end
   state, both refs present, `/plan-*.md` in the repo's exclude file, and no blocked git call in the transcript.
@@ -2533,7 +2609,14 @@ description: Read before implementing any plan file, or any part of one - in thi
   ending in `Done (code):`; a finished log but an unrelated modified file in the tree → it stops naming that file; a
   finished log and an untracked stray file → it stops naming it; a finished log and a staged stray file → it stops
   naming it; `/implementing-plans` with no file, or with `plan-missing.md` → it stops listing `plan-toy.md`; a
-  finished log and only a modified `00-follow-ups-backlog.md` → it does not stop.
+  finished log and only a modified `00-follow-ups-backlog.md` → it does not stop; a `refs/checkpoints/toy/1` left
+  from an earlier run, with no `toy` branch and no `Base:` → it stops naming that ref.
+- **Part of a plan:** the toy plan with task 1's row ✅ DONE and its files in the initial commit, fresh start → only
+  task 2 runs; `/implementing-plans plan-toy.md 2` on the plain toy plan → only task 2 runs, task 1's row unchanged.
+- **By hand:** a toy task whose spec says the user runs it in a fresh session → no implementer is dispatched for it,
+  and the run stops before it, naming what the user runs.
+- **Suite artifacts:** `test/run.sh` also writing an untracked `test/out.log` → the run completes, `test/out.log`
+  unstaged and named in the final report.
 
 ## Task 10 · `bin/ai` stage launcher
 
@@ -2547,13 +2630,14 @@ description: Read before implementing any plan file, or any part of one - in thi
 
 **Interfaces:** consumes the skill names and arguments from Tasks 5, 8 and 9. Produces the `ai` command, which
 Task 5's real-run tests drive, and its four default models, which Task 6b's `skill-trigger-eval` copies: change both
-together.
+together; each is written `${AI_MODEL_<STAGE>:-<default>}` in both, and `test/test_ai.sh` checks they match.
 `reviewing-for-feedback` gets no stage: it isn't part of the four-stage flow, and is asked for in any session.
 
-**Spike first:** in a scratch repo, run `claude --model sonnet "/writing-plans tidy the tip numbering"` — interactive,
-never `-p`, as every stage runs, since the stages ask the user questions — and confirm the first turn loads the skill
-(the transcript shows the `writing-plans` skill loaded) and that its first reply is about tidying the tip numbering;
-then exit.
+**Spike first,** run by the user per Task 8 § *Tests*' rule for interactive tests: in a scratch repo,
+`claude --model sonnet "/writing-plans tidy the tip numbering"` — interactive,
+never `-p`, as every stage runs, since the stages ask the user questions — then exit; the executor confirms from that
+session's transcript that the first turn loaded the `writing-plans` skill and that its first reply is about tidying
+the tip numbering.
 If a slash command in the initial prompt doesn't run it, the prompt below becomes
 `Use the <skill> skill: <args>` everywhere (`Use the <skill> skill.` with no args), tests included. Record which in a status note in this task.
 
@@ -2566,17 +2650,18 @@ If a slash command in the initial prompt doesn't run it, the prompt below become
 | `implement` | `/implementing-plans <args>` | `AI_MODEL_IMPLEMENT` | `sonnet` |
 | `review` | `/reviewing-in-rounds <args>` | `AI_MODEL_REVIEW` | `opus` |
 
-- `--model` beats the variable, which beats the default; an empty variable counts as unset. Empty args are dropped
-  first, before any check below; the rest are joined with single spaces into one prompt argument; with none left the
-  prompt is the bare `/<skill>`, no trailing space.
+- `--model` beats the variable, which beats the default; an empty variable counts as unset. Empty arguments after
+  the stage are dropped first, before any check below (an empty stage is unknown); the rest are joined with single
+  spaces into one prompt argument; with none left the prompt is the bare `/<skill>`, no trailing space.
 - `--model` is accepted once, only before the stage: a second `--model` is read as the stage, so unknown; after the
   stage, `--model x` is part of the prompt like any other words.
 - No stage, an unknown one, `--model` without a value or with an empty one, `review` without `plan` or `code` as its first argument,
   `review plan` without a plan file, or `implement` without one →
   usage on stderr, its first line `usage: ai [--model <m>] <stage> [args…]`, exit 2, `claude` never run.
-  A plan file that `implement`, `review plan` or `review code` names and that isn't a file →
+  A plan file that `implement`, `review plan` or `review code` names, resolved against the repo root
+  (`git rev-parse --show-toplevel`; outside a repo, the cwd) as `implementing-plans` does, and that isn't a file →
   `ai: no such plan file: <f>` on stderr, exit 2, `claude` never run.
-  `CLAUDECODE` set (inside a Claude session) → `ai: run this in a terminal, not inside Claude` on stderr, exit 2,
+  `CLAUDECODE` set, even empty (inside a Claude session) → `ai: run this in a terminal, not inside Claude` on stderr, exit 2,
   `claude` never run.
   `claude` not on `PATH` (with `AI_CLAUDE` unset) → exit 127.
 - The defaults are suggestions: the tip says how to override them per shell (`export AI_MODEL_PLAN=…`) or per call.
@@ -2596,29 +2681,38 @@ exactly; one naming only one of them checks that line, the model's line being th
   `AI_MODEL_PLAN= ai plan 12` → `opus`; `AI_MODEL_ISSUE= ai issue` → `sonnet`; `AI_MODEL_IMPLEMENT= ai implement p.md`
   → `sonnet`; `AI_MODEL_REVIEW= ai review code` → `opus`; `ai review code p.md` → `/reviewing-in-rounds code p.md`.
 - `ai issue` → `/writing-issues` exactly; `ai issue "login fails" on Safari` → one line, `/writing-issues login fails
-  on Safari`; `ai issue a "" b` → `/writing-issues a b`.
+  on Safari`; `ai issue a "" b` → `/writing-issues a b`; `ai review "" code` → `/reviewing-in-rounds code`.
 - `ai plan ""` → `/writing-plans`, no trailing space.
 - `ai`, `ai bogus`, `ai --model`, `ai --model haiku`, `ai --model a --model b plan`, `ai --model "" plan`, `ai review`,
-  `ai review foo`, `ai review plan`, `ai review plan ""`, `ai implement`, `ai implement ""`
+  `ai review foo`, `ai review plan`, `ai review plan ""`, `ai implement`, `ai implement ""`, `ai "" plan 12`
   → exit 2, stderr's first line exactly the usage line, stub output absent; `ai review code` with no file is valid (it reviews the current branch).
 - `ai implement missing.md`, `ai review plan missing.md`, `ai review code missing.md` → exit 2, stderr
-  `ai: no such plan file: missing.md`, stub output absent.
-- `CLAUDECODE=1 ai plan 12` → exit 2, stderr naming the terminal, stub output absent.
+  `ai: no such plan file: missing.md`, stub output absent; `ai implement .` → the same with `.`.
+- In a scratch repo made by the test, `plan-x.md` at its root, run from its subdirectory `d/`: `ai implement plan-x.md`
+  → `/implementing-plans plan-x.md`.
+- `CLAUDECODE=1 ai plan 12` and `CLAUDECODE= ai plan 12` → exit 2, stderr exactly
+  `ai: run this in a terminal, not inside Claude`, stub output absent.
+- A stub that exits 3 as `AI_CLAUDE` → `ai plan 12` exits 3.
+- `grep -o 'AI_MODEL_[A-Z]*:-[a-z]*' "$AI" | sort -u` equals the same over `bin/skill-trigger-eval`.
 - `ai plan 12 --model x` → `opus`, and the prompt `/writing-plans 12 --model x`.
 - `AI_CLAUDE=/nonexistent ai plan` → exit 127; with `AI_CLAUDE` unset, and again with `AI_CLAUDE=`,
   `PATH=$emptydir "$BASH" "$AI" plan` → exit 127 and a message naming `claude` (run through `"$BASH"` so a missing
   `bash` can't fake the 127).
 - **Files edits:** `bin/check-md-limits` on the tip file, `tips.md` and `README.md` passes; `grep -cw 'bin/ai'
   .github/workflows/shellcheck.yml` prints 1; `README.md` § *Scripts* holds a line each for `ai`,
-  `claude-settings-merge` and `skill-trigger-eval`; `tips.md`'s 24 entry names `ai`.
+  `claude-settings-merge` and `skill-trigger-eval`; `tips.md`'s 24 entry names `ai`; in `tips/24_claude_code.md`,
+  `grep -cF 'export AI_MODEL_PLAN='` prints 1 and `grep -cF 'ai plan'` at least 1.
 - **End to end, last:** in a personal scratch repo with origin `git@github.com:andrelin/x.git`, a scratch tracker
   split into `00-follow-ups-backlog.md` and `00-follow-ups-in-flight.md`, and
-  one initial commit, each stage in a fresh interactive session; first, `gh repo view andrelin/x` must fail with
+  one initial commit holding Task 9's toy `test/run.sh` and a `CLAUDE.md` naming the suite `sh test/run.sh`, each stage
+  in a fresh interactive session the user runs (Task 8 § *Tests*' rule); first, `gh repo view andrelin/x` must fail with
   "Could not resolve", else abort (Task 8's absence check):
-  1. `ai issue "a function that doubles a number, with a test"`, the user will work on it → the create fails on the
+  1. `ai issue "a function that doubles a number, with a test"`, the user will work on it and, if asked, wants it in
+     the task tracker → the create fails on the
      network or with the repo not found (answered "keep it"), an `(issue to file)` item with
      `Target: github.com/andrelin/x` exists, and the session prints `ai plan '<title>'`.
-  2. That printed line, run as is → a `plan-<slug>.md` whose review log ends in `Done (plan):`, the item moved to
+  2. That printed line, run as is (offered to just make the change, the user asks for the plan) → a `plan-<slug>.md`
+     whose review log ends in `Done (plan):`, the item moved to
      in-flight, and the printed line `ai implement plan-<slug>.md`.
   3. That line → every task ✅ DONE and staged, nothing committed, a `Base:` line, and the printed line
      `ai review code plan-<slug>.md`.
@@ -2626,7 +2720,7 @@ exactly; one naming only one of them checks that line, the model's line being th
      offered; answered yes → those commits and no `refs/checkpoints/` left.
 - **Then Task 5's pending real-run tests:** intake against Task 8's issue, the code review to `Done (code):` after
   Task 9's toy run, diff input and completion — steps 2 and 4 above count for intake and completion when they pass.
-  Once none of Task 5's tests is left unrun, its row becomes ✅ DONE.
+  Once none of Task 5's tests is left unrun, its row becomes ✅ DONE; then delete Task 8's customer scratch tree.
 
 ## Task 11 · Claude config on Linux and WSL
 
@@ -2815,6 +2909,7 @@ and the trigger queries only name it).
 | 6 | 6 | 0 | 37 | 73 | 24 | 110 |
 | 7 | 6 | 0 | 26 | 59 | 20 | 85 |
 | 8 | 6 | 2 | 19 | 64 | 31 | 85 |
+| 9 | 6 | 0 | 25 | 63 | 28 | 88 |
 
 Note after round 3: rounds 1 to 3 were run by hand ahead of Task 5, three reviewers split by section rather than
 by lens, with no findings file; nits were fixed too.
@@ -2832,3 +2927,7 @@ Task 5 test gap a round finds joins Task 5's runnable-now backlog rather than be
 Note after round 8: the first round scoped to Tasks 8–10; five lenses found the same defect (Task 8's search and label
 list lacking the create's target), so the counts overstate the distinct defects; both blocking findings were tests
 whose setup could never hold.
+Note after round 9: verified majors rose (19 → 25), several from round 8's own fixes (the `tr` listing, the moved
+baseline), and five defects were found by two or three lenses each.
+User decision after round 9: stop reviewing and build Tasks 8–10; the review stays open without `Done (plan):`, and
+what it would still find is left to the build and the code review.

@@ -2115,3 +2115,768 @@ stops at the first turn; an untracked plan file publishes nothing.
 ### R8-125 · nit · work context
 
 Task 8: `brew unlink glab` leaves glab unlinked on abort.
+
+## Round 9
+
+Lenses: scope, clarify, data flow, test matrix, consistency, work context. Opus reviewers and verifiers;
+scoped to Tasks 8–10 (user decision after round 7).
+
+### R9-1 · major · scope
+
+Task 10's spike and end-to-end steps name no one to run them: they need an interactive session, `-p` is forbidden and
+`ai` exits 2 under `CLAUDECODE`, so an agent executor unsets it, swaps in `claude -p`, or marks them run.
+
+Fixed: Task 8 § *Tests*: "The user runs each one" — every interactive or fresh-session test in Tasks 8–10 and Task 5's real runs runs in the
+user's terminal; the executor gives setup, prompt and answers,
+then checks the transcript (`~/.claude/projects/…/<session id>.jsonl`) and named files.
+Task 10's spike and e2e cite it.
+
+### R9-2 · major · scope
+
+Task 5's runnable-now tests (re-evaluation, verification, no plan, exclude, tests after fixes, tampering, whose work,
+this plan's review to `Done (plan):`, the six untested behaviours) belong to no task, yet Task 10 flips Task 5's row
+only when none is unrun: the row can never flip.
+
+Fixed: Task 9's first step runs every test Task 5 lists as runnable now (this plan's review counting once it ends in `Done (plan):`);
+Task 5's status lists name their owners (Task 9's first step, Task 10's end).
+
+### R9-3 · major · scope
+
+Task 9's description promises "any part of one", but the body takes only a plan file, and a fresh start has no rule
+for rows already ✅ DONE; on a plan with done tasks executors differ.
+
+Fixed: Task 9 *Start*: task numbers after the plan file limit the run, and a ✅ DONE task is skipped on any start; a *Part of a plan* test.
+
+### R9-4 · major · scope
+
+Task 9: no path for a task or test needing the user or a fresh session (spike stops, by-hand tasks, fresh-session
+pressure tests, `!` lines): a subagent fails twice and retries on opus, or simulates a fresh session in its own context
+and reports a pass.
+
+Fixed: Task 9 body: *Work only the user or a fresh session can do* never goes to a subagent; the run stops for the user before that task's batch;
+a *By hand* test.
+
+### R9-5 · major · scope
+
+Task 9 *Pinned failure*'s second case puts `test/test_pair.sh` outside the toy suite's `test/*/test_*.sh` glob: the
+suite passes, so the pinned-to-none stop has no test that can fail.
+
+Fixed: Task 9 *Pinned failure*: `test/pair/test_pair.sh`, committed per the new variant rule.
+
+### R9-6 · major · clarify
+
+Task 9's override list doesn't name SDD 7.0.0 SKILL.md:282 ("Never dispatch multiple implementation subagents in
+parallel"); an executor serialises and the toy run's "both in one message" fails.
+
+Fixed: Task 9 § *Overridden in SDD 7.0.0* names the parallel ban (SKILL.md:282), replaced by the batch rule.
+
+### R9-7 · major · clarify
+
+Task 9 *The listing*: `git status --porcelain -z | tr '\0' '\n'` prints a staged rename as `R  b.sh` plus a bare
+`a.sh` line, a phantom leftover; Task 5's completion test runs `git mv a.sh b.sh` in this toy repo.
+
+Fixed: Task 9 *The listing* adds `--no-renames`, saying why.
+
+### R9-8 · major · clarify
+
+Task 9 *Pinned failure*: `test/test_pair.sh` outside the toy glob, can't fail. Same defect as R9-5.
+
+Fixed: with R9-5.
+
+### R9-9 · major · clarify
+
+Task 9: a shared build directory reads as "dispatch in parallel, serialise the tests" in the body, but the *Shared
+build directory* test expects separate dispatch messages.
+
+Fixed: Task 9 Technique: a shared build directory means one task at a time, matching the test.
+
+### R9-10 · major · clarify
+
+Task 10: the executor can't run the interactive spike and e2e and `ai` refuses under `CLAUDECODE`; who runs them and
+with what evidence is unsaid. Same defect as R9-1.
+
+Fixed: with R9-1.
+
+### R9-11 · major · clarify
+
+Task 8, Jira at customer level: the customer rule writes the user's answer into `<tree>/CLAUDE.md`, the Jira rule
+only proposes a section; the test says "proposes", leaving different files on disk.
+
+Fixed: Task 8 Jira bullet: its section is set up as for any tracker (written at customer level, printed at company);
+the second Jira test expects `CLAUDE.md` holding **Tracker:** `ABC`.
+
+### R9-12 · major · data flow
+
+Task 9 *The listing* after `tr`: a staged rename's old path is a line of its own, a made-up leftover that stops the run.
+Same defect as R9-7.
+
+Fixed: with R9-7.
+
+### R9-13 · major · data flow
+
+Task 9: nothing clears stale `refs/checkpoints/<branch>/*`; a restarted run (branch and `Base:` deleted) gets the same
+branch name, resume's "last checkpoint" picks the old ref and offers `git read-tree <stale>^2`.
+
+Fixed: Task 9 step 2: a fresh start stops and asks when `refs/checkpoints/<branch>/` holds an earlier run's ref, naming `git update-ref -d`;
+a Refusal case.
+
+### R9-14 · major · test matrix
+
+Task 9 *Pinned failure*: `test/test_pair.sh` never runs under `test/*/test_*.sh`. Same defect as R9-5.
+
+Fixed: with R9-5.
+
+### R9-15 · major · test matrix
+
+Task 9: variant fixtures (the suite-source `CLAUDE.md`, `test/c/test_c.sh`, `.gitignore`, `test_pair.sh`) aren't said
+to be committed; untracked, the clean-tree check stops first, so the red-baseline cases pass for the wrong reason and
+"plan wins" fails.
+
+Fixed: Task 9 Tests: *Every variant below* starts from a fresh toy repo, its fixture files in the initial commit, the plan untracked.
+
+### R9-16 · major · test matrix
+
+Task 9 toy run: "run once from `test/`" with `/implementing-plans plan-toy.md`; relative to the cwd the plan doesn't
+exist, and the branch and `Base:` already exist from the first run.
+
+Fixed: Task 9 *Start*: the plan file is root-relative whatever the cwd;
+Task 10's check resolves it against `git rev-parse --show-toplevel` (the cwd outside a repo), with a subdirectory test;
+the toy run's second run is in a fresh repo from `test/` with the same argument.
+
+### R9-17 · major · test matrix
+
+Task 9 toy run: `--name-status` "shows" six kinds of entry, not exactly these; the test files are unnamed, and a staged
+`plan-toy.md` passes.
+
+Fixed: Task 9 toy run names `test/a/test_a.sh` and `test/b/test_b.sh` and expects exactly six `--name-status` lines, in order.
+
+### R9-18 · major · test matrix
+
+Task 8: "an item with no `Target:` is listed, unchanged" is untested; the Lookup test has no such item.
+
+Fixed: Task 8 Lookup test: a third item with no `Target:` → listed, unchanged, no call holding its title.
+
+### R9-19 · major · test matrix
+
+Task 8: refusing a tree root holding another owner's repos is untested; only `$HOME` is.
+
+Fixed: Task 8 customer scratch tree test: `<other>`, holding a repo with origin `andrelin/p`, is refused before `<tree>`.
+
+### R9-20 · major · test matrix
+
+Task 8's second Jira case: whether `<tree>/CLAUDE.md` exists afterwards is unsaid. Same defect as R9-11.
+
+Fixed: with R9-11.
+
+### R9-21 · major · test matrix
+
+Task 8 *Content bar*: only the body file is checked; a title naming the customer or host is published unchecked.
+
+Fixed: Task 8 *Content bar*: the create's `--title` value is checked too.
+
+### R9-22 · major · consistency
+
+`ai` refuses under `CLAUDECODE`, yet Task 10's spike and e2e and Task 5's real runs need an interactive terminal, and
+the only precedent (Handover, Task 5 status) is headless `claude -p` by the agent. Same defect as R9-1.
+
+Fixed: with R9-1.
+
+### R9-23 · major · consistency
+
+Task 10 flips Task 5's row only once none of its tests is unrun, but most have no owner. Same defect as R9-2.
+
+Fixed: with R9-2.
+
+### R9-24 · major · consistency
+
+Task 9 reads the suite from § *Global constraints*, but the `writing-plans` edit saying a plan names it there has no
+wording, location or form, only a mention in Task 5's status line.
+
+Fixed: Task 9's first step adds the `writing-plans` § *Structure* sentence (`Suite: <command>` or `Suite: none`);
+the baseline reads the `Suite:` line; the toy plan holds `Suite: sh test/run.sh`; Task 5's "Still to make" names the form.
+
+### R9-25 · major · consistency
+
+Task 9 overrides SDD's fix-loop escalation but not its breaker (7.0.0 SKILL.md:411-429), which at round 5 parks open
+findings and marks the task complete: the second attempt, opus retry and stop never trigger.
+
+Fixed: Task 9 § *Overridden in SDD 7.0.0* names the breaker (:411-429): a task still failing at round 5 is a failed attempt.
+
+### R9-26 · minor · scope
+
+Task 8 Lookup: `! gh auth refresh -s delete_repo` is never narrowed again; the scope stays for good.
+
+Fixed: Task 8 Lookup: `! gh auth refresh -r delete_repo` after the delete.
+
+### R9-27 · minor · scope
+
+Task 9: checkpoint refs are deleted only after the completion commit; an abandoned run or declined commit leaves them.
+Same defect as R9-13.
+
+Fixed: with R9-13.
+
+### R9-28 · minor · scope
+
+Task 10: `ai`'s plan-file check is cwd-relative but hand-off lines name a root-relative plan; from a subdirectory
+`ai implement plan-x.md` exits 2. Same defect as R9-16.
+
+Fixed: with R9-16.
+
+### R9-29 · minor · scope
+
+Task 10 Interfaces: "change both together" for the four defaults; no test catches `bin/ai` and `skill-trigger-eval`
+drifting.
+
+Fixed: Task 10 Interfaces: both files write each default `${AI_MODEL_<STAGE>:-<default>}`; `test/test_ai.sh` compares their `grep -o` output.
+
+### R9-30 · minor · scope
+
+Task 9 says Task 5's completion test runs after its toy run; Task 10 lists it as its own end work.
+Refuted: "after", not "right after"; the order line rules out a conflict.
+
+### R9-31 · minor · scope
+
+Task 8's body likely exceeds the skill's 100-line aim (about 10,300 characters); nothing says what may move to a doc.
+
+Fixed: Task 8 Files: past 100 lines, the command forms and target rule move to `claude/docs/issue-commands.md`; a File map row.
+
+### R9-32 · minor · scope
+
+Task 8: "Claude never writes" the company `## Issues` section is a restriction no requirement asks for.
+Refuted: a deliberate narrower choice pinned by a test; writing it mid-issue puts an unrelated change in the user's tree.
+
+### R9-33 · minor · clarify
+
+Task 9 and 10: the plan argument resolves against the root or the cwd; from `test/` the skill stops and `ai` exits 2.
+Refuted as major: cwd resolution matches Task 10's check and works with `../plan-toy.md`; only the test's argument is
+unstated. Same defect as R9-16.
+
+Fixed: with R9-16.
+
+### R9-34 · minor · clarify
+
+Task 9 baseline: no fixed form for the suite in § *Global constraints*; a guess runs `bin/check-md-limits`.
+Refuted as major: the fallback chain (plan, `CLAUDE.md`, ask) and the toy tests limit harm; only the form is missing.
+Same defect as R9-24.
+
+Fixed: with R9-24.
+
+### R9-35 · minor · clarify
+
+Task 8: whether a not-found search or `label list` triggers "target looks wrong" is unclear; the customer test
+wrongly predicts a network failure.
+Refuted as major: L2165 covers a failed search or label list (report, go ahead); only "on the network" is wrong.
+
+Fixed: Task 8 customer test: the search and `label list` fail with `Could not resolve to a Repository`, not on the network.
+
+### R9-36 · minor · clarify
+
+Task 8: the code-reference format (permalink or `path:line @ sha`) is undefined, and in scratch repos
+`git branch -r --contains` lists nothing, so the rule can't be met.
+Refuted as major: the only checking test accepts any path, line and SHA, and origin/main satisfies it in real use.
+
+Fixed: Task 8 *The issue's shape*: references are `<path>:<line> @ <short sha>`, `<path>` alone when origin has no such commit.
+
+### R9-37 · minor · clarify
+
+Task 8 lookup: a `"` in a title breaks `in:title "<title>"`; the *Shell characters* fixture has one.
+
+Fixed: Task 8: a search string drops each `"` of the title (Files clause, shell-characters bullet); Lookup test `Say "hi"` → `in:title "Say hi"`.
+
+### R9-38 · minor · clarify
+
+Task 8: where `Target:` sits in an item is unsaid.
+
+Fixed: Task 8 Files: `Target:` is its own line right below the heading.
+
+### R9-39 · minor · clarify
+
+Task 8: the `Ended:` value after a "comment there instead?" yes, or after a failed create plus `!` line, is undefined.
+
+Fixed: Task 8: `Ended: drafted` also after a drafted comment or a failed create's `!` line; the *Search match* yes case expects it.
+
+### R9-40 · minor · clarify
+
+Task 8: the drafted comment's body file and glab form are unsaid.
+
+Fixed: Task 8 *Search before filing*: the comment goes to `issue-body-<n>.md`,
+drafted as `gh issue comment … --body-file` or `glab issue note … --message`; the test expects `--body-file`.
+
+### R9-41 · minor · clarify
+
+Task 8: the `!` line's target when the repo has no `origin` remote is undefined.
+
+Fixed: Task 8 target rule: several remotes and no `origin` → ask; no remote → title and body only, no `Target:`; a *No remote* test.
+
+### R9-42 · minor · clarify
+
+Task 8: whether a `**Tracker:**` naming the current repo counts as "this repo's own issues" is unclear.
+
+Fixed: Task 8 guard paragraph: this repo's own issues are `each repo's own` or a `host/owner/repo` naming its origin.
+
+### R9-43 · minor · clarify
+
+Task 8: how deep the other-owner scan of a proposed tree root goes is unsaid, and untested.
+
+Fixed: Task 8: the refused root is one that is, or whose direct subdirectories are, a repo naming another owner; tested with R9-19.
+
+### R9-44 · minor · clarify
+
+Task 8 search: when to "ask the user for the tracker" instead of searching is unsaid.
+
+Fixed: Task 8 search: on Jira, Azure DevOps or Bitbucket, no search; ask whether the tracker already holds one.
+
+### R9-45 · minor · clarify
+
+Task 8: how far up from a personal repo the `00-follow-ups-*` tracker is looked for is unsaid.
+
+Fixed: Task 8: the tracker is a `00-follow-ups-*` file in the repo's root or a directory above it, up to `$HOME`.
+
+### R9-46 · minor · clarify
+
+Task 8's body may pass the 150 cap at 150 characters a line; what may move to a doc is unsaid. Same defect as R9-31.
+
+Fixed: with R9-31.
+
+### R9-47 · minor · clarify
+
+Task 9: whether a re-review gets the whole task diff or a fix-only diff (7.0.0 SKILL.md:396) is unsaid.
+
+Fixed: Task 9 Technique: a re-review gets the whole task's input re-captured, never a fix-only diff.
+
+### R9-48 · minor · clarify
+
+Task 9: how an **Interfaces** dependency is decided from prose, and what the implementer's path report is for.
+
+Fixed: Task 9 Technique: a dependency is an **Interfaces** naming the other task or a path in its Files list, unsure → in order;
+the path report goes in the final report, the listing decides staging.
+
+### R9-49 · minor · clarify
+
+Task 9 toy run: capturing task 1's `--cached` diff mid-run inside a parallel batch has no defined moment.
+
+Fixed: Task 9 toy run: task 1's cached diff at the end equals `git diff HEAD refs/checkpoints/toy/1^2 -- <task-1 files>`.
+
+### R9-50 · minor · clarify
+
+Task 9: no body rule that a deviation stops the run, only a red flag; the *Deviation* test expects a stop.
+
+Fixed: Task 9 *Keep the plan in sync*: a flagged deviation stops the run, the batch unstaged, the ruling in that task's section.
+
+### R9-51 · minor · clarify
+
+Task 10: "empty args dropped first" — all of argv or only the prompt args?
+
+Fixed: Task 10: empty arguments after the stage are dropped, an empty stage is unknown; tests `ai review "" code` and `ai "" plan 12`.
+
+### R9-52 · minor · data flow
+
+Task 8 lookup takes the one issue whose title equals the item's, `--state all`, with no author bound: a generic title
+on another author's closed issue writes the wrong `#n`.
+Refuted as major: needs an exactly equal title while the user's own isn't filed, and the wrong number shows in the heading.
+
+Fixed: Task 8 lookup clause: gh adds `--author @me`, glab checks `author.username` against `glab api user`;
+the Lookup and skill-edit tests check `--author @me`.
+
+### R9-53 · minor · data flow
+
+Task 8: "a network error" is definite but nothing maps error text; `EOF` or `connection reset` read as definite →
+`!` line → duplicate.
+Refuted as major: L2186 already classes a timeout or dropped connection as unknown, which covers the cited texts.
+
+Fixed: Task 8 *A failed create*: only pre-send failures, a missing repo, disabled issues or a missing CLI are definite;
+any other error is unknown.
+
+### R9-54 · minor · data flow
+
+Task 8: the duplicate search's `--state open` misses a closed regression.
+Refuted: the search serves "comment there instead?" on open issues; a regression gets a new issue.
+
+### R9-55 · minor · data flow
+
+Task 8: `in:title "<title>"` breaks on a `"`, and the item silently keeps `(issue to file)`. Same defect as R9-37.
+
+Fixed: with R9-37.
+
+### R9-56 · minor · data flow
+
+Task 8: `gh label list` returns 30 by default; a valid label past that is dropped silently.
+
+Fixed: Task 8 *Labels*: `gh label list --limit 1000`, `glab label list --per-page 100`.
+
+### R9-57 · minor · data flow
+
+Task 8: `Ended:` is written only after filing; compaction between a successful create and that write resumes the
+interview, which may create again.
+
+Fixed: Task 8: the draft file gains `Ended: unknown <issues URL>` just before a create, replaced once it returns.
+
+### R9-58 · minor · data flow
+
+Task 9 resolves the plan against the root, Task 10's `-f` against the cwd. Same defect as R9-16.
+
+Fixed: with R9-16.
+
+### R9-59 · minor · data flow
+
+Task 9 baseline: a suite in a Bash call hits the 2-minute default timeout; a long suite reports as a red baseline
+with no failing tests.
+
+Fixed: Task 9 baseline: every suite run uses `timeout: 600000`; a timeout stops as a timeout, never as failing tests.
+
+### R9-60 · minor · data flow
+
+Task 9: gitignored files are invisible to the listing (an implementer's `.env` is never caught), and untracked suite
+artifacts stop every batch.
+
+Fixed: Task 9 checkpoint: untracked paths a suite run creates and gitignored paths a batch created are never leftovers or staged,
+and are named in the final report; a *Suite artifacts* test.
+
+### R9-61 · minor · test matrix
+
+Task 9 *Pinned failure*: "existing test" is undefined, so a fixer loosening task 1's own new test may pass.
+Refuted as major: the test is task 1's spec, so loosening it is a deviation the review fails; only the term is undefined.
+
+Fixed: Task 9 Technique: an existing test is any test in the tree when the subagent starts, its own task's included.
+
+### R9-62 · minor · test matrix
+
+Task 9 *Resume*: no variant with an unstaged edit to a ✅ DONE task's file.
+
+Fixed: Task 9 *Resume*: an unstaged edit to `a.sh` (task 1, ✅ DONE) → it stops naming it.
+
+### R9-63 · minor · test matrix
+
+Task 9 *Resume*: no ref plus a stray staged file → `git read-tree HEAD` is untested.
+
+Fixed: Task 9 *Resume*: branch and `Base:` plus a staged stray file → it stops naming `git read-tree HEAD`.
+
+### R9-64 · minor · test matrix
+
+Task 9 toy run: the final message should hold exactly `ai review code plan-toy.md`.
+
+Fixed: Task 9 toy run: the final message holds `ai review code plan-toy.md` exactly.
+
+### R9-65 · minor · test matrix
+
+Task 9: no assertions for no `sdd-workspace`/`task-brief`, no `isolation`, no `git add -A`, staging in plan order,
+re-review via `re-review-prompt.md`, the opus retry naming what failed.
+
+Fixed: Task 9 toy run asserts no `task-brief` or `sdd-workspace`, no `isolation`, no `git add -A`, `git add --` in plan order;
+*Failing task* asserts re-review prompts and the opus prompt naming the failing test.
+
+### R9-66 · minor · test matrix
+
+Task 8 *Search match*: the request's wording is unnamed; a free-text search may miss the first issue.
+Refuted as major: the first issue is the user's live pick; telling the tester to reuse its title words suffices.
+
+Fixed: Task 8 *Search match*: the request reuses the first issue's title words.
+
+### R9-67 · minor · test matrix
+
+Task 8: the target rule covers one or several remotes, not zero. Refuted as major: L2181 gives title and body only for
+a target neither CLI files on; only zero remotes is unstated. Same defect as R9-41.
+
+Fixed: with R9-41.
+
+### R9-68 · minor · test matrix
+
+Task 8: the `Ended:` value after a "comment there instead?" yes. Same defect as R9-39.
+
+Fixed: with R9-39.
+
+### R9-69 · minor · test matrix
+
+Task 8: "a timeout can't be forced" is doubtful; a non-routable host hangs.
+
+Fixed: Task 8: the timed-out create is stated as an accepted gap, with no claim that it can't be forced.
+
+### R9-70 · minor · test matrix
+
+Task 8: no assertion for "no `--assignee`" or "no label create".
+
+Fixed: Task 8 first test: no `--assignee` in the create, no `gh label create` in the transcript.
+
+### R9-71 · minor · test matrix
+
+Task 8: stripping a branch from the `ai plan` title is never exercised.
+
+Fixed: Task 8 apostrophe test: an item `B2.3` with a 🐛 badge and branch `fix/cache` → `ai plan 'Fix the cache'`.
+
+### R9-72 · minor · test matrix
+
+Task 8: resuming "unless that file ends in `Ended:`" is untested.
+
+Fixed: Task 8 won't-work-on test: `/compact` and "carry on" after `Ended: drafted` → no resumed interview.
+
+### R9-73 · minor · test matrix
+
+Task 8 Lookup's GitLab case runs before glab is installed and passes on command-not-found.
+Refuted: the three asserts hold whether glab fails on the network or is missing.
+
+### R9-74 · minor · test matrix
+
+Task 8 *Shell characters*: no `&` in the input.
+
+Fixed: Task 8 *Shell characters*: the title gains `& c`.
+
+### R9-75 · minor · test matrix
+
+Task 8: the failed-create tests don't assert the drafted `!` line.
+
+Fixed: Task 8: the sync-script and company-GitLab tests expect the drafted `!` lines.
+
+### R9-76 · minor · test matrix
+
+Task 8: the `writing-follow-up-items` and `maintaining-follow-up-trackers` edits are checked only by check-md-limits.
+
+Fixed: Task 8 Tests: a *Follow-up skill edits* `grep -cF` check per edited skill.
+
+### R9-77 · minor · test matrix
+
+Task 10: `ai review "" code` and `ai "" plan 12` are untested. Same defect as R9-51.
+
+Fixed: with R9-51.
+
+### R9-78 · minor · test matrix
+
+Task 10: the `CLAUDECODE` message isn't compared exactly, and a set-but-empty `CLAUDECODE=` is undefined.
+
+Fixed: Task 10: `CLAUDECODE` set, even empty, refuses; the test compares the message exactly for `=1` and `=`.
+
+### R9-79 · minor · test matrix
+
+Task 10: `ai implement .` (a directory) is untested.
+
+Fixed: Task 10 test: `ai implement .` → `ai: no such plan file: .`.
+
+### R9-80 · minor · test matrix
+
+Task 10: exit-status pass-through through `exec` is untested.
+
+Fixed: Task 10 test: a stub exiting 3 → `ai` exits 3.
+
+### R9-81 · minor · test matrix
+
+Task 10: the new tip's content is untested (the README is).
+
+Fixed: Task 10 *Files edits* test: the tip file holds `export AI_MODEL_PLAN=` once and `ai plan`.
+
+### R9-82 · minor · test matrix
+
+Task 10: no test links the two copies of the four defaults. Same defect as R9-29.
+
+Fixed: with R9-29.
+
+### R9-83 · minor · test matrix
+
+Task 10 e2e: the repo has no suite, so step 3 asks the suite question with no scripted answer.
+
+Fixed: Task 10 e2e: the initial commit holds Task 9's `test/run.sh` and a `CLAUDE.md` naming `sh test/run.sh`.
+
+### R9-84 · minor · consistency
+
+Task 9: with `sdd-workspace` and `task-brief` dropped, where briefs, reports and deferred minors go is unsaid
+(SDD 7.0.0 :136-139, :361, :473-480); minors may be dropped.
+
+Fixed: Task 9 § *Overridden in SDD 7.0.0*: briefs, reports and review packages go to `<scratchpad>/impl-<task>-*.md`,
+deferred minors to a `Deferred:` line the final report lists (:136-139, :361, :473-480).
+
+### R9-85 · minor · consistency
+
+Task 9 *Save points* runs `git stash` and restores only the index, leaving the toy tree reverted; Task 10 then runs
+Task 5's completion tests in that repo, which stop for a setup reason.
+
+Fixed: Task 9 *Save points* runs in a `cp -R` copy of the toy repo.
+
+### R9-86 · minor · consistency
+
+Task 5 requirement 4's pathspecs lack `top` though said to be "the same" as Task 9's; the built
+`claude/skills/reviewing-in-rounds/SKILL.md:34` lacks it too.
+
+Fixed: Task 5 requirement 4 gains `top`; Task 9's first step and Task 5's "Still to make" add it to `reviewing-in-rounds/SKILL.md:34`.
+
+### R9-87 · minor · consistency
+
+Task 9 flips `writing-plans.json` `1.11` into a near-miss though 6b dropped near-miss 16 for that reason.
+Refuted: 6b's status plans the flip, user-approved; the eval scores only the first Skill or Read call.
+
+### R9-88 · minor · consistency
+
+Task 8 deletes every scratch tree after its last test, but Task 5's intake test at Task 10's end needs the customer
+tree and its apostrophe item.
+
+Fixed: Task 8 keeps the customer scratch tree for Task 5's intake test; Task 10's end deletes it.
+
+### R9-89 · minor · consistency
+
+Task 10 e2e step 1 ("a function that doubles a number") may be judged a chore or unsure, and Task 5's size gate offers
+to skip the plan; the tester's answers aren't scripted.
+
+Fixed: Task 10 e2e scripts the answers: yes to the task tracker at step 1, the plan at step 2.
+
+### R9-90 · minor · consistency
+
+`CLAUDE_CODE_SUBAGENT_MODEL(_FORCE)` exported in a shell changes subagent models in every stage; no task owns it.
+Refuted: `model` is passed explicitly on every dispatch, and leaving `_FORCE` unset is a recorded decision.
+
+### R9-91 · minor · work context
+
+Task 8's first pressure test files a real public issue from the gitignored, customer-naming backlog; checks run only
+after filing, and `grep -Fxf` matches whole lines, so a rephrased customer name is published.
+Refuted as major: a leak needs three guards to fail at once (the user's pick, the last turn's full view, the red flags).
+
+Fixed: Task 8 first test: the user checks the item names no customer or customer host before naming it.
+
+### R9-92 · minor · work context
+
+Task 8: the last turn asks only "anything to change?" then files; § *Approvals* wants an explicit go-ahead.
+
+Fixed: Task 8: the last turn asks "anything to change, or file it?" and files only on an explicit yes; the tests quote it.
+
+### R9-93 · minor · work context
+
+Task 8: `! gh auth refresh -s delete_repo` keeps the scope for good. Same defect as R9-26.
+
+Fixed: with R9-26.
+
+### R9-94 · minor · work context
+
+Task 8: the tester answers `$HOME` to prove refusal; a regression writes `$HOME/CLAUDE.md`, which loads in every later
+session and cleanup misses.
+
+Fixed: Task 8 customer tree test: `$HOME/CLAUDE.md` byte-identical before and after (or absent both times).
+
+### R9-95 · minor · work context
+
+Task 9's customer toy run uses `example-client/x`, a real account; use `example--client`.
+Refuted: `example-client` stays for fixtures that never reach the network; Task 9's run is local git only.
+
+### R9-96 · nit · scope
+
+Task 10: extra arguments after the plan file are unspecified.
+
+### R9-97 · nit · scope
+
+Task 10's README catch-up lines are out of scope.
+Refuted: they fix real README drift, per "docs ship with the change".
+
+### R9-98 · nit · scope
+
+Task 8 prints `ai plan`, which doesn't exist until Task 10.
+
+### R9-99 · nit · clarify
+
+Task 8: with glab unlinked, `can-file-issue` still prints glab: probe first or attempt the create?
+Refuted as minor.
+
+### R9-100 · nit · clarify
+
+Task 9: do SDD's NEEDS_CONTEXT and DONE_WITH_CONCERNS count as "blocked"? Refuted as minor.
+
+### R9-101 · nit · clarify
+
+Task 9: `git add --` given matched leftovers or Files-list spans; gitignore check per span or per file.
+Refuted as minor.
+
+### R9-102 · nit · clarify
+
+Task 9: listing the root's `plan-*.md` also lists review files. Refuted as minor.
+
+### R9-103 · nit · clarify
+
+Task 10: which argument is the plan file when more follow. Refuted as minor. Same defect as R9-96.
+
+### R9-104 · nit · clarify
+
+Task 10: `PATH=$emptydir` needs `bin/ai` to use builtins only before the exec; unstated. Refuted as minor.
+
+### R9-105 · nit · clarify
+
+Task 10 e2e baseline's "ask once" answer. Refuted as minor: the plan's suite command may not exist before its tasks
+create it. Same defect as R9-83.
+
+### R9-106 · nit · clarify
+
+Task 8 Files: "beside gh (lines 45-48)".
+
+### R9-107 · nit · clarify
+
+Task 8: `<n>`'s start, and `<scratchpad>` in a session with none.
+
+### R9-108 · nit · clarify
+
+Task 8: `grep -Fxf`'s direction.
+
+### R9-109 · nit · clarify
+
+Task 9: the customer resume variant's origin is unnamed.
+
+### R9-110 · nit · clarify
+
+Task 8 *Tightening*: whether the fixture `CLAUDE.md` is committed.
+
+### R9-111 · nit · clarify
+
+Task 10: `--model=x` form.
+
+### R9-112 · nit · clarify
+
+Task 10: `CLAUDECODE=` empty. Same defect as R9-78.
+
+### R9-113 · nit · clarify
+
+Task 9: `1.11` removed when it becomes `2.11`?
+
+### R9-114 · nit · data flow
+
+Task 8: empty or failing `can-file-issue` or `level` output is undefined.
+Refuted as minor: `can-file-issue` prints exactly gh, glab or none, and the guard decides the create itself.
+
+### R9-115 · nit · data flow
+
+Task 9: appending to `info/exclude` fails without `.git/info/`.
+Refuted as minor: the default template creates it, and `--git-path` resolves to the common dir.
+
+### R9-116 · nit · data flow
+
+Task 8 and 10 fixtures fail as "repo not found", the tests still say network failure. Same defect as R9-35.
+
+### R9-117 · nit · test matrix
+
+Task 9 *Resume*: the seed doesn't say whether the session starts on `main` or `toy`.
+Refuted as minor: both branches sit at the same commit; the outcome doesn't change.
+
+### R9-118 · nit · test matrix
+
+Task 9: the customer resume variant's origin is unnamed. Same defect as R9-109.
+
+### R9-119 · nit · consistency
+
+Task 5b is ✅ DONE while its requirement 1 waits on Task 9's first step; its "Still to make" is never cleared.
+Refuted as minor: the row says the PR-number case is added in Task 9's first step.
+
+### R9-120 · nit · consistency
+
+Task 8's template double-quotes `ai plan "<title>"`.
+
+### R9-121 · nit · consistency
+
+Task 8: "this repo's own issues" vs the section's "each repo's own". Same defect as R9-42.
+
+### R9-122 · nit · consistency
+
+Task 5's status row "edits made" reads as done.
+
+### R9-123 · nit · consistency
+
+Task 8's Files entry mixes requirements into the file list.
+
+### R9-124 · nit · consistency
+
+Task 8: `example--client/x` is defined after its first use.
+
+### R9-125 · nit · work context
+
+Task 8 names the real `example-client` account's creation date.
+Refuted: a public fact about a public account; no work-context bar covers it.

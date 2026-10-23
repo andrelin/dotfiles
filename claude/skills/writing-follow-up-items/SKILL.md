@@ -20,6 +20,8 @@ Cross-cutting items that don't fit the PR you're writing: things another team ow
 architectural risks, open questions, pending-merge branches — but not work already captured in a live plan file,
 or anything one in-flight PR fully resolves. **Both halves keep numbered themed sections**; what differs between
 them is only how an item is identified.
+An issue filed only for someone else gets no item; whether something belongs in the task tracker, this tracker or
+both is `writing-issues`.
 
 ## Which half it goes in
 
@@ -45,6 +47,8 @@ where there is no PR yet. It is the one id that outlives the branch, the PR and 
 One issue routinely spans several PRs and one PR can answer several issues, so put the reference on **every** item
 that serves it. An issue that is merely *context* ("shipped by #442") stays in the body — a heading reference
 means *this item is that issue*.
+**`(issue to file)` holds the number's place** in the heading while the user still has to file the issue, until they
+report the number or the next review run finds it.
 **Import a current issue's content; record a stale one's number only.** Where the issue still describes what is
 wanted, fold its substance into the item — acceptance criteria, constraints, who asked — so the item stands alone.
 Where it predates the current design, keep the number, don't restate wording that has been overtaken, and note in
@@ -55,6 +59,8 @@ the item that the issue is stale. Decide which by reading the issue against the 
 - **Themed sections** (`## N · Title`) open with a **one- or two-line introduction** naming what ties the items
   together and why it is one theme — what the user reads returning cold — then the items
   (`### N.M · Title <badge> <branch?>`).
+- **An `(issue to file)` item gets `Target: <host>/<project path>`** on its own line right below the heading, since a
+  tracker at a tree root spans several repos; it stays when the number replaces `(issue to file)`.
 - **Every item leads with a `→` line** stating the single concrete next step (merge / ask X / add dep / decide),
   then bullets below it — skim the `→`, dive when acting. Those bullets follow one compact shape:
   **what the problem is · why it is a problem · how we might solve it**, a sentence each, all three always present.

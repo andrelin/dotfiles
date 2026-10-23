@@ -46,6 +46,7 @@ recipes_optional=(
   actionlint
   bats-core
   gh
+  glab
   k9s         # Kubernetes terminal UI
   kafka
   kube-ps1    # Kubernetes prompt info for bash and zsh

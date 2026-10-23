@@ -65,7 +65,7 @@ in § *The staged workflow*. No external spec.
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ✅ DONE | scored 2026-10-23: 20/20 and 20/21, both descriptions kept; `writing-plans`' `1.11` a known miss until Task 9 |
 | 7 · Instruction-set audit | ⏳ PENDING | |
-| 8 · `writing-issues` skill | ⏳ PENDING | |
+| 8 · `writing-issues` skill | 🚧 PARTIAL | built 2026-10-23, automated checks pass; the user's live tests pending; deviations in Task 8 |
 | 9 · `implementing-plans` skill | ⏳ PENDING | |
 | 10 · `bin/ai` stage launcher | ⏳ PENDING | |
 | 11 · Claude config on Linux and WSL | ⏳ PENDING | |
@@ -2393,6 +2393,11 @@ description: Read before writing, filing or drafting an issue or ticket for any 
     filing off `github.com` can succeed in a test, and no fixture here forces a timeout — an accepted gap.
 - **Recipe:** `awk '/^recipes_optional=\(/,/^\)/' init/31_homebrew_recipes.sh | grep -cw glab` prints 1, and
   `grep -cw glab init/31_homebrew_recipes.sh` prints 1, so it is in no other list.
+
+**As built (2026-10-23):** the command forms, target rule, quoting, search, labels and failed-create cases moved to
+`claude/docs/issue-commands.md` (the skill is 92 lines, the doc 47); `maintaining-follow-up-trackers` step 2's lookup
+took six lines, not one clause; the `Target:` bullet covers `(issue to file)` items only. `check-md-limits`,
+markdownlint, shellcheck on `init/31` and the `grep` checks pass; every live test above is still to run.
 
 ## Task 9 · `implementing-plans` skill
 

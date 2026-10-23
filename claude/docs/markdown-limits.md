@@ -46,6 +46,8 @@ It says when to read the skill and stops; a summary of the body gets followed in
 
 **Blank lines and headings never count.** Each costs next to no tokens, and both make a file easier to read,
 so a cap that charged for them would push a file towards one dense, unheaded block.
+Free is not a reason to add more: a heading earns its place by helping a reader find something, and a file split
+into many tiny sections is no easier to read than a dense one.
 A `#` line inside a code fence or front matter is not a heading and still counts.
 **Beyond those, what counts depends on who reads the file.**
 

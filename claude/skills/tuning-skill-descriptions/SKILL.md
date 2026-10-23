@@ -20,7 +20,9 @@ session on the machine until it ends.
   one-step request triggers no skill whatever the description says, so it measures nothing.
 - **About 10 near-misses** from neighbouring skills' ground — the requests most easily confused with this one
   (`writing-plans` against `writing-follow-up-items`). A near-miss set of unrelated tasks passes every description.
-- **The user reviews the set once.** After that it is a regression suite: a real misfire seen later joins it.
+- **The user reviews the set once.** Whoever writes the queries also writes the candidates and shares their blind
+  spots, and whether a skill *should* load is the user's call — a wrong label quietly scores the worse description
+  higher. After that it is a regression suite: a real misfire seen later joins it.
 - **Hold out every third query** of each kind before the first run. Write candidates from the other two thirds'
   results only, and report the held-out third's separately — tuning on what you then report proves nothing.
 

@@ -14,7 +14,7 @@
   {"query": "Write the PR description for this branch: it adds the retry to the invoice export job and the integration test for it.", "should_trigger": false},
   {"query": "Review this branch against main before I open the MR. It touches the VAT calculation and its tests.", "should_trigger": false},
   {"query": "Add a rule to the project's CLAUDE.md that integration tests need -Pintegration, and cut something to pay for it.", "should_trigger": false},
-  {"query": "Implement Task 2 from plan-export-retry.md: the retry wrapper and its tests. The plan is final, just build it.", "should_trigger": false},
+  {"query": "Compare wrapping the invoice export in our own retry loop against using Spring Retry, and recommend one. Just answer here, I don't want a file for it.", "should_trigger": false},
   {"query": "The pipeline fails intermittently on the Kafka consumer test. Find out why before we touch anything.", "should_trigger": false},
   {"query": "Write the commit message for the staged changes, which rename exportAll to exportPending across the module.", "should_trigger": false},
   {"query": "Create a new skill for writing Gradle build logic, with a description that makes it load when someone edits build.gradle.kts.", "should_trigger": false},

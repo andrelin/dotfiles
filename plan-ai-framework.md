@@ -60,7 +60,7 @@ in § *The staged workflow*. No external spec.
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests wait for Tasks 8–10 |
 | 5b · `reviewing-for-feedback` skill | ⏳ IN PROGRESS | written and first-review tested 2026-10-19; re-review run next |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
-| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19, runs made inert 2026-10-23; both eval sets approved 2026-10-23; the real runs next |
+| 6b · `tuning-skill-descriptions` skill and trigger evals | 🚧 PARTIAL | built 2026-10-19, runs made inert 2026-10-23; both eval sets approved and scored 2026-10-23 (20/20, 20/21); `writing-plans`' `1.11` awaits the user's call |
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | ⏳ PENDING | |
 | 9 · `implementing-plans` skill | ⏳ PENDING | |
@@ -81,9 +81,8 @@ the work repo it was made for resolves `company`). Task 6b is built and 🚧. Ta
 
 **Start tomorrow here, in this order:**
 
-1. **Task 6b — both eval sets are approved** (2026-10-23). Next, the real `bin/skill-trigger-eval` runs on
-   `tuning-skill-descriptions` and `writing-plans`, scores recorded under Task 6b, row ✅. Run them from a session
-   that doesn't need either skill: the run hides it machine-wide.
+1. **Task 6b — both skills are scored** (2026-10-23, under Task 6b). Left: the user's call on `writing-plans`' `1.11`,
+   then row ✅.
 2. **Task 5b — the re-review test.** The scratch repos lived in the session scratchpad and are gone; rebuild them as
    Task 5b's status describes (`gross_ore` truncating the VAT, a round-number test, commits by another author).
    Run the first review again (its report lands in the new session's scratchpad), then commit the fix in the upstream
@@ -1785,8 +1784,18 @@ implementing a plan updates the plan, so `writing-plans` loading there is correc
 approved `writing-plans.json`, and asked for that case as a should-fire query: `1.11`, implementing a plan task
 without saying to update the plan, approved too. Both sets carry stable `id`s for the user to name queries by,
 `1.n` should-fire and `2.n` near-miss. Once Task 9 lands, `writing-plans` should no longer load there: `1.11` then
-flips to a near-miss against `implementing-plans`, becoming the next free `2.n`. Left: the real runs on
-`tuning-skill-descriptions` and `writing-plans`. Deviations:
+flips to a near-miss against `implementing-plans`, becoming the next free `2.n`.
+
+**Real runs, 2026-10-23, opus, one worker** (held out: `1.3`, `1.6`, `1.9`, `2.3`, `2.6`, `2.9`):
+
+- `tuning-skill-descriptions`, current description: 20/20 — every should-fire 3/3, every near-miss 0/3, held-out
+  6/6. Nothing to beat, so it stays.
+- `writing-plans`, current description: 20/21. Every near-miss 0/3; should-fire 3/3 but for `1.9` 2/3 (held out,
+  passes) and `1.11` 0/3, the one failure: implementing a plan task doesn't load it. Held-out 6/6.
+- Left: the user decides whether `writing-plans`' description takes `1.11` now, to be undone when Task 9 lands, or
+  `1.11` stays a recorded miss until `implementing-plans` owns it.
+
+Deviations:
 
 - The recording wrapper relays each line to `run_eval` before recording it, instead of `tee`: after a kill the
   orphaned `claude` can print on, and a recorded late line would make a hung run look decided. The relay's write to

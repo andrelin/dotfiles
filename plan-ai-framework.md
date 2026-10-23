@@ -58,7 +58,7 @@ in § *The staged workflow*. No external spec.
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests wait for Tasks 8–10 |
-| 5b · `reviewing-for-feedback` skill | ⏳ IN PROGRESS | first review re-run 2026-10-23, a temp-dir cleanup fixed; re-review next |
+| 5b · `reviewing-for-feedback` skill | ✅ DONE | first review, re-review and hand-over tested 2026-10-23; a temp-dir cleanup fixed |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ✅ DONE | scored 2026-10-23: 20/20 and 20/21, both descriptions kept; `writing-plans`' `1.11` a known miss until Task 9 |
 | 7 · Instruction-set audit | ⏳ PENDING | |
@@ -82,15 +82,7 @@ the work repo it was made for resolves `company`). Task 6b is built and 🚧. Ta
 **Start tomorrow here, in this order:**
 
 1. **Task 6b — done** (2026-10-23).
-2. **Task 5b — the re-review test.** The scratch repos lived in the session scratchpad and are gone; rebuild them as
-   Task 5b's status describes (`gross_ore` truncating the VAT, a round-number test, commits by another author).
-   Run the first review again (its report lands in the new session's scratchpad), then commit the fix in the upstream
-   repo. Pushing it to the bare remote is blocked by the guard — a path remote resolves `customer` — so the user
-   runs the push with `! … WORK_CONTEXT_WAIVE=1 git push …`. Then the re-review, given the first report: the rounding
-   finding must come back addressed, and verifiers must run per lens with a `Verified:` line per finding (the
-   permissions-open run skipped them). Then Task 5's *Whose work* hand-over, now that 5b exists: the
-   `migration.md`-by-another-author setup, answered "a colleague's", must end in this skill with `git status`
-   unchanged. Then row ✅ and commit.
+2. **Task 5b — done** (2026-10-23).
 3. **Then Task 8, 9, 10** in the plan's order; Task 5's remaining real-run tests are listed under its status.
 
 Headless test runs: `claude -p … --output-format stream-json --verbose`, with `--add-dir ~/.claude/docs` (and the
@@ -1584,7 +1576,7 @@ want of the lens file — which it did, rightly, rather than invent lenses):
   applied them. An open `user decision needed` → asked first. A `Done (plan):` log → said so and asked, naming the
   close it would make.
 - *Whose work* (1): a `migration.md` committed by another author → asked before writing anything, `git status`
-  clean. The hand-over half waits for Task 5b's skill.
+  clean. The hand-over half passed with Task 5b, 2026-10-23.
 
 Still to run, all needing Tasks 8–10: intake against Task 8's issue, a review to `Done (<kind>):` (this plan's next
 review, and the code review after Task 9's toy run), diff input, re-evaluation with a planted failing test, tests
@@ -1655,6 +1647,14 @@ which truncates the VAT where `vat_ore` rounds half up, under a test of round nu
   switch, stash, commit, rebase, push or add; no reviewer `Skill` call or edit. But one reviewer cleaned up with
   `rm -rf /var/folders/*/*/T/tmp.*`, every temp dir of the user's, not its own; the shared reviewer prompt, here and
   in `reviewing-in-rounds`, now says to delete nothing but its own `mktemp -d`, by the path it printed.
+- *Re-review, 2026-10-23,* after the author's fix (`gross_ore` via `vat_ore`, a test of `gross_ore(2)`), pushed by the
+  user past the guard, given the first report's path, $2.78: the rounding finding addressed, with the line; the test
+  gap and the nit addressed; the minor `gross_ore(1)` case open and carried forward as a new major (the new loop
+  takes its expected value from `vat_ore`, so a round-up `vat_ore` passes). A verifier per lens, a `Verified:` line
+  per finding, the same unchanged state and absent commands, and every `rm -rf` on a reviewer's own `mktemp -d`.
+- *Hand-over,* Task 5's *Whose work* test: `/reviewing-in-rounds plan migration.md`, Kari's commit, asked first;
+  resumed with "It's a colleague's." it loaded this skill and reviewed a scratchpad copy, verifier per lens, $2.74 in
+  all. `git status` and the index unchanged, no `plan-migration.md`.
 
 ## Task 6 · `filing-learnings` skill
 

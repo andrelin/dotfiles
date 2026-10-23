@@ -49,7 +49,7 @@ exists: on an engagement the user owns the remote, and a review that touches it 
 | "The user pasted a PR link, so they want the platform." | They gave you the target. Where you read it from is still the local clone. |
 | "`--comment` saves the user a step." | It posts under their name to their client's repo. That is theirs to do, every time. |
 | "The findings are obviously right, so posting is harmless." | Being right isn't authorisation. Posted-and-right costs what posted-and-wrong costs. |
-| "They approved posting on the last MR." | An approval covers one action, not a policy — see `~/.claude/CLAUDE.md` § *Work contexts*. |
+| "They approved posting on the last MR." | An approval covers what it names, once — see `~/.claude/CLAUDE.md` § *Approvals*. |
 
 ## Red flags — stop
 

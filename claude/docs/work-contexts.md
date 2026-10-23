@@ -1,6 +1,7 @@
 # Work contexts — the detail behind the four levels
 
-The resolution order, the permission lists and the one-approval rule are in `~/.claude/CLAUDE.md` § *Work contexts*, loaded before any git command.
+The resolution order and the permission lists are in `~/.claude/CLAUDE.md` § *Work contexts*,
+and the one-approval rule in § *Approvals*, both loaded before any git command.
 This file carries the reasoning and the edge cases.
 
 ## Why the levels nest

@@ -27,9 +27,11 @@ merge — `--abort` and hand back. `git add`, `restore`, `checkout`/`switch`, `s
 inspection and a clean zero-conflict rebase or merge are fine; draft the message for the user to run.
 `~/.claude/hooks/work-context.sh` enforces this list and reports the level at session start; a block is final — draft the command for the user.
 At customer level the one platform write it allows is `issue create`, where `work-context.sh can-file-issue` prints a tool.
-
-**An approval covers what it names, once** — never the item beside it, nor the next change: ask for each, explicitly.
 Before customer work read the `CLAUDE.md` at the root of that tree; how a level applies, why, and the guard's gaps: `~/.claude/docs/work-contexts.md`.
+
+## Approvals
+
+**An approval covers what it names, once** — never its neighbour or the next one: ask for each explicitly, above all a git or platform write.
 
 ## Durable context lives in the repo
 

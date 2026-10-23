@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+#
+# Start a fresh interactive Claude session for one stage of the staged workflow, on that stage's model.
+#
+# Usage: ai [--model <m>] <stage> [args…]
+#   issue [words…]                     /writing-issues        AI_MODEL_ISSUE, default sonnet
+#   plan [issue or words…]             /writing-plans         AI_MODEL_PLAN, default opus
+#   implement <plan file> [words…]     /implementing-plans    AI_MODEL_IMPLEMENT, default sonnet
+#   review plan <plan file> [words…]   /reviewing-in-rounds   AI_MODEL_REVIEW, default opus
+#   review code [plan file] [words…]
+#
+# --model beats the stage's variable, which beats the default; an empty variable counts as unset.
+# bin/skill-trigger-eval copies the four defaults, so change both together.
+#
+# Exit 2 on bad usage, a missing plan file or when run inside Claude; 127 when claude isn't found.
+# Env: AI_CLAUDE, the claude to run (default claude on PATH).
+
+set -euo pipefail
+
+function usage() {
+  cat >&2 <<'EOF'
+usage: ai [--model <m>] <stage> [args…]
+  issue [words…]
+  plan [issue or words…]
+  implement <plan file> [words…]
+  review plan <plan file> [words…]
+  review code [plan file] [words…]
+EOF
+  exit 2
+}
+
+function die() {
+  echo "ai: $*" >&2
+  exit 2
+}
+
+function require_plan_file() {
+  local file="$1" root
+  [[ -n "$file" ]] || usage
+  root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  [[ "$file" == /* ]] || file="$root/$file"
+  [[ -f "$file" ]] || die "no such plan file: $1"
+}
+
+[[ -z "${CLAUDECODE+set}" ]] || die "run this in a terminal, not inside Claude"
+
+model=""
+if [[ "${1:-}" == --model ]]; then
+  [[ -n "${2:-}" ]] || usage
+  model="$2"
+  shift 2
+fi
+[[ $# -ge 1 ]] || usage
+stage="$1"
+shift
+
+args=()
+for arg in "$@"; do
+  if [[ -n "$arg" ]]; then args+=("$arg"); fi
+done
+
+case "$stage" in
+  issue) skill=writing-issues; default_model="${AI_MODEL_ISSUE:-sonnet}" ;;
+  plan) skill=writing-plans; default_model="${AI_MODEL_PLAN:-opus}" ;;
+  implement)
+    skill=implementing-plans; default_model="${AI_MODEL_IMPLEMENT:-sonnet}"
+    require_plan_file "${args[0]:-}" ;;
+  review)
+    skill=reviewing-in-rounds; default_model="${AI_MODEL_REVIEW:-opus}"
+    case "${args[0]:-}" in
+      plan) require_plan_file "${args[1]:-}" ;;
+      code) [[ -z "${args[1]:-}" ]] || require_plan_file "${args[1]}" ;;
+      *) usage ;;
+    esac ;;
+  *) usage ;;
+esac
+
+prompt="/$skill"
+[[ ${#args[@]} -eq 0 ]] || prompt+=" ${args[*]}"
+
+claude="${AI_CLAUDE:-claude}"
+if ! command -v -- "$claude" > /dev/null; then
+  echo "ai: $claude: command not found" >&2
+  exit 127
+fi
+exec "$claude" --model "${model:-$default_model}" "$prompt"

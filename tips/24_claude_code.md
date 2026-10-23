@@ -125,3 +125,22 @@ A failed or hung `claude` run fails the whole score rather than counting as a mi
 skill says how to use the numbers.
 
 From `bin/skill-trigger-eval`.
+
+## Tip 24.8: `ai` — one fresh session per stage
+
+Carries a piece of work from issue to reviewed change in four clean sessions, each on its stage's model, handing
+the next an artifact rather than chat history.
+Each command starts an interactive `claude` running that stage's skill, and the session ends by printing the next one.
+
+```sh
+ai issue "login fails on Safari"     # /writing-issues, sonnet: interviews you, then files or drafts
+ai plan 12                           # /writing-plans, opus: an issue number, title or plain words
+ai implement plan-login.md           # /implementing-plans, sonnet: plan files resolve against the repo root
+ai review code plan-login.md         # /reviewing-in-rounds, opus; `ai review plan <file>` reviews a plan
+```
+
+The models are suggestions: override one per call with `ai --model haiku issue`, before the stage, or per shell
+with `export AI_MODEL_PLAN=sonnet` (also `AI_MODEL_ISSUE`, `AI_MODEL_IMPLEMENT`, `AI_MODEL_REVIEW`).
+Run it from a terminal: inside a Claude session it refuses.
+
+From `bin/ai`.

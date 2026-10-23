@@ -67,7 +67,7 @@ in § *The staged workflow*. No external spec.
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | 🚧 PARTIAL | built 2026-10-23, automated checks pass; the user's live tests pending; deviations in Task 8 |
 | 9 · `implementing-plans` skill | ⏳ PENDING | |
-| 10 · `bin/ai` stage launcher | ⏳ PENDING | |
+| 10 · `bin/ai` stage launcher | 🚧 PARTIAL | built 2026-10-23, `test/test_ai.sh` passes; the spike, `type -a ai` and the end-to-end run are the user's |
 | 11 · Claude config on Linux and WSL | ⏳ PENDING | |
 | 12 · Hidden-Unicode check on agent-loaded files | ⏳ PENDING | |
 | M · Machine-local cleanup (untracked, by hand) | ⏳ PENDING | |
@@ -2726,6 +2726,11 @@ exactly; one naming only one of them checks that line, the model's line being th
 - **Then Task 5's pending real-run tests:** intake against Task 8's issue, the code review to `Done (code):` after
   Task 9's toy run, diff input and completion — steps 2 and 4 above count for intake and completion when they pass.
   Once none of Task 5's tests is left unrun, its row becomes ✅ DONE; then delete Task 8's customer scratch tree.
+
+**As built (2026-10-23):** the slash-command form, pending the spike; checks run in this order: inside Claude, usage,
+the plan file, then `claude` on `PATH`, so `CLAUDECODE=1 ai bogus` names the terminal; an absolute plan path is
+checked as given; a missing `claude` prints `ai: claude: command not found`. `test/test_ai.sh` (52 assertions) also
+greps the docs edits and compares the defaults with `bin/skill-trigger-eval`.
 
 ## Task 11 · Claude config on Linux and WSL
 

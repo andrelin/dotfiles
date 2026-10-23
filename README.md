@@ -75,6 +75,9 @@ The `/bin` directory is added to `$PATH` and contains:
 - [sync-claude-deny](bin/sync-claude-deny) - sync git-secret paths into Claude Code deny rules. Use `--check` to verify without modifying.
 - [sort-claude-settings](bin/sort-claude-settings) - sort arrays in Claude Code settings files for deterministic output.
 - [check-md-limits](bin/check-md-limits) - enforce the markdown line-length and file-length limits. Run by the pre-commit hook and CI.
+- [claude-settings-merge](bin/claude-settings-merge) - register the dotfiles-owned hooks and deny rules in `~/.claude/settings.json`.
+- [skill-trigger-eval](bin/skill-trigger-eval) - score how often a skill's description makes Claude load it.
+- [ai](bin/ai) - start a fresh Claude session for one stage (`issue`, `plan`, `implement`, `review`) on that stage's model.
 
 The `src` function (defined in [.zshrc](link/.zshrc) and [.bashrc](link/.bashrc)) re-sources the files in
 `/source` — every `*sh` under zsh, `*.sh` only under bash — useful after a change without opening a new shell.

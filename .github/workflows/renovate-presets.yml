@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 env:
-  RENOVATE_VERSION: 44.145.1 # renovate: npm=renovate
+  RENOVATE_VERSION: 44.176.2 # renovate: npm=renovate
 
 jobs:
   # Every repo that extends these presets breaks silently on an invalid one,

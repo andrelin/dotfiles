@@ -56,9 +56,10 @@ The `_macos_` marker means it is not selected by default on Linux or WSL, where 
   branch and model on row 1, styled like the zsh prompt
   ([link/.omz-custom/andrelin.zsh-theme](../link/.omz-custom/andrelin.zsh-theme)); context and rate-limit bars
   on row 2.
-- `claude/hooks/` → `~/.claude/hooks/` — hook scripts; `work-context.sh` blocks Claude's commits, pushes and
-  platform writes on customer repos and names the work context at session start (Tip 24.6).
-- `claude/shims/` → `~/.claude/shims/` — `git`, `gh`, `glab` and `az` shims, first on `PATH` in Claude Code only, so the
+- `claude/hooks/` → `~/.claude/hooks/` — hook scripts; `work-context.sh` blocks Claude's commits, pushes and platform
+  writes on customer work, which is only what `~/.claude-customers` lists — write it on each machine with customer work,
+  one `host/owner`, directory or customer name per line (syntax: `claude/docs/work-contexts.md`) — and names the context at session start.
+- `claude/shims/` → `~/.claude/shims/` — `git`, `gh`, `glab`, `az` and `fj` shims, first on `PATH` in Claude Code only, so the
   guard sees aliases, functions and scripts too; waive it once with `! WORK_CONTEXT_WAIVE=1 git push` at the prompt.
 
 Only these entries are linked; machine-local state (`projects/`, `sessions/`, `history.jsonl`) stays untouched,

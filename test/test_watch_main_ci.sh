@@ -24,7 +24,7 @@ export HOME="$root"
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 
 # A repo with main and feature both on a bare origin and tracked. The commit lands before origin is added and origin
-# fetches it, so a session's work-context shim, which counts a local-path origin as customer work, allows each step.
+# fetches it, so a session's work-context shim, which judges a local-path origin by that path, allows each step.
 R="$root/repo"
 git init -q -b main "$R"
 git -C "$R" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init

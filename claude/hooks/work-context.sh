@@ -16,22 +16,38 @@
 LC_ALL=C
 
 MARKER=.claude-files-issues
-COMPANY_ORGS=.claude-company-orgs
+CUSTOMERS=.claude-customers
 SECRET_MAPPING=.gitsecret/paths/mapping.cfg
 WAIVE_VAR=WORK_CONTEXT_WAIVE
 TRACKED="GH_REPO GH_HOST GITLAB_HOST GL_HOST GITLAB_URI GITLAB_REPO GIT_DIR GIT_WORK_TREE"
 GIT=${WORK_CONTEXT_GIT:-git}
 UNKNOWN_DIR="<unknown directory>"
 TILDE='~'
+C_LOADED=0
 FORCE_WRITE=0
 X1=$'\001'
 NL=$'\n'
 BSNL=$'\\\n'
-TOOL_RE='(^|[^[:alnum:]_-])(git|gh|glab|az)([^[:alnum:]_-]|$)'
+TOOL_RE='(^|[^[:alnum:]_-])(git|gh|glab|az|fj)([^[:alnum:]_-]|$)'
+# A dotfile glob or brace word, which can reach a protected file without spelling its name.
+DOT_GLOB_RE='(^|[[:space:]/="'\''])\.[^[:space:]]*[]*?[{]'
 
 # --- helpers -------------------------------------------------------------------------------------------------
 
 canon() { ( cd -P -- "$1" 2>/dev/null && printf '%s' "$PWD" ); }
+
+# canon_loose <absolute-path>: canon of a path that may not exist yet, its deepest existing ancestor canonical.
+canon_loose() {
+  local p=$1 rest="" c
+  [[ $p == /* ]] || return 1
+  until c=$(canon "$p"); do
+    rest=/${p##*/}$rest
+    p=${p%/*}
+    [[ -n $p ]] || p=/
+  done
+  [[ $c == / ]] && c=""
+  printf '%s' "$c$rest"
+}
 
 # Drop PATH entries that are ~/.claude/shims, so the guard's own git calls never recurse through Task 2b's shim.
 strip_shims() {
@@ -181,36 +197,276 @@ parse_url() {
   [[ -n $U_OWNER && -n $U_REPO ]]
 }
 
-# company_org <host> <owner>: listed in the user's ~/.claude-company-orgs, one <host>/<owner> per line, # comments.
-# It names the owners the company has taken on, so it stays untracked; an ssh. host prefix is dropped, which makes
-# one line cover both of Azure DevOps' clone URLs. Builtins only, for the shims. Call it under nocasematch.
-company_org() {
-  local line want=${1#ssh.}/$2
-  [[ -r $HOME/$COMPANY_ORGS ]] || return 1
+# customer_entry <line> -> ENTRY_KIND (org, host, dir or name) and ENTRY: one line of the user's ~/.claude-customers,
+# which lists customer work explicitly; nothing else is. A line is a host/owner, or a clone URL reduced to one the way
+# parse_url reduces a remote; a bare host, all of whose owners are customer work, and a name too; a directory (/, ~ or
+# $HOME, or a slash path whose first part has no dot, taken from $HOME) whose whole tree is; or a name or abbreviation.
+# A # starting the line, or after a space, begins a comment. Fails with 1 on a blank or comment line, 2 on a line it
+# can't read. Builtins only, for the shims.
+customer_entry() {
+  local line=${1#"${1%%[![:space:]]*}"} first rest port U_HOST U_OWNER U_REPO
+  [[ $line == "#"* ]] && return 1
+  line=${line%%[[:space:]]#*}
+  line=${line%"${line##*[![:space:]]}"}
+  [[ -n $line ]] || return 1
+  [[ $line == \"*\" || $line == \'*\' ]] && line=${line:1:${#line}-2}
+  case $line in
+    '$HOME' | '${HOME}') line=$TILDE ;;
+    '$HOME/'* | '${HOME}/'*) line=$TILDE/${line#*/} ;;
+  esac
+  line=${line%/}
+  [[ -n $line ]] || return 2
+  # A userless host:owner/repo is scp-style, which https:// would misread as a port; host:port[/path] is ssh://.
+  first=${line%%:*}
+  if [[ $line == *:* && $line != *@* && $line != *://* && $first == *.* && $first != */* ]]; then
+    rest=${line#*:}
+    port=${rest%%/*}
+    if [[ -n $port && -z ${port//[0-9]/} ]]; then
+      if [[ $rest == */* ]]; then line="ssh://git@$line"; else line=$first; fi
+    else
+      line="git@$line"
+    fi
+  fi
+  case $line in
+    "$TILDE") ENTRY_KIND=dir; ENTRY=$HOME ;;
+    "$TILDE"/*) ENTRY_KIND=dir; ENTRY=$HOME/${line#"$TILDE"/} ;;
+    "$TILDE"*) return 2 ;;
+    /*) ENTRY_KIND=dir; ENTRY=$line ;;
+    *://* | *@*:*)
+      parse_url "$line" || parse_url "${line%.git}/x" || return 2
+      customer_org_entry ;;
+    */*)
+      first=${line%%/*}
+      if [[ $first == *.* && $first != .* ]]; then
+        parse_url "https://$line" || parse_url "https://${line%.git}/x" || return 2
+        customer_org_entry
+      else
+        ENTRY_KIND=dir; ENTRY=$HOME/$line
+      fi
+      ;;
+    *)
+      if [[ $line =~ ^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$ ]]; then
+        ENTRY_KIND=host; ENTRY=$line
+        [[ ${ENTRY:0:4} == [sS][sS][hH]. ]] && ENTRY=${ENTRY:4}
+      else
+        ENTRY_KIND=name; ENTRY=$line
+      fi
+      ;;
+  esac
+  return 0
+}
+
+# customer_org_entry: the U_HOST/U_OWNER customer_entry's parse_url call set, as an org entry, ssh. dropped.
+customer_org_entry() {
+  local host=$U_HOST
+  [[ ${host:0:4} == [sS][sS][hH]. ]] && host=${host:4}
+  ENTRY_KIND=org; ENTRY=$host/$U_OWNER
+}
+
+# load_customers -> C_KIND, C_ENTRY, C_DIR (a dir entry's canonical path, or empty), C_UNREAD (lines it can't read),
+# C_NODIR (dir entries naming no existing folder): ~/.claude-customers, parsed once per run.
+load_customers() {
+  local line rc nc=0 i=0
+  (( C_LOADED )) && return 0
+  C_LOADED=1 C_KIND=() C_ENTRY=() C_DIR=() C_UNREAD=0 C_NODIR=0
+  [[ -r $HOME/$CUSTOMERS ]] || return 0
+  # The host pattern in customer_entry must see letter case.
+  shopt -q nocasematch && nc=1
+  shopt -u nocasematch
   while IFS= read -r line || [[ -n $line ]]; do
-    line=${line%%#*}
-    line=${line#"${line%%[![:space:]]*}"}
-    line=${line%"${line##*[![:space:]]}"}
-    [[ -n $line && $line == "$want" ]] && return 0
-  done < "$HOME/$COMPANY_ORGS"
+    customer_entry "$line"; rc=$?
+    if (( rc == 0 )); then
+      C_KIND[i]=$ENTRY_KIND C_ENTRY[i]=$ENTRY C_DIR[i]=""
+      if [[ $ENTRY_KIND == dir ]]; then
+        C_DIR[i]=$(canon "$ENTRY") || C_NODIR=$((C_NODIR + 1))
+      fi
+      i=$((i + 1))
+    elif (( rc == 2 )); then
+      C_UNREAD=$((C_UNREAD + 1))
+    fi
+  done < "$HOME/$CUSTOMERS"
+  (( nc )) && shopt -s nocasematch
+  return 0
+}
+
+# customer_org <host> <owner>: listed in ~/.claude-customers, as an owner, a whole host, or a name the owner is
+# named for, which also catches a clone behind an SSH host alias. Builtins only, for the shims.
+customer_org() {
+  local host=$1 i
+  [[ ${host:0:4} == [sS][sS][hH]. ]] && host=${host:4}
+  load_customers
+  for (( i = 0; i < ${#C_KIND[@]}; i++ )); do
+    case ${C_KIND[i]} in
+      org) lower_eq "${C_ENTRY[i]}" "$host/$2" && return 0 ;;
+      host)
+        lower_eq "${C_ENTRY[i]}" "$host" && return 0
+        named_for "$2" "${C_ENTRY[i]}" && return 0
+        ;;
+      name) named_for "$2" "${C_ENTRY[i]}" && return 0 ;;
+    esac
+  done
   return 1
+}
+
+# ascii <text> [long] -> ASCII: Nordic and common accented letters spelled in ASCII, as folder names often are, so a
+# customer named Fjærvik matches fjaervik-app and fjærvik-app alike under the guard's C locale. The short spelling writes
+# ø and å as o and a, the long one as oe and aa; names are matched in both.
+ascii() {
+  local s=$1
+  # Finder stores names decomposed: compose the letters spelled two ways, then drop the other combining marks.
+  s=${s//a$'\xcc\x8a'/å}; s=${s//A$'\xcc\x8a'/Å}; s=${s//o$'\xcc\x88'/ö}; s=${s//O$'\xcc\x88'/Ö}
+  s=${s//a$'\xcc\x88'/ä}; s=${s//A$'\xcc\x88'/Ä}
+  s=${s//$'\xcc'?/}; s=${s//$'\xcd'?/}
+  s=${s//æ/ae}; s=${s//Æ/AE}; s=${s//ä/ae}; s=${s//Ä/AE}; s=${s//ü/u}; s=${s//Ü/U}; s=${s//ß/ss}; s=${s//þ/th}
+  s=${s//é/e}; s=${s//è/e}; s=${s//ê/e}; s=${s//É/E}; s=${s//á/a}; s=${s//à/a}; s=${s//â/a}; s=${s//Á/A}
+  s=${s//í/i}; s=${s//ì/i}; s=${s//Í/I}; s=${s//ó/o}; s=${s//ò/o}; s=${s//ô/o}; s=${s//Ó/O}; s=${s//ú/u}
+  s=${s//ù/u}; s=${s//Ú/U}; s=${s//ç/c}; s=${s//Ç/C}; s=${s//ñ/n}; s=${s//Ñ/N}; s=${s//ð/d}; s=${s//Ð/D}
+  if [[ -n ${2-} ]]; then
+    s=${s//ø/oe}; s=${s//Ø/OE}; s=${s//ö/oe}; s=${s//Ö/OE}; s=${s//å/aa}; s=${s//Å/AA}
+  else
+    s=${s//ø/o}; s=${s//Ø/O}; s=${s//ö/o}; s=${s//Ö/O}; s=${s//å/a}; s=${s//Å/A}
+  fi
+  ASCII=$s
+}
+
+# named_for <component> <name>: a folder name names a customer. A name of five or more letters and digits matches
+# anywhere in the component, ignoring case and punctuation; a shorter abbreviation must be a whole word of it, so
+# FVK marks fvk-portal but not fvkx.
+named_for() {
+  local spelling
+  for spelling in "" long; do
+    named_as "$1" "$2" "$spelling" && return 0
+  done
+  return 1
+}
+
+# named_as <component> <name> <spelling>: named_for in one ASCII spelling, applied to both sides.
+named_as() {
+  local comp name word short r=1 IFS=" "
+  ascii "$1" "$3"; comp=$ASCII
+  ascii "$2" "$3"; name=${ASCII//[^[:alnum:]]/}
+  [[ -n $name ]] || return 1
+  # Which rule applies is decided on the short spelling, so Mørk is an abbreviation in both.
+  ascii "$2"; short=${ASCII//[^[:alnum:]]/}
+  shopt -s nocasematch
+  if (( ${#short} >= 5 )); then
+    [[ ${comp//[^[:alnum:]]/} == *"$name"* ]] && r=0
+  else
+    set -f
+    for word in ${comp//[^[:alnum:]]/ }; do
+      [[ $word == "$name" ]] && r=0
+    done
+    set +f
+  fi
+  shopt -u nocasematch
+  return $r
+}
+
+# customer_dir <dir> [names]: at or below a directory listed in ~/.claude-customers, or, with a second argument,
+# below $HOME in a folder whose name names a listed customer or host. Names are checked only against a repository's own
+# location, never a subfolder a command runs in, and never outside $HOME, where Claude's scratch paths live.
+customer_dir() {
+  local d home rel comp i e
+  local -a comps=()
+  load_customers
+  (( ${#C_KIND[@]} )) || return 1
+  d=$(canon_loose "$1") || return 1
+  home=$(canon "$HOME") || home=$HOME
+  rel=""
+  if [[ -n ${2-} ]] && lower_eq "${d:0:${#home}+1}" "$home/"; then
+    rel=${d:${#home}+1}
+    set -f
+    IFS=/ read -r -a comps <<< "$rel"
+    set +f
+  fi
+  for (( i = 0; i < ${#C_KIND[@]}; i++ )); do
+    case ${C_KIND[i]} in
+      dir)
+        e=${C_DIR[i]}
+        [[ -n $e ]] || continue
+        { lower_eq "$d" "$e" || lower_eq "${d:0:${#e}+1}" "$e/"; } && return 0
+        ;;
+      name|host)
+        e=${C_ENTRY[i]}
+        for comp in ${comps[@]+"${comps[@]}"}; do
+          named_for "$comp" "$e" && return 0
+        done
+        # A dotted entry is a host and a name: its label before the TLD also names folders, so acme.no marks acme-portal.
+        if [[ ${C_KIND[i]} == host ]]; then
+          e=${e%.*}; e=${e##*.}
+          for comp in ${comps[@]+"${comps[@]}"}; do
+            named_for "$comp" "$e" && return 0
+          done
+        fi
+        ;;
+    esac
+  done
+  return 1
+}
+
+# customer_repo <dir> [git-dir]: the repository's own locations, its toplevel and its main worktree, which a linked
+# worktree or a --git-dir from elsewhere still writes to, sit in customer work; or <dir> is in a listed directory.
+customer_repo() {
+  local top common
+  customer_dir "$1" && return 0
+  # With --git-dir and no work tree, git reports the directory it runs in as the toplevel, so take it from the git dir.
+  if [[ -n ${2-} ]]; then
+    if [[ ${2##*/} == .git ]]; then
+      if [[ $2 == */* ]]; then top=${2%/*}; else top=.; fi
+      [[ $top == /* ]] || top=$1/$top
+    fi
+  else
+    top=$( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$1" rev-parse --show-toplevel 2>/dev/null )
+  fi
+  [[ -n $top ]] && customer_dir "$top" names && return 0
+  common=$( unset GIT_WORK_TREE; "$GIT" -C "$1" ${2:+"--git-dir=$2"} rev-parse --git-common-dir 2>/dev/null )
+  [[ -n $common ]] || return 1
+  [[ $common == /* ]] || common=$1/$common
+  [[ ${common##*/} == .git ]] && common=${common%/*}
+  customer_dir "$common" names
+}
+
+# has_customers: ~/.claude-customers lists at least one entry.
+has_customers() {
+  load_customers
+  (( ${#C_KIND[@]} ))
+}
+
+# unresolved_class -> CL: a target the guard cannot resolve could be a listed customer's, so it is customer while any
+# customer is listed, and the user's own otherwise.
+unresolved_class() {
+  if has_customers; then CL=customer; else CL=company; fi
+}
+
+# no_repo_class <dir> -> CL: a directory outside any repository is the user's own unless a customer directory, judged
+# by its path even before it exists. One the guard cannot resolve (a cd to a variable, cd -) could be a listed
+# customer's, so it fails closed, but only while any customer is listed.
+no_repo_class() {
+  if customer_dir "$1" names; then CL=customer
+  elif ! canon_loose "$1" >/dev/null; then unresolved_class
+  else CL=company
+  fi
 }
 
 # classify <host> <owner> <repo> -> CL
 classify() {
+  if customer_org "$1" "$2"; then
+    CL=customer
+    return
+  fi
   shopt -s nocasematch
-  if [[ $2 == uptimeconsulting ]] || company_org "$1" "$2"; then
+  if [[ $2 == uptimeconsulting ]]; then
     CL=company
   elif [[ $2 == andrelin && $1 == github.com ]]; then
     if [[ $3 == *uptime* ]]; then CL=company; else CL=personal; fi
   else
-    CL=customer
+    CL=company
   fi
   shopt -u nocasematch
 }
 
 url_class() {
-  if parse_url "$1"; then classify "$U_HOST" "$U_OWNER" "$U_REPO"; else CL=customer; fi
+  if parse_url "$1"; then classify "$U_HOST" "$U_OWNER" "$U_REPO"; else CL=company; fi
 }
 
 # url_class_at <url> <base-dir>: a remote URL, or a local path (file://, absolute, relative to base-dir).
@@ -224,7 +480,7 @@ url_class_at() {
     *) p=$u ;;
   esac
   [[ $p == /* ]] || p=$2/$p
-  if [[ -d $p ]]; then level_of_dir "$p"; else CL=customer; fi
+  if [[ -d $p ]]; then level_of_dir "$p"; else CL=company; fi
 }
 
 in_scratch() {
@@ -242,23 +498,30 @@ in_scratch() {
   return 1
 }
 
-# level_of_dir <dir> -> CL, LV_URL (origin, or empty), LV_REPO (1 when dir is in a repository).
+# level_of_dir <dir> -> CL, LV_URL (origin, or empty), LV_REPO (1 when dir is in a repository), LV_LISTED (1 when
+# a listed customer directory or name made it customer).
 level_of_dir() {
   local dir=$1 top url
-  LV_URL="" LV_REPO=0
-  if ! ( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$dir" rev-parse --absolute-git-dir >/dev/null 2>&1 ); then
-    CL=customer
+  LV_URL="" LV_REPO=0 LV_LISTED=0
+  ( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$dir" rev-parse --absolute-git-dir >/dev/null 2>&1 ) && LV_REPO=1
+  if (( ! LV_REPO )); then
+    no_repo_class "$dir"
+    [[ $CL == customer ]] && canon "$dir" >/dev/null && LV_LISTED=1
     return
   fi
-  LV_REPO=1
   url=$( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$dir" remote get-url origin 2>/dev/null )
+  LV_URL=$url
+  load_customers # here, not in the subshell below, where the parse would be lost
+  if ( unset GIT_DIR; customer_repo "$dir" ); then
+    CL=customer LV_LISTED=1
+    return
+  fi
   if [[ -n $url ]]; then
-    LV_URL=$url
     url_class "$url"
     return
   fi
   top=$( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$dir" rev-parse --show-toplevel 2>/dev/null )
-  if [[ -n $top ]] && in_scratch "$top"; then CL=personal; else CL=customer; fi
+  if [[ -n $top ]] && in_scratch "$top"; then CL=personal; else CL=company; fi
 }
 
 # --- the repository a git or platform call acts on -----------------------------------------------------------
@@ -296,7 +559,11 @@ origin_target() {
     bump personal "no origin remote" ""
     T_LEVEL+=(personal); T_HOST+=("")
   else
-    bump customer "no origin remote" ""
+    bump company "no origin remote" ""
+    T_LEVEL+=(company); T_HOST+=("")
+  fi
+  if customer_repo "$R_DIR" "${1:-${GIT_DIR-}}"; then
+    bump customer "a listed customer folder" ""
     T_LEVEL+=(customer); T_HOST+=("")
   fi
 }
@@ -372,14 +639,18 @@ push_target() {
   fi
   p=$t
   [[ $p == /* ]] || p=$R_DIR/$p
-  if [[ -d $p ]]; then
+  if [[ $t == *'$'* || $t == *'`'* ]]; then
+    unresolved_class
+    bump "$CL" "$t" "(an unexpanded target)"
+  elif [[ -d $p ]]; then
     level_of_dir "$p"
     bump "$CL" "$t" "$p"
   elif [[ $t == *:* || $t == */* ]]; then
     url_class "$t"
     bump "$CL" "$t" "$t"
   else
-    bump customer "$t" "(not a remote, directory or URL)"
+    unresolved_class
+    bump "$CL" "$t" "(not a remote, directory or URL)"
   fi
 }
 
@@ -450,7 +721,14 @@ check_git() {
   reset_worst
   T_LEVEL=() T_HOST=()
   if ! resolve_repo "$dir" "$gitdir"; then
-    bump customer "no git repository" ""
+    # A git dir the guard can't resolve, such as one holding $HOME, could be a listed customer's.
+    if [[ -n $gitdir || -n ${GIT_DIR-} ]]; then
+      unresolved_class
+      bump "$CL" "a git dir the guard cannot resolve" ""
+    else
+      level_of_dir "$dir"
+      bump "$CL" "no git repository" ""
+    fi
   else
     origin_target "$gitdir"
     [[ $sub == push ]] && push_targets "${rest[@]}"
@@ -493,7 +771,7 @@ repo_value_target() {
         host=$(platform_host "$tool")
         path=$v
       fi
-      if [[ $path == */* ]]; then classify "$host" "${path%%/*}" "${path##*/}"; else CL=customer; fi
+      if [[ $path == */* ]]; then classify "$host" "${path%%/*}" "${path##*/}"; else CL=company; fi
       ;;
   esac
   bump "$CL" "$3" "$v"
@@ -663,7 +941,18 @@ check_platform() {
         done <<< "$(rgit config --get-regexp '^remote\..*\.gh-resolved$')"
       fi
     else
-      bump customer "no git repository" ""
+      level_of_dir "$dir"
+      bump "$CL" "no git repository" ""
+      T_LEVEL+=("$CL"); T_HOST+=("")
+    fi
+  fi
+  if (( FLAG_USED && ! issue_create )); then
+    level_of_dir "$dir"
+    if (( LV_LISTED )); then
+      bump customer "a listed customer folder" ""
+      T_LEVEL+=(customer); T_HOST+=("")
+    elif (( ! LV_REPO )) && [[ $CL == customer ]]; then
+      bump customer "a directory the guard cannot resolve" ""
       T_LEVEL+=(customer); T_HOST+=("")
     fi
   fi
@@ -707,8 +996,9 @@ check_platform() {
           named_target "$host" "${id%%/*}" "${id##*/}" "endpoint" "${pos[1]}"
           ;;
         *)
-          bump customer "endpoint" "${pos[1]}"
-          T_LEVEL+=(customer); T_HOST+=("$host")
+          unresolved_class
+          bump "$CL" "endpoint" "${pos[1]}"
+          T_LEVEL+=("$CL"); T_HOST+=("$host")
           NAMED=1
           ;;
       esac
@@ -748,9 +1038,100 @@ check_az() {
   fi
   reset_worst
   T_LEVEL=() T_HOST=()
-  if resolve_repo "$dir" ""; then origin_target ""; else bump customer "no git repository" ""; fi
+  if resolve_repo "$dir" ""; then origin_target ""; else level_of_dir "$dir"; bump "$CL" "no git repository" ""; fi
   [[ $W_LEVEL != customer ]] && return 0
   deny "$dir" az "$@"
+  return 2
+}
+
+# --- fj --------------------------------------------------------------------------------------------------------
+
+# fj_read_allowed <word> <word>: the first two words of an fj call that only reads.
+fj_read_allowed() {
+  case "$1 $2" in
+    "whoami "* | "version "* | "completion "* | "auth list" | \
+    "issue search" | "issue view" | "issue browse" | "issue templates" | \
+    "pr search" | "pr view" | "pr status" | "pr browse" | "pr checkout" | \
+    "repo view" | "repo readme" | "repo clone" | "repo browse" | "repo star-status" | "repo watch-status" | \
+    "org list" | "org view" | "org members" | "user search" | "user view" | "user repos" | \
+    "release list" | "release view" | "tag list" | "tag view" | "actions tasks" | "wiki view" | "wiki list" | \
+    "milestone list" | "milestone view")
+      return 0 ;;
+  esac
+  return 1
+}
+
+# no_customer_remote <dir>: every remote of the repository at <dir> is personal or company work.
+no_customer_remote() {
+  local r url
+  for r in $( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$1" remote 2>/dev/null ); do
+    url=$( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$1" remote get-url "$r" 2>/dev/null )
+    url_class_at "$url" "$1"
+    [[ $CL == customer ]] && return 1
+  done
+  return 0
+}
+
+# check_fj <dir> [args...]: forgejo-cli. Anything but a known read is a write, judged by the worse of the directory it
+# runs in, the one -C names, every remote of the repository there, any of which fj can aim at, and the repo --repo
+# names. A positional owner/repo (fj repo delete) is not parsed.
+check_fj() {
+  local dir=$1 cwd=$1 a next="" host="" repo="" url
+  shift
+  local -a words=()
+  for a in "$@"; do
+    if [[ -n $next ]]; then
+      case $next in
+        cwd) resolve_cd "$dir" "$a"; cwd=${NEWDIR:-$UNKNOWN_DIR} ;;
+        host) host=$a ;;
+        repo) repo=$a ;;
+      esac
+      next=""
+      continue
+    fi
+    case $a in
+      -C | --cwd) next=cwd ;;
+      --cwd=* | -C?*)
+        a=${a#--cwd=}; a=${a#-C}; a=${a#=}
+        resolve_cd "$dir" "$a"; cwd=${NEWDIR:-$UNKNOWN_DIR}
+        ;;
+      -H | --host) next=host ;;
+      --host=*) host=${a#*=} ;;
+      -H?*) host=${a#-H}; host=${host#=} ;;
+      -r | --repo) next=repo ;;
+      --repo=*) repo=${a#*=} ;;
+      -r?*) repo=${a#-r}; repo=${repo#=} ;;
+      -R | --remote | --style) next=skip ;;
+      -*) ;;
+      *) words+=("$a") ;;
+    esac
+  done
+  (( ${#words[@]} )) || return 0
+  fj_read_allowed "${words[0]}" "${words[1]-}" && return 0
+  reset_worst
+  level_of_dir "$dir"
+  bump "$CL" "the directory fj runs in" ""
+  if [[ $cwd != "$dir" ]]; then
+    level_of_dir "$cwd"
+    bump "$CL" "the -C directory $cwd" ""
+  fi
+  no_customer_remote "$cwd" || bump customer "a customer remote" ""
+  # The repo --repo names, on the host -H names or else origin's.
+  if [[ $repo == */* ]]; then
+    if [[ -z $host ]]; then
+      url=$( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$cwd" remote get-url origin 2>/dev/null )
+      parse_url "$url" && host=$U_HOST
+    fi
+    host=$(host_only "$host")
+    if [[ -n $host ]]; then
+      classify "$host" "${repo%%/*}" "${repo##*/}"
+    else
+      unresolved_class
+    fi
+    bump "$CL" "the repo --repo names" ""
+  fi
+  [[ $W_LEVEL != customer ]] && return 0
+  deny "$dir" fj "$@"
   return 2
 }
 
@@ -761,6 +1142,7 @@ check_argv() {
     git) check_git "$dir" "$@" ;;
     gh|glab) check_platform "$dir" "$tool" "$@" ;;
     az) check_az "$dir" "$@" ;;
+    fj) check_fj "$dir" "$@" ;;
     *) return 0 ;;
   esac
 }
@@ -784,7 +1166,7 @@ deny() {
   seg=$prefix$(quote_words "$@")
   if [[ $dir == "$UNKNOWN_DIR" ]]; then qdir=$dir; else qdir=$(quote_words "$dir"); fi
   [[ -d "$HOME/.claude/shims" ]] && waive="$WAIVE_VAR=1 "
-  printf '%s\n' "Blocked by the work-context guard: $dir is a $W_LEVEL repository ($W_REMOTE${W_URL:+ $W_URL}), and \`$seg\` writes to its history or remote, or isn't on the guard's read allowlist; both belong to the user." \
+  printf '%s\n' "Blocked by the work-context guard: $dir is $W_LEVEL work ($W_REMOTE${W_URL:+ $W_URL}), and \`$seg\` writes to its history or remote, or isn't on the guard's read allowlist; both belong to the user." \
     "Prepare the working tree, then give the user the exact command to run:" \
     "\`! cd $qdir && $waive$seg\`. Rules: ~/.claude/CLAUDE.md § Work contexts." >&2
 }
@@ -812,8 +1194,9 @@ deny_reveal() {
 }
 
 deny_protected() {
-  if [[ ${1##*/} == "$COMPANY_ORGS" ]]; then
-    echo "Only the user edits ~/$COMPANY_ORGS: ask them to run \`! echo '<host>/<owner>' >> ~/$COMPANY_ORGS\`" >&2
+  if [[ ${1##*/} == "$CUSTOMERS" ]]; then
+    echo "Only the user edits ~/$CUSTOMERS: ask them to run \`! echo '<entry>' >> ~/$CUSTOMERS\`," \
+      "where the entry is one of a host/owner, a directory or a customer's name." >&2
   else
     echo "Only the user creates $MARKER: ask them to run \`! touch $1\`" >&2
   fi
@@ -866,7 +1249,7 @@ no_jq_path() {
   local input="" re
   IFS= read -r -d '' input
   [[ $input == *"$MARKER"* ]] && deny_jq "it names $MARKER"
-  [[ $input == *"$COMPANY_ORGS"* ]] && deny_jq "it names $COMPANY_ORGS"
+  [[ $input == *"$CUSTOMERS"* ]] && deny_jq "it names $CUSTOMERS"
   [[ $input == *"$WAIVE_VAR"* ]] && deny_jq "it names $WAIVE_VAR"
   re='"command"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)"'
   if [[ $input =~ $re ]]; then
@@ -879,7 +1262,7 @@ no_jq_path() {
   else
     exit 0
   fi
-  [[ $CMD =~ $TOOL_RE ]] && deny_jq "it runs git, gh, glab or az"
+  [[ $CMD =~ $TOOL_RE ]] && deny_jq "it runs git, gh, glab, az or fj"
   exit 0
 }
 
@@ -1004,8 +1387,25 @@ cd_target() {
   CD_TARGET=$1
 }
 
-# The issue marker and the company orgs file: each loosens the guard, so only the user writes them.
-basename_is_protected() { [[ ${1##*/} == "$MARKER" || ${1##*/} == "$COMPANY_ORGS" ]]; }
+# The issue marker and the customers file: each loosens the guard, so only the user writes them.
+# A word that is the name or a glob matching it, in any letter case, as macOS's file system ignores case.
+# With a second argument the word is a find -name pattern, which matches dotfiles whether or not it starts with a dot.
+basename_is_protected() {
+  local base=${1##*/} r=1 name
+  base=${base//[\"\']/}
+  # A glob or brace word only reaches a dotfile when it starts with a dot, as the protected files' names do.
+  [[ $base == .* || -n ${2-} ]] && base=${base//\{*\}/*}
+  # A pattern of wildcards alone names no file; find build -name '*' -delete is a cleanup.
+  [[ -n ${2-} && -z ${base//[*?]/} ]] && return 1
+  shopt -s nocasematch
+  for name in "$MARKER" "$CUSTOMERS"; do
+    [[ $base == "$name" ]] && r=0
+    # shellcheck disable=SC2053 # unquoted on purpose: a glob in the word matches the name it would expand to
+    [[ ( $base == .* || -n ${2-} ) && $name == $base ]] && r=0
+  done
+  shopt -u nocasematch
+  return $r
+}
 
 # normalise: strips wrappers and prefixes from WORDS, from the front. Sets NI (first real word), SEG_DIR,
 # WAIVER_SET, and trims trailing group closers.
@@ -1139,6 +1539,7 @@ redirect_op() {
     '&>'*) ROP='&>' ;;
     '>>'*) ROP='>>' ;;
     '>&'*) ROP='>&' ;;
+    '>|'*) ROP='>|' ;;
     '<&'*) ROP='<&' ;;
     '>'*) ROP='>' ;;
     '<'*) ROP='<' ;;
@@ -1150,7 +1551,7 @@ redirect_op() {
 
 # A protected file, written by a redirection or a file-writing command.
 check_protected_segment() {
-  local i w
+  local i j w
   for (( i = NI; i < NW; i++ )); do
     w=${WORDS[i]}
     if redirect_op "$w" && [[ $ROP == *'>'* ]]; then
@@ -1159,7 +1560,21 @@ check_protected_segment() {
     fi
   done
   case $FIRST in
-    touch|cp|mv|tee|install|ln|sed|perl|dd|truncate)
+    find)
+      # find only writes with -delete or -exec; a find that names the file to look for it is a read.
+      for (( i = NI + 1; i < NW; i++ )); do
+        case ${WORDS[i]} in -delete | -exec | -execdir | -ok | -okdir) ;; *) continue ;; esac
+        for (( j = NI + 1; j < NW; j++ )); do
+          basename_is_protected "${WORDS[j]}" && deny_protected "${WORDS[j]}"
+          case ${WORDS[j-1]} in
+            -name | -iname | -path | -ipath | -wholename | -iwholename)
+              basename_is_protected "${WORDS[j]}" pattern && deny_protected "${WORDS[j]}" ;;
+          esac
+        done
+        break
+      done
+      ;;
+    touch|cp|mv|tee|install|ln|sed|perl|dd|truncate|rm|unlink|chmod|chflags|xattr|shred|trash|srm|ed|ex)
       for (( i = NI + 1; i < NW; i++ )); do
         basename_is_protected "${WORDS[i]}" && deny_protected "${WORDS[i]}"
       done
@@ -1244,7 +1659,7 @@ run_check() {
   exit "$rc"
 }
 
-# guard_segment: a git, gh, glab or az call, with the segment's directory and environment.
+# guard_segment: a git, gh, glab, az or fj call, with the segment's directory and environment.
 guard_segment() {
   local tool=$FIRST dir=$SEG_DIR i w val
   local -a args=()
@@ -1364,9 +1779,11 @@ secret_relevant() {
 
 segment_relevant() {
   [[ $1 =~ $TOOL_RE ]] && return 0
+  [[ $1 =~ $DOT_GLOB_RE ]] && return 0
+  [[ $1 == *find* && $1 =~ -(delete|exec|execdir|ok|okdir)([[:space:]]|$) ]] && return 0
   case $1 in
     *cd*|*pushd*|*popd*|*export*|*unset*|*declare*|*typeset*|*readonly*|*'('*|*')'*) return 0 ;;
-    *"$MARKER"*|*"$COMPANY_ORGS"*|*"$WAIVE_VAR"*|*git-secret*) return 0 ;;
+    *"$MARKER"*|*"$CUSTOMERS"*|*"$WAIVE_VAR"*|*git-secret*|*[.][Cc][Ll][Aa][Uu][Dd][Ee]-*) return 0 ;;
   esac
   return 1
 }
@@ -1377,10 +1794,11 @@ process_command() {
   local -a seg_off=() seg_len=() dstack=() ib_text=() ib_off=() ib_done=()
   # Line by line, because bash 3.2's ${s//x/y} is quadratic in the number of matches: a 2000-line heredoc took
   # 90 seconds as one substitution. Within a line, separators become \001 in a copy of the same length, so offsets
-  # map back to the text; the & of a redirection (>&, &>, <&) is protected first.
+  # map back to the text; the & or | of a redirection (>&, &>, <&, >|) is protected first.
   local line lpos=0 lp llen
   while IFS= read -r line || [[ -n $line ]]; do
     s=${line//'>&'/'>_'}
+    s=${s//'>|'/'>_'}
     s=${s//'&>'/'_>'}
     s=${s//'<&'/'<_'}
     s=${s//[;|&]/$X1}
@@ -1507,7 +1925,7 @@ process_segment() {
         exit 2
       fi
       ;;
-    git|gh|glab|az)
+    git|gh|glab|az|fj)
       FORCE_WRITE=0
       if [[ $FIRST == gh || $FIRST == glab ]] && [[ ${ARGV[1]-} == api && ${ARGV[2]-} == graphql ]]; then
         # A multi-line query puts the mutation on a later line, past the separator split.
@@ -1559,12 +1977,27 @@ pre_tool_use() {
 
 # --- can-file-issue and session-start ------------------------------------------------------------------------
 
+# forgejo_host <host>: fj holds a login for the host, which makes it a Forgejo instance.
+forgejo_host() {
+  local h
+  command -v fj >/dev/null 2>&1 || return 1
+  while IFS= read -r h; do
+    lower_eq "$h" "$1" && return 0
+  done < <(fj auth list 2>/dev/null)
+  return 1
+}
+
 can_file_issue() {
   local dir=$1 url tool
   url=$( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$dir" remote get-url origin 2>/dev/null )
   if [[ -z $url ]] || ! parse_url "$url"; then echo none; return 0; fi
   if lower_eq "$U_HOST" github.com; then tool=gh
   elif is_gitlab_host "$U_HOST"; then tool=glab
+  elif forgejo_host "$U_HOST"; then
+    # fj's target isn't parsed, so no marker opens a customer's Forgejo: any customer remote means none.
+    level_of_dir "$dir"
+    if [[ $CL != customer ]] && no_customer_remote "$dir"; then echo fj; else echo none; fi
+    return 0
   else echo none; return 0
   fi
   if ( check_argv "$dir" "$tool" issue create ) 2>/dev/null; then echo "$tool"; else echo none; fi
@@ -1592,7 +2025,11 @@ session_start() {
   cwd=${cwd:-$PWD}
   blocked="Commits, pushes and platform writes are blocked here; draft them for the user."
   level_of_dir "$cwd"
-  if (( ! LV_REPO )); then
+  load_customers
+  if (( LV_LISTED )); then
+    text="Work context: customer (a listed customer folder${LV_URL:+, origin $LV_URL}), resolved by"
+    text+=" ~/.claude/hooks/work-context.sh. $blocked"
+  elif (( ! LV_REPO )); then
     text="Work context: no git repository at $cwd; resolve per repository before any git write."
   elif [[ -n $LV_URL ]]; then
     text="Work context: $CL (origin $LV_URL), resolved by ~/.claude/hooks/work-context.sh."
@@ -1605,6 +2042,13 @@ session_start() {
     text="Work context: $CL (no origin remote)."
     [[ $CL == customer ]] && text+=" $blocked"
   fi
+  if [[ ! -e $HOME/$CUSTOMERS ]]; then
+    text+=" No ~/$CUSTOMERS on this machine, so nothing here is treated as customer work."
+  elif [[ ! -r $HOME/$CUSTOMERS ]]; then
+    text+=" Note: ~/$CUSTOMERS can't be read, so it protects nothing; tell the user."
+  fi
+  (( C_NODIR )) && text+=" Note: $C_NODIR directory line(s) of ~/$CUSTOMERS name no existing folder (letter case counts on a case-sensitive file system) and protect nothing until it exists; tell the user."
+  (( C_UNREAD )) && text+=" Note: $C_UNREAD line(s) of ~/$CUSTOMERS are not understood and protect nothing; tell the user."
   printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$(json_string "$text")"
   # The Bash tool's PATH comes from a shell snapshot taken before CLAUDECODE is set, so source/ can't add the
   # shims; Claude Code sources CLAUDE_ENV_FILE before each Bash call instead.

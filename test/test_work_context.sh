@@ -32,6 +32,9 @@ export HOME="$root"
 # Only scratch/ is a scratch prefix, so fixtures beside it are not exempt from the no-origin rule.
 export WORK_CONTEXT_SCRATCH_DIRS="$root/scratch"
 mkdir -p "$root/scratch"
+# Customer work is only what ~/.claude-customers lists; these fixtures stand in for a customer on each host.
+printf '%s\n' '# example customers' github.com/example-client gitlab.com/example-client gitlab.example.com/example-client \
+  ghe.example.com/example-client dev.azure.com/example-client forgejo.example.com/example-client > "$HOME/.claude-customers"
 
 # The guard runs under Apple's bash 3.2 as a hook, so the tests run it the same way.
 function wc_run() { /bin/bash "$SCRIPT" "$@"; }
@@ -42,6 +45,21 @@ function mkrepo() {
   git -C "$1" init -q
   [[ -z "$2" ]] || git -C "$1" remote add origin "$2"
 }
+
+# push_customers [--off]: saves the customers file, which --off also removes; pop_customers restores the last save,
+# reset_customers copies it back and keeps it saved.
+customers_depth=0
+function push_customers() {
+  customers_depth=$((customers_depth + 1))
+  cp "$HOME/.claude-customers" "$HOME/customers.$customers_depth"
+  [[ ${1-} == --off ]] && rm "$HOME/.claude-customers"
+  return 0
+}
+function pop_customers() {
+  mv "$HOME/customers.$customers_depth" "$HOME/.claude-customers"
+  customers_depth=$((customers_depth - 1))
+}
+function reset_customers() { cp "$HOME/customers.$customers_depth" "$HOME/.claude-customers"; }
 
 PERSONAL_URL=git@github.com:andrelin/dotfiles.git
 CUSTOMER_URL=git@github.com:example-client/x.git
@@ -72,9 +90,10 @@ https://github.com/uptimeconsulting/x|company
 git@gitlab.com:example-client/group/sub/repo.git|customer
 https://dev.azure.com/example-client/proj/_git/repo|customer
 git@ssh.dev.azure.com:v3/example-client/p/r|customer
-git@gitlab.com:andrelin/x.git|customer
+git@gitlab.com:andrelin/x.git|company
 git@gitlab.com:uptimeconsulting/x.git|company
-not a url|customer
+not a url|company
+git@github.com:some-oss-owner/x.git|company
 git@github.com:Andrelin/dotfiles.git|personal
 https://github.com/UptimeConsulting/x|company
 https://gitlab.example.com/uptimeconsulting/sub/x.git|company
@@ -82,38 +101,52 @@ https://andrelin@github.com/andrelin/x.git|personal
 EOF
 
 mkdir -p "$root/not-a-repo"
-assert "$(wc_run level "$root/not-a-repo")" "customer" "a directory outside any repo"
+assert "$(wc_run level "$root/not-a-repo")" "company" "a directory outside any repo"
+mkdir -p "$root/custtree/sub"; mkrepo "$root/custtree/corepo" "$COMPANY_URL"
+printf '%s\n' '  ~/custtree   # a customer tree' >> "$HOME/.claude-customers"
+assert "$(wc_run level "$root/custtree/sub")" "customer" "a non-repo directory below a listed customer directory"
+assert "$(wc_run level "$root/custtree/corepo")" "customer" "a company-origin repo below a customer directory"
+assert "$(wc_run level "$root/not-a-repo")" "company" "a non-repo directory outside the listed ones"
 mkrepo "$root/scratch/noorigin"
 assert "$(wc_run level "$root/scratch/noorigin")" "personal" "a no-origin repo under a scratch prefix"
 mkrepo "$root/noorigin"
-assert "$(wc_run level "$root/noorigin")" "customer" "a no-origin repo beside the scratch prefix"
+assert "$(wc_run level "$root/noorigin")" "company" "a no-origin repo beside the scratch prefix"
 mkrepo "$root/scratchy/noorigin"
-assert "$(wc_run level "$root/scratchy/noorigin")" "customer" "a sibling sharing the scratch prefix's name"
+assert "$(wc_run level "$root/scratchy/noorigin")" "company" "a sibling sharing the scratch prefix's name"
 assert "$(cd "$P" && wc_run level)" "personal" "level defaults to the working directory"
 
-e_header "level: the user's company orgs file"
+e_header "level: the user's customers file"
 
-# An owner listed in ~/.claude-company-orgs is company work, on that host only. The file is the user's, untracked,
-# so an acquired client's name never reaches this public repo.
+# Owners listed in ~/.claude-customers are customer work, on that host only; an unlisted owner is the user's own.
+push_customers
 printf '%s\n' '# acquired' 'dev.azure.com/Example-Acquired' '  gitlab.example.com/acq-group   # its GitLab' \
-  '# dev.azure.com/commented-out' '' > "$HOME/.claude-company-orgs"
+  '# dev.azure.com/commented-out' '' >> "$HOME/.claude-customers"
 n=0
 while IFS='|' read -r url expected; do
   n=$((n + 1))
   mkrepo "$root/orgs/$n" "$url"
   assert "$(wc_run level "$root/orgs/$n")" "$expected" "listed: $url"
 done <<'EOF'
-https://dev.azure.com/example-acquired/proj/_git/repo|company
-https://example-acquired@dev.azure.com/example-acquired/proj/_git/repo|company
-git@ssh.dev.azure.com:v3/example-acquired/p/r|company
-https://gitlab.example.com/acq-group/x.git|company
-git@github.com:example-acquired/x.git|customer
-https://dev.azure.com/example-client/proj/_git/repo|customer
-https://dev.azure.com/commented-out/p/_git/r|customer
-https://dev.azure.com/example-acquired-two/p/_git/r|customer
+https://dev.azure.com/example-acquired/proj/_git/repo|customer
+https://example-acquired@dev.azure.com/example-acquired/proj/_git/repo|customer
+git@ssh.dev.azure.com:v3/example-acquired/p/r|customer
+https://gitlab.example.com/acq-group/x.git|customer
+git@github.com:example-acquired/x.git|company
+https://dev.azure.com/commented-out/p/_git/r|company
+https://dev.azure.com/example-acquired-two/p/_git/r|company
 EOF
-rm "$HOME/.claude-company-orgs"
-assert "$(wc_run level "$root/orgs/1")" "customer" "without the file, a listed owner is customer again"
+
+# A name or abbreviation marks every folder below $HOME named for the customer, whatever the repo's origin.
+printf '%s\n' 'Fjordvik Kraftlag' 'FVK' 'Ærøby' >> "$HOME/.claude-customers"
+mkdir -p "$root/work/fjordvik-kraftlag-api" "$root/work/FVK_portal/sub" "$root/work/fvkx" "$root/work/myfvk"
+mkrepo "$root/work/fvk-app" "$COMPANY_URL"
+assert "$(wc_run level "$root/work/fjordvik-kraftlag-api")" "customer" "a folder containing a listed name"
+assert "$(wc_run level "$root/work/FVK_portal/sub")" "customer" "below a folder with the abbreviation as a word"
+assert "$(wc_run level "$root/work/fvk-app")" "customer" "a company-origin repo in a folder named for a customer"
+assert "$(wc_run level "$root/work/fvkx")" "company" "an abbreviation inside a longer word"
+assert "$(wc_run level "$root/work/myfvk")" "company" "an abbreviation ending a longer word"
+pop_customers
+assert "$(wc_run level "$root/orgs/1")" "company" "unlisted again, the owner is the user's own"
 
 # --- check-argv ----------------------------------------------------------------------------------------------
 
@@ -284,6 +317,9 @@ expect_bash 2 "$P" "env -C $C git push"
 expect_bash 2 "$P" "git -C $C push"
 expect_bash 2 "$P" "cd $C && git commit -m x"
 expect_bash 2 "$P" 'cd "$UNSET_X" && git commit -m x'
+push_customers --off
+expect_bash 0 "$P" 'cd "$UNSET_X" && git commit -m x'
+pop_customers
 expect_bash 2 "$P" "cd - && git push"
 expect_bash 2 "$P" "gh pr create -R example-client/x"
 expect_bash 2 "$P" "GH_REPO=example-client/x gh pr create"
@@ -468,6 +504,20 @@ assert "$(wc_run can-file-issue "$PFORK")" none "a personal fork of a customer r
 assert "$(wc_run can-file-issue "$MNO")" none "no origin"
 assert "$(wc_run can-file-issue "$root/not-a-repo")" none "not a repository"
 
+# A stub fj with a login for forgejo.example.com, so only that host counts as Forgejo.
+mkdir -p "$root/fjbin"
+printf '#!/bin/sh\n[ "$1 $2" = "auth list" ] && echo forgejo.example.com\n' > "$root/fjbin/fj"
+chmod +x "$root/fjbin/fj"
+FJ="$root/fj-co"; mkrepo "$FJ" git@forgejo.example.com:uptimeconsulting/x.git
+FJC="$root/fj-cust"; mkrepo "$FJC" git@forgejo.example.com:example-client/x.git
+FJUP="$root/fj-coup"; mkrepo "$FJUP" git@forgejo.example.com:uptimeconsulting/x.git
+git -C "$FJUP" remote add upstream "$CUSTOMER_URL"
+FJX="$root/fj-other"; mkrepo "$FJX" git@git.example.org:uptimeconsulting/x.git
+assert "$(PATH="$root/fjbin:$PATH" wc_run can-file-issue "$FJ")" fj "company on a Forgejo host fj is logged in to"
+assert "$(PATH="$root/fjbin:$PATH" wc_run can-file-issue "$FJC")" none "customer on Forgejo"
+assert "$(PATH="$root/fjbin:$PATH" wc_run can-file-issue "$FJUP")" none "company on Forgejo with a customer upstream"
+assert "$(PATH="$root/fjbin:$PATH" wc_run can-file-issue "$FJX")" none "company on a host fj has no login for"
+
 # --- session-start -------------------------------------------------------------------------------------------
 
 e_header "session-start"
@@ -485,7 +535,7 @@ function mentions() {
   echo "${out:-none}"
 }
 assert "$(mentions "$(session_context "$C")")" "blocked " "customer"
-assert "$(mentions "$(session_context "$root/noorigin")")" "blocked " "no origin outside scratch"
+assert "$(mentions "$(session_context "$root/noorigin")")" "none" "no origin outside scratch"
 assert "$(mentions "$(session_context "$P")")" "none" "personal"
 assert "$(mentions "$(session_context "$CO")")" "none" "company"
 assert "$(mentions "$(session_context "$COUP")")" "none" "company with a customer upstream"
@@ -517,7 +567,7 @@ rmdir "$HOME/.claude/shims"
 e_header "deny message"
 
 deny="$(printf '%s' "$(bash_json "$C" "git push")" | wc_run pre-tool-use 2>&1 >/dev/null)"
-[[ "$deny" == *"$C is a customer repository"* ]] && e_success "names the directory and level" ||
+[[ "$deny" == *"$C is customer work"* ]] && e_success "names the directory and level" ||
   e_error "names the directory and level: $deny"
 [[ "$deny" == *"! cd $C && git push"* ]] && e_success "offers the plain command" ||
   e_error "offers the plain command: $deny"
@@ -562,31 +612,411 @@ elapsed=$(( (${EPOCHREALTIME/./} - ${start/./}) / 1000 ))
 assert "$rc" 0 "a 5 MB Write passes"
 (( elapsed < 2000 )) && e_success "in under 2 seconds (${elapsed} ms)" || e_error "in under 2 seconds (${elapsed} ms)"
 
-# --- company orgs guard -------------------------------------------------------------------------------------
+# --- customers file guard -----------------------------------------------------------------------------------
 
-e_header "company orgs guard"
+e_header "customers file guard"
 
-# The file upgrades a customer repo to company, so only the user writes it, as with the marker.
-orgs="$HOME/.claude-company-orgs"
-assert "$(hook_rc "$(file_json Write file_path "$orgs")")" 2 "Write of the orgs file"
-assert "$(hook_rc "$(file_json Edit file_path "$orgs" new_string x)")" 2 "Edit of the orgs file"
-assert "$(hook_rc "$(file_json Write file_path "$root/t/company-orgs")")" 0 "Write of a file merely like it"
-expect_bash 2 "$P" "echo dev.azure.com/example-client >> $orgs"
-expect_bash 2 "$P" "printf x >\"$orgs\""
-expect_bash 2 "$P" "tee -a $orgs < /dev/null"
-expect_bash 2 "$P" "sed -i '' 1d $orgs"
-expect_bash 2 "$P" "cp /dev/null $orgs"
-expect_bash 0 "$P" "cat $orgs"
-deny="$(printf '%s' "$(file_json Write file_path "$orgs")" | wc_run pre-tool-use 2>&1 >/dev/null)"
-[[ "$deny" == *'! echo'*'>> '* ]] && e_success "the denial gives the user the command" ||
+# Removing a line from the customers file loosens the guard, so only the user writes it too.
+custs="$HOME/.claude-customers"
+assert "$(hook_rc "$(file_json Write file_path "$custs")")" 2 "Write of the customers file"
+assert "$(hook_rc "$(file_json Edit file_path "$custs" new_string x)")" 2 "Edit of the customers file"
+assert "$(hook_rc "$(file_json Write file_path "$root/t/customers")")" 0 "Write of a file merely like it"
+expect_bash 2 "$P" "echo github.com/example-client >> $custs"
+expect_bash 2 "$P" "printf x >\"$custs\""
+expect_bash 2 "$P" "tee -a $custs < /dev/null"
+expect_bash 2 "$P" "cp /dev/null $custs"
+expect_bash 2 "$P" "sed -i '' 1d $custs"
+expect_bash 2 "$P" "rm $custs"
+expect_bash 2 "$P" "rm -f $custs"
+expect_bash 2 "$P" "unlink $custs"
+expect_bash 2 "$P" "chmod 000 $custs"
+expect_bash 2 "$P" "trash $custs"
+expect_bash 2 "$P" "srm $custs"
+expect_bash 2 "$P" "ed $custs"
+expect_bash 2 "$P" "ex $custs"
+expect_bash 2 "$P" "echo x >| $custs"
+expect_bash 2 "$P" "echo x 1>|$custs"
+expect_bash 2 "$P" "find $root -maxdepth 1 -name .claude-customers -exec rm {} \\;"
+deny="$(printf '%s' "$(file_json Write file_path "$custs")" | wc_run pre-tool-use 2>&1 >/dev/null)"
+[[ "$deny" == *'! echo'*'>> ~/.claude-customers'* ]] && e_success "the denial gives the user the command" ||
   e_error "the denial gives the user the command: $deny"
-assert "$(nojq_hook "$(file_json Write file_path "$orgs")" 2>/dev/null; echo $?)" 2 "without jq, an orgs-file write blocks"
+expect_bash 0 "$P" "cat $custs"
+assert "$(nojq_hook "$(file_json Write file_path "$custs")" 2>/dev/null; echo $?)" 2 "without jq, a customers-file write blocks"
 
-# A listed customer repo is company to check-argv too, which the shims call.
-printf '%s\n' 'dev.azure.com/example-acquired' > "$orgs"
-expect_argv 0 "$root/orgs/1" git push
-rm "$orgs"
+# A listed customer repo is customer to check-argv too, which the shims call.
+push_customers
+printf '%s\n' 'dev.azure.com/example-acquired' >> "$HOME/.claude-customers"
 expect_argv 2 "$root/orgs/1" git push
+pop_customers
+expect_argv 0 "$root/orgs/1" git push
+
+# --- customers file: entry forms and repository locations ---------------------------------------------------
+
+e_header "customers file: entry forms and repository locations"
+
+push_customers
+mkdir -p "$root/abs-cust/sub" "$root/clients/rel-x/sub" "$root/home-cust/sub" "$root/web#2/sub"
+mkrepo "$root/ssh-azure" "git@ssh.dev.azure.com:v3/example-sshco/p/r"
+mkrepo "$root/ssh-url" "https://dev.azure.com/example-sshurl/p/_git/r"
+mkrepo "$root/url-cust" "git@github.com:example-urlco/x.git"
+mkrepo "$root/gitat-cust" "git@github.com:example-gitatco/x.git"
+mkrepo "$root/uptime-listed" "git@github.com:uptimeconsulting/listed.git"
+# shellcheck disable=SC2088 # entries as the user writes them, for the guard to expand
+printf '%s\n' "$root/abs-cust" 'clients/rel-x   # relative to HOME' '$HOME/home-cust' 'ssh.dev.azure.com/example-sshco' \
+  'https://github.com/example-urlco' 'git@github.com:example-gitatco.git' '~/web#2' 'github.com/uptimeconsulting' \
+  'git@ssh.dev.azure.com:v3/example-sshurl/p/r' \
+  >> "$HOME/.claude-customers"
+assert "$(wc_run level "$root/abs-cust/sub")" "customer" "an absolute directory entry"
+assert "$(wc_run level "$root/clients/rel-x/sub")" "customer" "a path entry without a dot is relative to HOME"
+assert "$(wc_run level "$root/home-cust/sub")" "customer" "a \$HOME directory entry"
+assert "$(wc_run level "$root/ssh-azure")" "customer" "an ssh. host entry"
+assert "$(wc_run level "$root/ssh-url")" "customer" "an Azure DevOps SSH URL entry, v3 skipped"
+assert "$(wc_run level "$root/url-cust")" "customer" "an https URL entry"
+assert "$(wc_run level "$root/gitat-cust")" "customer" "a git@ URL entry"
+assert "$(wc_run level "$root/web#2/sub")" "customer" "a # inside an entry is not a comment"
+assert "$(wc_run level "$root/uptime-listed")" "customer" "a listed owner wins over the company org"
+reset_customers
+
+printf '%s\n' 'Fjordvik Kraftlag' 'FVK' 'Ærøby' >> "$HOME/.claude-customers"
+
+# A repo is customer by its own location, however a command reaches it.
+mkdir -p "$root/norepo-home"
+CREPO="$root/custtree/repo"; mkrepo "$CREPO" "$COMPANY_URL"
+REAL_GIT=$(type -ap git | grep -v '/shims/' | head -n 1)
+"$REAL_GIT" -C "$CREPO" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m init
+"$REAL_GIT" -C "$CREPO" worktree add -q "$root/outside-wt"
+[[ -e "$root/outside-wt/.git" ]] && e_success "the outside worktree exists" || e_error "the outside worktree exists"
+mkdir -p "$root/plain"
+expect_bash 2 "$CREPO" "git push"
+expect_bash 2 "$CREPO" "gh pr create"
+expect_bash 2 "$root/plain" "git --git-dir=$CREPO/.git commit -m x"
+expect_bash 2 "$root/plain" "GIT_DIR=$CREPO/.git git commit -m x"
+assert "$(wc_run level "$root/outside-wt")" "customer" "a linked worktree outside the customer tree"
+expect_argv 2 "$root/outside-wt" git commit -m x
+mkrepo "$root/work/fvk-gh" "$COMPANY_URL"
+expect_bash 2 "$root/work/fvk-gh" "git push"
+mkrepo "$root/mine/lib/fvk" "$COMPANY_URL"; rm -rf "$root/mine/lib/fvk/.git"; mkrepo "$root/mine" "$COMPANY_URL"
+assert "$(wc_run level "$root/mine/lib/fvk")" "company" "a name on a subfolder inside a company repo"
+
+# Names only mark folders below HOME: a scratch path outside it never becomes customer.
+OUT="$(mktemp -d)"; mkrepo "$OUT/-Users-x-src-fjordvik-kraftlag-app/scratchpad/r"
+assert "$(wc_run level "$OUT/-Users-x-src-fjordvik-kraftlag-app/scratchpad/r")" "company" "a name outside HOME"
+rm -rf "$OUT"
+
+# Nordic letters match with or without their ASCII spelling.
+mkdir -p "$root/work/ærøby-app" "$root/work/aeroby-tools" "$root/work/b-tools"
+assert "$(wc_run level "$root/work/ærøby-app")" "customer" "a name with æ and ø"
+assert "$(wc_run level "$root/work/aeroby-tools")" "customer" "the ASCII spelling of a Nordic name"
+assert "$(wc_run level "$root/work/b-tools")" "company" "a Nordic name does not shrink to a stray letter"
+
+# Forgejo issue filing respects listed folders.
+FJCUST="$root/custtree/fj"; mkrepo "$FJCUST" git@forgejo.example.com:uptimeconsulting/x.git
+FJNAMED="$root/work/fvk-fj"; mkrepo "$FJNAMED" git@forgejo.example.com:uptimeconsulting/x.git
+assert "$(PATH="$root/fjbin:$PATH" wc_run can-file-issue "$FJCUST")" none "Forgejo in a listed customer directory"
+assert "$(PATH="$root/fjbin:$PATH" wc_run can-file-issue "$FJNAMED")" none "Forgejo in a folder named for a customer"
+
+# fj: anything but a known read is a write, judged by the directory it runs in.
+expect_bash 2 "$C" "fj issue create x --body y"
+expect_bash 2 "$C" "fj pr create x"
+expect_bash 2 "$P" "fj -C $C issue comment 1 x"
+expect_bash 0 "$C" "fj issue view 1"
+expect_bash 0 "$C" "fj -H forgejo.example.com issue search x"
+expect_bash 0 "$CO" "fj pr create x"
+expect_argv 2 "$C" fj issue create x
+
+# A lone ~ lists the whole home directory; a remote that is a missing local path is the user's own.
+push_customers; printf '%s\n' '~' >> "$HOME/.claude-customers"
+assert "$(wc_run level "$root/norepo-home")" "customer" "a lone ~ entry"
+pop_customers
+mkrepo "$root/localorigin" "../no-such-dir"
+assert "$(wc_run level "$root/localorigin")" "company" "an origin that is a missing local path"
+
+# Targets the guard cannot resolve fail closed only while a customer is listed.
+mkdir -p "$root/norepo"
+expect_bash 2 "$P" 'git push "$UNSET_R" main'
+expect_bash 2 "$P" "cd - && git push"
+push_customers --off
+expect_bash 0 "$P" 'git push "$UNSET_R" main'
+expect_bash 0 "$P" "cd - && git push"
+expect_bash 0 "$root/norepo" "gh pr create"
+expect_bash 0 "$root/norepo" "az repos pr create"
+expect_bash 0 "$P" "gh pr create -R foo"
+assert "$(wc_run level "$root/norepo")" "company" "a non-repo folder with no customers file"
+printf '%s\n' '# only comments' '   ' > "$HOME/.claude-customers"
+expect_bash 0 "$P" 'cd "$UNSET_X" && git commit -m x'
+pop_customers
+pop_customers
+
+# --- customers file: URL forms, case, boundaries and fj -------------------------------------------------------
+
+e_header "customers file: URL forms, case, boundaries and fj"
+
+push_customers
+# shellcheck disable=SC2088 # entries as the user writes them, for the guard to expand
+printf '%s\n' 'ssh://git@forgejo.example.com:2222/example-port/x.git' 'forgejo@code.example.com:example-scp/r.git' \
+  'host.example.org' '${HOME}/brace-cust' '~/trail-cust/' '~other' '"$HOME/quoted-cust"' '.work/hidden-cust' \
+  '~/MixedCase' 'Sundstrøm' 'Åsen' 'Abcd' 'Abcde' 'FVK' >> "$HOME/.claude-customers"
+mkrepo "$root/port-cust" "https://forgejo.example.com/example-port/x.git"
+mkrepo "$root/scp-cust" "ssh://forgejo@code.example.com:22/example-scp/r.git"
+mkrepo "$root/host-cust" "git@host.example.org:anyone/x.git"
+mkdir -p "$root/brace-cust/s" "$root/trail-cust/s" "$root/quoted-cust/s" "$root/.work/hidden-cust/s" "$root/mixedcase/s" \
+  "$root/work/sundstroem-app" "$root/work/aasen-api" "$root/work/xabcdx" "$root/work/xabcdex"
+assert "$(wc_run level "$root/port-cust")" "customer" "a URL entry with a port"
+assert "$(wc_run level "$root/scp-cust")" "customer" "an scp entry with a user other than git"
+assert "$(wc_run level "$root/host-cust")" "customer" "a bare host covers every owner"
+assert "$(wc_run level "$root/brace-cust/s")" "customer" "a \${HOME} entry"
+assert "$(wc_run level "$root/trail-cust/s")" "customer" "a directory entry with a trailing slash"
+assert "$(wc_run level "$root/quoted-cust/s")" "customer" "a quoted entry"
+assert "$(wc_run level "$root/.work/hidden-cust/s")" "customer" "a relative path under a hidden folder"
+assert "$(wc_run level "$root/mixedcase/s")" "customer" "a directory entry in another letter case"
+assert "$(wc_run level "$root/work/sundstroem-app")" "customer" "ø spelled oe"
+assert "$(wc_run level "$root/work/aasen-api")" "customer" "å spelled aa"
+assert "$(wc_run level "$root/work/xabcdx")" "company" "a four-letter name inside a word"
+assert "$(wc_run level "$root/work/xabcdex")" "customer" "a five-letter name inside a word"
+
+# Session start names a listed folder.
+assert "$(mentions "$(session_context "$root/brace-cust/s")")" "blocked " "session start in a listed folder"
+[[ "$(session_context "$root/brace-cust/s")" == *"a listed customer folder"* ]] && e_success "session start says why" ||
+  e_error "session start says why"
+
+# A listed directory that is a subfolder of an unlisted repo counts where a command runs in it.
+mkrepo "$root/outer" "$COMPANY_URL"; mkdir -p "$root/outer/clientdir"
+printf '%s\n' "$root/outer/clientdir" >> "$HOME/.claude-customers"
+expect_bash 2 "$root/outer/clientdir" "git commit -m x"
+expect_bash 0 "$root/outer" "git commit -m x"
+
+# A name on a subfolder of a company repo does not make commands there customer work.
+mkrepo "$root/site" "$COMPANY_URL"; mkdir -p "$root/site/docs/fvk-case"
+expect_bash 0 "$root/site/docs/fvk-case" "git commit -m x"
+
+# Protected-file variants.
+expect_bash 2 "$P" "chflags uchg ~/.claude-customers"
+expect_bash 2 "$P" "xattr -c ~/.claude-customers"
+expect_bash 2 "$P" "rm ~/.claude-cust*"
+expect_bash 2 "$P" "find ~ -maxdepth 1 -name .claude-customers -delete"
+expect_bash 2 "$P" "shred -u ~/.claude-customers"
+assert "$(hook_rc "$(file_json Write file_path "$HOME/.Claude-Customers")")" 2 "Write of the file in another letter case"
+
+# fj: option forms and relative -C, and the no-jq fallback.
+expect_bash 2 "$P" "fj --cwd $C issue create x"
+expect_bash 2 "$P" "fj --cwd=$C issue create x"
+expect_bash 2 "$P" "fj -C$C issue create x"
+expect_bash 2 "$C" "fj -C $P issue create x"
+expect_bash 2 "$root" "cd customer && fj -C . issue create x"
+expect_bash 0 "$C" "fj -R origin issue view 1"
+expect_bash 0 "$C" "fj"
+assert "$(nojq_hook "$(bash_json "$P" "fj issue create x")" 2>/dev/null; echo $?)" 2 "without jq, an fj call blocks"
+
+# An unexpanded push target is unresolved; glab's numeric project endpoint passes when nobody is listed.
+expect_bash 2 "$P" 'git push "$DIR/repo" main'
+push_customers --off
+expect_bash 0 "$P" "glab api -X POST projects/123/issues"
+pop_customers
+pop_customers
+
+# --- customers file: repo flags, remotes and owners -----------------------------------------------------------
+
+e_header "customers file: repo flags, remotes, owners and globs"
+
+push_customers
+printf '%s\n' 'Fjordvik Kraftlag' 'FVK' 'Ærøby' 'Havbris.example' '~someone' >> "$HOME/.claude-customers"
+
+# A repo flag or variable from inside a listed folder is still customer work.
+FLAGREPO="$root/work/fvk-flags"; mkrepo "$FLAGREPO" "git@github.com:somebody/portal.git"
+expect_bash 2 "$FLAGREPO" "gh pr merge 5 -R somebody/portal"
+expect_bash 2 "$FLAGREPO" "GH_REPO=somebody/portal gh pr merge 5"
+expect_bash 2 "$FLAGREPO" "glab mr merge 5 -R somebody/portal"
+# And from a directory the guard can't resolve, which could be a listed one.
+expect_bash 2 "$P" 'cd "$UNSET_X" && gh pr merge 5 -R somebody/portal'
+expect_bash 2 "$P" "cd - && gh pr merge 5 -R somebody/portal"
+
+# A userless scp-style entry names its owner, not its repo.
+printf '%s\n' 'github.com:scp-owner/app.git' >> "$HOME/.claude-customers"
+mkrepo "$root/scp/owner" "git@github.com:scp-owner/other.git"
+mkrepo "$root/scp/repo" "git@github.com:app/x.git"
+assert "$(wc_run level "$root/scp/owner")" "customer" "a userless scp entry covers its owner"
+assert "$(wc_run level "$root/scp/repo")" "company" "and not an owner named like its repo"
+# A port after the host is a port, never an owner.
+printf '%s\n' 'git.portco.example:2222' 'git.portteam.example:2222/team-p' >> "$HOME/.claude-customers"
+mkrepo "$root/port/host" "ssh://git@git.portco.example:2222/anyone/app.git"
+mkrepo "$root/port/team" "ssh://git@git.portteam.example:2222/team-p/app.git"
+mkrepo "$root/port/other" "ssh://git@git.portteam.example:2222/other/app.git"
+assert "$(wc_run level "$root/port/host")" "customer" "host:port is the whole host"
+assert "$(wc_run level "$root/port/team")" "customer" "host:port/owner is that owner"
+assert "$(wc_run level "$root/port/other")" "company" "and not another owner on the host"
+
+# fj --repo is judged on the -H host, or else origin's.
+expect_bash 2 "$P" "fj -H forgejo.example.com issue create x --repo example-client/r"
+expect_bash 2 "$P" "fj -H https://forgejo.example.com issue close 3 --repo=example-client/r"
+expect_bash 0 "$P" "fj -H forgejo.example.com issue create x --repo someone/r"
+# An fj -C or push target the guard can't resolve could be a listed customer's.
+expect_bash 2 "$P" 'fj -C "$UNSET_F" issue create x'
+expect_bash 2 "$P" 'fj --cwd="$UNSET_F" issue create x'
+expect_bash 2 "$P" 'git push https://github.com/`echo example-client`/x main'
+
+# A bare or separate git dir in a named folder, from a folder that isn't customer work.
+"$REAL_GIT" init -q --bare "$root/work/fvk.git"
+expect_bash 2 "$root/plain" "git --git-dir=$root/work/fvk.git push"
+
+# Accented names, single-quoted entries and a bare $HOME.
+printf '%s\n' 'Médica' "'~/sq-cust'" >> "$HOME/.claude-customers"
+mkdir -p "$root/work/medica-app" "$root/sq-cust/s"
+assert "$(wc_run level "$root/work/medica-app")" "customer" "an accented name matches its ASCII spelling"
+assert "$(wc_run level "$root/sq-cust/s")" "customer" "a single-quoted entry"
+for h in '$HOME' '${HOME}'; do
+  push_customers
+  printf '%s\n' "$h" >> "$HOME/.claude-customers"
+  assert "$(wc_run level "$root/not-a-repo")" "customer" "a bare $h entry covers all of HOME"
+  pop_customers
+done
+
+# An unreadable customers file is reported; root reads it anyway, so the case needs another user.
+if (( EUID != 0 )); then
+  chmod 000 "$HOME/.claude-customers"
+  ctx=$(session_context "$P")
+  chmod 644 "$HOME/.claude-customers"
+  [[ "$ctx" == *"can't be read"* ]] && e_success "session start reports an unreadable file" ||
+    e_error "session start reports an unreadable file: $ctx"
+fi
+
+# The customers file in another letter case, and a find pattern that reaches it without a leading dot.
+expect_bash 2 "$P" "rm ~/.Claude-Customers"
+expect_bash 2 "$P" "unlink $HOME/.CLAUDE-CUSTOMERS"
+expect_bash 2 "$P" "find ~ -maxdepth 1 -name '*customers' -delete"
+expect_bash 0 "$P" "find build -name '*' -delete"
+expect_bash 0 "$P" "find build -name '*.log' -delete"
+
+# A git dir the guard can't expand could be a listed customer's.
+mkrepo "$root/work/fvk-gd" "$COMPANY_URL"
+expect_bash 2 "$P" 'GIT_DIR=$HOME/work/fvk-gd/.git git commit -m x'
+expect_bash 2 "$P" 'git --git-dir=~/work/fvk-gd/.git commit -m x'
+
+# A literal path that doesn't exist yet is judged by its path, so a new scratch repo can commit in one call.
+expect_bash 0 "$root/scratch" "mkdir -p $root/scratch/new1 && cd $root/scratch/new1 && git init -q && git commit -m x"
+expect_bash 2 "$root/scratch" "mkdir -p $root/work/fvk-new && cd $root/work/fvk-new && git init -q && git commit -m x"
+
+# Attached short fj options, and a -H host with a user.
+expect_bash 2 "$P" "fj -Hforgejo.example.com issue create x --repo example-client/r"
+expect_bash 2 "$P" "fj -H=forgejo.example.com issue create x --repo example-client/r"
+expect_bash 2 "$P" "fj -H forgejo.example.com pr create x -rexample-client/r"
+expect_bash 2 "$P" "fj -H forgejo.example.com pr create x -r=example-client/r"
+expect_bash 2 "$P" "fj -H git@forgejo.example.com issue create x --repo example-client/r"
+# --repo with no host to judge it on.
+mkdir -p "$root/nohost"
+expect_bash 2 "$root/nohost" "fj issue create x --repo example-client/r"
+
+# A dotted entry in any letter case is a host and a name.
+printf '%s\n' 'Git.Kystlag.example' 'st.olav' >> "$HOME/.claude-customers"
+mkrepo "$root/dotted/host" "git@git.kystlag.example:anyone/x.git"
+mkrepo "$root/dotted/owner" "git@github.com:stolav-hf/app.git"
+mkdir -p "$root/work/kystlag-portal"
+assert "$(wc_run level "$root/dotted/host")" "customer" "a capitalised dotted entry covers its host"
+assert "$(wc_run level "$root/work/kystlag-portal")" "customer" "and marks folders named for its label"
+assert "$(wc_run level "$root/dotted/owner")" "customer" "a lowercase dotted entry marks owners named for it"
+
+# A directory entry naming no existing folder is reported.
+# shellcheck disable=SC2088 # an entry as the user writes it, for the guard to expand
+printf '%s\n' '~/no-such-tree' >> "$HOME/.claude-customers"
+ctx=$(session_context "$P")
+[[ "$ctx" == *"name no existing folder"* ]] && e_success "session start reports a directory entry that doesn't exist" ||
+  e_error "session start reports a directory entry that doesn't exist: $ctx"
+
+mkrepo "$root/fjorigin" "git@forgejo.example.com:someone/x.git"
+expect_bash 2 "$root/fjorigin" "fj issue create x --repo example-client/r"
+expect_bash 0 "$root/fjorigin" "fj issue create x --repo someone/r"
+
+# On a case-insensitive file system, a folder reached in another letter case is still below HOME.
+mkdir -p "$root/work/fvk-norepo"
+UPROOT=$(printf '%s' "$root" | tr '[:lower:]' '[:upper:]')
+if [[ -d "$UPROOT/work/fvk-norepo" ]]; then
+  assert "$(wc_run level "$UPROOT/work/fvk-norepo")" "customer" "a named folder reached in another letter case"
+fi
+
+# fj is judged by every remote, not only origin.
+FJFORK="$root/fjfork"; mkrepo "$FJFORK" "$COMPANY_URL"
+git -C "$FJFORK" remote add upstream git@forgejo.example.com:example-client/x.git
+expect_bash 2 "$FJFORK" "fj -R upstream issue create x"
+expect_bash 2 "$FJFORK" "fj pr create x"
+
+# A linked worktree named for a customer, its main repo not.
+MAINR="$root/plainmain"; mkrepo "$MAINR" "$COMPANY_URL"
+"$REAL_GIT" -C "$MAINR" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m init
+"$REAL_GIT" -C "$MAINR" worktree add -q "$root/work/fvk-wt"
+expect_argv 2 "$root/work/fvk-wt" git commit -m x
+# Its own location counts however the git dir is given, from a folder that isn't customer work.
+expect_bash 2 "$root/plain" "GIT_DIR=$root/work/fvk-wt/.git git push"
+expect_bash 2 "$root/plain" "git --git-dir=$root/work/fvk-wt/.git commit -m x"
+
+# fj -C resolves against the directory the command runs in, and judges the remotes there.
+expect_bash 2 "$root" "fj -C customer issue create x"
+expect_bash 2 "$root" "fj --cwd=customer issue create x"
+expect_bash 0 "$root" "fj -C personal issue create x"
+expect_bash 2 "$P" "fj -C $FJFORK issue create x"
+expect_bash 0 "$root/plain" 'fj -C $HOME/personal issue create x'
+expect_bash 0 "$root/plain" 'fj -C ${HOME}/personal issue create x'
+expect_bash 0 "$C" "fj --style fancy issue view 1"
+
+# A name also matches a remote's owner: a clone outside HOME, or behind an SSH host alias.
+OUT2="$(mktemp -d)"; mkrepo "$OUT2/clone" "git@github.com:fvk/app.git"
+assert "$(wc_run level "$OUT2/clone")" "customer" "a name matching the remote's owner, outside HOME"
+rm -rf "$OUT2"
+mkrepo "$root/aliased" "git@github-fvk:fvk/app.git"
+assert "$(wc_run level "$root/aliased")" "customer" "a clone behind an SSH host alias"
+
+# A dotted brand name is a name, not a host.
+mkdir -p "$root/work/havbris-example-app"
+assert "$(wc_run level "$root/work/havbris-example-app")" "customer" "a dotted brand name marks folders"
+printf '%s\n' 'stormkast.example' 'ssh.git.example.net' >> "$HOME/.claude-customers"
+mkdir -p "$root/work/stormkast-app"; mkrepo "$root/sshhost" "git@git.example.net:anyone/x.git"
+assert "$(wc_run level "$root/work/stormkast-app")" "customer" "a host entry marks folders named for its label before the TLD"
+assert "$(wc_run level "$root/sshhost")" "customer" "a bare host entry with ssh. covers the host"
+
+# A folder name stored decomposed, as Finder writes it.
+NFD="$root/work/$(printf 'A\xcc\x8asen-app')"; mkdir -p "$NFD"
+printf '%s\n' 'Åsen' >> "$HOME/.claude-customers"
+assert "$(wc_run level "$NFD")" "customer" "a decomposed folder name"
+printf '%s\n' "$(printf 'Ha\xcc\x8aland')" 'Mørk' >> "$HOME/.claude-customers"
+mkdir -p "$root/work/haaland-app" "$root/work/moerkeroed" "$root/work/moerk-app"
+assert "$(wc_run level "$root/work/haaland-app")" "customer" "a decomposed entry in its long spelling"
+assert "$(wc_run level "$root/work/moerkeroed")" "company" "a short name stays an abbreviation in its long spelling"
+assert "$(wc_run level "$root/work/moerk-app")" "customer" "and matches as a whole word"
+
+# Session start reports lines it cannot read.
+ctx=$(session_context "$P")
+[[ "$ctx" == *"not understood"* ]] && e_success "session start reports unread lines" ||
+  e_error "session start reports unread lines: $ctx"
+
+# Globs: a dotfile glob or brace reaching the customers file blocks; ordinary globs and finds do not.
+expect_bash 2 "$P" "rm ~/.c*"
+expect_bash 2 "$P" "mv ~/.claude-{customers,x} /tmp"
+expect_bash 2 "$P" "perl -e 'unlink \"$HOME/.claude-customers\"'"
+expect_bash 0 "$P" "chmod +x .git/hooks/*"
+expect_bash 0 "$P" "rm -rf build/*"
+expect_bash 0 "$P" "find . ( -path '*/objects/*' ) -prune -o -type d -print"
+expect_bash 0 "$P" "find ~ -name .claude-customers"
+
+# fj -C with a tilde resolves to HOME, reaching the listed tree.
+expect_bash 2 "$P" "fj -C ~/custtree/sub issue create x"
+
+# A listed folder without a repo blocks gh and az; a bare-word push target is unresolved.
+mkdir -p "$root/custtree/norepo"
+expect_bash 2 "$root/custtree/norepo" "gh pr create"
+expect_bash 2 "$root/custtree/norepo" "az repos pr create"
+expect_bash 2 "$P" "git push nosuchremote main"
+push_customers --off
+expect_bash 0 "$P" "git push nosuchremote main"
+ctx=$(session_context "$P")
+[[ "$ctx" == *"nothing here is treated as customer work"* ]] && e_success "session start says no customers are listed" ||
+  e_error "session start says no customers are listed: $ctx"
+pop_customers
+[[ "$(session_context "$P")" != *"nothing here is treated"* ]] && e_success "and says nothing once they are" ||
+  e_error "and says nothing once they are"
+
+# The old company orgs file is no longer read.
+printf '%s\n' github.com/example-client > "$HOME/.claude-company-orgs"
+assert "$(wc_run level "$C")" "customer" "a leftover company orgs file changes nothing"
+rm "$HOME/.claude-company-orgs"
+pop_customers
 
 # --- waiver guard --------------------------------------------------------------------------------------------
 

@@ -9,10 +9,12 @@ legal name belongs, otherwise Uptime or Uptime Consulting; `uptimeconsulting` is
 
 ## Work contexts — who reads what you commit
 
-Resolve from `git remote get-url origin`, first match wins, never from the directory path; both unknowns resolve upward,
-so an unreadable remote is **customer** (an origin-less repo in a temp directory is **personal**) and undeterminable visibility is **public**.
-Company org or an owner listed in `~/.claude-company-orgs` → **company**; another owner → **customer**; the personal account
-with `uptime` in the repo name (case-insensitive) → **company**; otherwise **personal**, split by `gh repo view --json visibility`.
+**Customer** is what the machine-local `~/.claude-customers` lists: a `<host>/<owner>`, a whole host, a directory and
+its tree, or a name or abbreviation, which marks every folder and remote owner named for it; while it lists anything,
+a target the guard can't resolve is customer too.
+Otherwise resolve from `git remote get-url origin`: the personal account → **personal**, split by
+`gh repo view --json visibility` (undeterminable is **public**), or **company** with `uptime` in the repo name
+(case-insensitive); an origin-less repo in a temp directory → **personal**; anything else → **company**.
 
 | Level | Bar on what you commit | History and remote |
 | --- | --- | --- |

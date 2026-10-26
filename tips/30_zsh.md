@@ -45,6 +45,7 @@ Aliases and/or tab-completion for one specific CLI. Skip the rows whose tool you
 | [brew](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/brew) | Completions only — `brew`, `brew cask`, `brew services`. |
 | [docker](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/docker) | Completions + `dbl` (build), `drm` (rm), `drmi` (rmi), `dst` (stats). |
 | [docker-compose](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/docker-compose) | `dco` (compose), `dcup`/`dcupd` (up / up -d), `dcdn` (down), `dcl`/`dclf` (logs / logs -f), `dcb` (build), `dce` (exec), `dcps` (ps), `dcrun` (run). |
+| [fj](../link/.omz-custom/plugins/fj/fj.plugin.zsh) | Completions only — pulled from `fj completion zsh` and cached; a local plugin modelled on `gh`'s. |
 | [gh](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/gh) | Completions only — pulled from `gh completion -s zsh` and cached. Pairs with Tip 12.1. |
 | [git](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git) | Massive alias set. Daily drivers: `gst`, `gco`, `gcm` (checkout main), `gcb` (checkout -b), `gp`, `gl`, `gca`, `glola` (pretty graph log). |
 | [git-extras](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git-extras) | Completions for [git-extras](https://github.com/tj/git-extras) commands (`git delete-branch`, `git changelog`, `git ignore`, …). |

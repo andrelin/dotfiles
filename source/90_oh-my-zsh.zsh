@@ -10,6 +10,7 @@ plugins=(
     docker-compose
     encode64
     extract
+    fj          # Forgejo CLI completion, from $ZSH_CUSTOM/plugins
     gh
     git
     git-extras

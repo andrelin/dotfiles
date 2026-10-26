@@ -45,6 +45,7 @@ unset java_latest
 recipes_optional=(
   actionlint
   bats-core
+  forgejo-cli # fj, the Forgejo CLI
   gh
   glab
   k9s         # Kubernetes terminal UI

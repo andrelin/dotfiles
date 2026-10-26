@@ -27,7 +27,7 @@ A customer repo being private makes the reader smaller, not the care looser.
     the TLD marks folders too (`acme.no` marks `acme-portal`); `host:port` is read as the host;
   - a directory: `/…`, `~`, `~/…`, `$HOME/…`, or a slash path whose first part has no dot or starts with one
     (`.work/acme`), taken from `$HOME`. Its whole tree is customer work whatever its repos' origins, matched in any
-    letter case where the file system ignores case; session start reports one naming no existing folder;
+    letter case; session start reports one naming no existing folder as written;
   - a bare name or abbreviation, which marks every folder below `$HOME` named for it, and every remote whose owner is
     named for it — wherever the clone sits, and behind an SSH host alias such as `git@github-acme:acme/app.git`.
 - **A line the guard can't read protects nothing,** such as `~someone`; session start counts such lines and says so,

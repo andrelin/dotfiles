@@ -59,9 +59,10 @@ shims="$root/claude/shims"
 mkdir -p "$shims"
 ln -s "$CHECKOUT/claude/hooks" "$root/claude/hooks"
 for t in git gh glab az fj; do ln -s "$SHIM" "$shims/$t"; done
-# Every tool the guard checks has its committed link, read from the index so a Windows checkout counts too.
+# Every tool the guard checks has its committed link, read from the index so a Windows checkout counts too. HOME has
+# moved, so a CI container's safe.directory, set in the global config, is given again.
 for t in git gh glab az fj; do
-  mode="$("$real_git" -C "$CHECKOUT" ls-files -s -- "claude/shims/$t")"
+  mode="$("$real_git" -c safe.directory="$CHECKOUT" -C "$CHECKOUT" ls-files -s -- "claude/shims/$t")"
   assert "${mode%% *}" 120000 "claude/shims/$t is a committed link"
 done
 

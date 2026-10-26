@@ -264,7 +264,7 @@ customer_org_entry() {
 }
 
 # load_customers -> C_KIND, C_ENTRY, C_DIR (a dir entry's canonical path, or empty), C_UNREAD (lines it can't read),
-# C_NODIR (dir entries naming no existing folder): ~/.claude-customers, parsed once per run.
+# C_NODIR (dir entries naming no folder as written): ~/.claude-customers, parsed once per run.
 load_customers() {
   local line rc nc=0 i=0
   (( C_LOADED )) && return 0
@@ -278,7 +278,8 @@ load_customers() {
     if (( rc == 0 )); then
       C_KIND[i]=$ENTRY_KIND C_ENTRY[i]=$ENTRY C_DIR[i]=""
       if [[ $ENTRY_KIND == dir ]]; then
-        C_DIR[i]=$(canon "$ENTRY") || C_NODIR=$((C_NODIR + 1))
+        # One not found as written, as in another letter case on Linux, still matches by its path in any case.
+        C_DIR[i]=$(canon "$ENTRY") || { C_NODIR=$((C_NODIR + 1)); C_DIR[i]=$(canon_loose "$ENTRY"); }
       fi
       i=$((i + 1))
     elif (( rc == 2 )); then
@@ -2047,7 +2048,7 @@ session_start() {
   elif [[ ! -r $HOME/$CUSTOMERS ]]; then
     text+=" Note: ~/$CUSTOMERS can't be read, so it protects nothing; tell the user."
   fi
-  (( C_NODIR )) && text+=" Note: $C_NODIR directory line(s) of ~/$CUSTOMERS name no existing folder (letter case counts on a case-sensitive file system) and protect nothing until it exists; tell the user."
+  (( C_NODIR )) && text+=" Note: $C_NODIR directory line(s) of ~/$CUSTOMERS name no existing folder as written; they match by path in any letter case, but check their spelling; tell the user."
   (( C_UNREAD )) && text+=" Note: $C_UNREAD line(s) of ~/$CUSTOMERS are not understood and protect nothing; tell the user."
   printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$(json_string "$text")"
   # The Bash tool's PATH comes from a shell snapshot taken before CLAUDECODE is set, so source/ can't add the

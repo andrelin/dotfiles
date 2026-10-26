@@ -918,7 +918,7 @@ assert "$(wc_run level "$root/dotted/owner")" "customer" "a lowercase dotted ent
 # shellcheck disable=SC2088 # an entry as the user writes it, for the guard to expand
 printf '%s\n' '~/no-such-tree' >> "$HOME/.claude-customers"
 ctx=$(session_context "$P")
-[[ "$ctx" == *"name no existing folder"* ]] && e_success "session start reports a directory entry that doesn't exist" ||
+[[ "$ctx" == *"name no existing folder as written"* ]] && e_success "session start reports a directory entry that doesn't exist" ||
   e_error "session start reports a directory entry that doesn't exist: $ctx"
 
 mkrepo "$root/fjorigin" "git@forgejo.example.com:someone/x.git"

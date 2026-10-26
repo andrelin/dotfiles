@@ -6,7 +6,7 @@ description: Read before writing, filing or drafting an issue or ticket for any 
 # Writing issues
 
 One piece of work becomes an issue, a follow-up tracker item, or both, through a short interview.
-Every `gh` and `glab` command form, the target rule and what to do when a call fails: `~/.claude/docs/issue-commands.md`,
+Every `gh`, `glab` and `fj` command form, the target rule and what to do when a call fails: `~/.claude/docs/issue-commands.md`,
 read before the first search.
 
 ## Two questions, decided first
@@ -57,8 +57,7 @@ A rule per group of repos, defaulting by level:
 
 | Level and host | Home | Who files |
 | --- | --- | --- |
-| personal (the personal account, bar `uptime` repos) | that repo's GitHub issues | Claude, `gh issue create` |
-| company, on `github.com` or a GitLab host | that repo's issues | Claude, with the tool `can-file-issue` prints |
+| personal or company, on any host `can-file-issue` maps (GitHub, GitLab, a Forgejo `fj` is logged in to) | that repo's issues | Claude, with the tool `can-file-issue` prints |
 | company elsewhere | that repo's `## Issues` section; none → ask | the user, from Claude's draft |
 | customer | the `## Issues` section; none → ask | the user, from Claude's draft — unless a marker lets the guard allow it |
 
@@ -81,13 +80,13 @@ A rule per group of repos, defaulting by level:
 
 - **No section at customer level:** ask, and write the user's answer into one so the next issue doesn't ask.
   The customer-tree root is the user's answer, never inferred; `$HOME`, or a directory that is, or whose direct
-  subdirectories are, a repo whose origin names another owner, is refused and asked again.
+  subdirectories are, a repo `work-context.sh level` doesn't report as customer, is refused and asked again.
 - **No section at company level:** ask, then print the section for the user to add to the repo's `CLAUDE.md` in a
   change of their own; Claude never writes it.
 - **Where a section says Claude files through `gh` or `glab`,** on `github.com` or a host whose name contains `gitlab`,
   ask the user to run `! touch <tree>/.claude-files-issues` once; below it the guard allows `issue create` to each repo's
-  own issues. On any other host (GitHub Enterprise, Azure DevOps, a self-hosted GitLab without `gitlab` in its
-  hostname) say the marker won't help, and draft.
+  own issues. On any other host (Forgejo, GitHub Enterprise, Azure DevOps, a self-hosted GitLab without `gitlab` in
+  its hostname) say the marker won't help, and draft.
   A tracker shared across repos stays draft-and-paste — a deliberate limit until a project needs more.
 - **Jira, the first time one appears:** its section is set up as above — written at customer level, printed at company
   level — and the issue drafted for pasting. Filing through a Jira connector is out of scope: the guard sees Bash only.

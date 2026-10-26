@@ -49,6 +49,8 @@ function mkrepo() {
 
 P="$root/personal";  mkrepo "$P" git@github.com:andrelin/dotfiles.git
 C="$root/customer";  mkrepo "$C" git@github.com:example-client/x.git
+# Customer work is only what the customers file lists.
+printf '%s\n' github.com/example-client > "$HOME/.claude-customers"
 S="$root/scratch/s"; mkrepo "$S"
 
 # The shim dir is built here rather than using the committed symlinks, which a Windows checkout turns into text
@@ -56,7 +58,12 @@ S="$root/scratch/s"; mkrepo "$S"
 shims="$root/claude/shims"
 mkdir -p "$shims"
 ln -s "$CHECKOUT/claude/hooks" "$root/claude/hooks"
-for t in git gh glab az; do ln -s "$SHIM" "$shims/$t"; done
+for t in git gh glab az fj; do ln -s "$SHIM" "$shims/$t"; done
+# Every tool the guard checks has its committed link, read from the index so a Windows checkout counts too.
+for t in git gh glab az fj; do
+  mode="$("$real_git" -C "$CHECKOUT" ls-files -s -- "claude/shims/$t")"
+  assert "${mode%% *}" 120000 "claude/shims/$t is a committed link"
+done
 
 # Stubs stand in for the real tools, so a test sees whether the shim reached them and with what.
 stubs="$root/stubs"
@@ -71,7 +78,11 @@ cat >"$stubs/gh" <<'EOF'
 [ -z "$GH_STUB_DIR" ] || cd "$GH_STUB_DIR" || exit
 git push
 EOF
-chmod +x "$stubs/git" "$stubs/gh"
+cat >"$stubs/fj" <<'EOF'
+#!/bin/sh
+echo "real fj $*"
+EOF
+chmod +x "$stubs/git" "$stubs/gh" "$stubs/fj"
 
 # The guard's own remote lookups use real git; the shim's exec reaches the stub.
 export WORK_CONTEXT_GIT="$real_git"
@@ -106,7 +117,7 @@ assert "$rc" 2 "customer: git push exits 2"
 assert "$out" "" "customer: git push never reaches git"
 
 err="$(shim_call "$C" "$TEST_PATH" git push 2>&1 >/dev/null)"
-assert "${err/*customer repository*/found}" found "customer: git push prints the guard's deny message"
+assert "${err/*is customer work*/found}" found "customer: git push prints the guard's deny message"
 
 out="$(through "$C" "$TEST_PATH" git log)"; rc=$?
 assert "$out" "real git log" "customer: git log reaches git"
@@ -114,6 +125,14 @@ assert "$rc" 0 "customer: git log exits 0"
 
 out="$(through "$P" "$TEST_PATH" git push)"
 assert "$out" "real git push" "personal: git push reaches git"
+
+out="$(through "$C" "$TEST_PATH" fj issue create x)"; rc=$?
+assert "$rc" 2 "customer: fj issue create exits 2"
+assert "$out" "" "customer: fj issue create never reaches fj"
+out="$(through "$C" "$TEST_PATH" fj issue view 1)"
+assert "$out" "real fj issue view 1" "customer: fj issue view reaches fj"
+out="$(through "$P" "$TEST_PATH" fj issue create x)"
+assert "$out" "real fj issue create x" "personal: fj issue create reaches fj"
 
 out="$(through "$P" "$TEST_PATH" git -C "$C" push)"; rc=$?
 assert "$rc" 2 "personal cwd: git -C <customer> push exits 2"

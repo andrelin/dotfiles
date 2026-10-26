@@ -13,7 +13,8 @@ These are this user's conventions, not a plugin's plan format: where `superpower
 
 - **A change whose diff fits in one sentence needs no plan:** say so and offer to just make it.
 - **Given an issue** (`/writing-plans <issue>`), read it first: `owner/repo#n` with `gh issue view <n> -R <owner/repo>`,
-  a number in the current repo or a URL as is, `glab issue view` likewise; a Jira key, ask the user to paste it.
+  a number in the current repo or a URL as is, `glab issue view` likewise; a Forgejo URL as
+  `fj -H <host> issue view <owner>/<repo>#<n>`; a Jira key, ask the user to paste it.
   A follow-up tracker item by its heading text, matching only when it equals a heading with the ref, status badge,
   branch and `(issue to file)` stripped, exactly; or by a ref (`B2.3`), resolved to its heading at once, since refs
   are reassigned. The plan records the heading; none matching, or more than one, → ask which.

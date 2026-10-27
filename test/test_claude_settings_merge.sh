@@ -132,10 +132,11 @@ keys_rule="Read(/$dots/link/.ssh/keys/**)"
 
 echo '{}' > "$settings"
 harden
-assert "$(jq '.permissions.deny | length' "$settings")" "18" "{} gains the eighteen deny rules"
+assert "$(jq '.permissions.deny | length' "$settings")" "19" "{} gains the nineteen deny rules"
 # The ~/ anchor is what makes the Edit rule reach a marker above the repo; a bare or **/ path would not.
 assert "$(deny_has 'Edit(~/**/.claude-files-issues)')" "yes" "the marker Edit rule is anchored at ~/"
 assert "$(deny_has 'Bash(touch *.claude-files-issues*)')" "yes" "the marker touch rule is added verbatim"
+assert "$(deny_has 'Edit(~/.claude-customers)')" "yes" "the customers file Edit rule is added"
 assert "$(deny_has 'Read(~/.ssh/id_*)')" "yes" "a credential Read rule is added"
 assert "$(jq -r "$instruction_files" "$settings")" "claude-md-and-agents-md" "instructionFiles is set when absent"
 assert "$(deny_has 'Read(~/.ssh/config_private)')" "yes" "the revealed git-secret ssh config is denied"
@@ -157,7 +158,7 @@ assert "$(jq '[.permissions.deny[] | select(contains("'"$HOME"'"))] | length' "$
 echo '{}' > "$settings"
 out="$(env -u DOTFILES "$SCRIPT" hardening "$settings" 2>&1)" && rc=0 || rc=$?
 assert "$rc" "0" "without DOTFILES hardening still succeeds"
-assert "$(jq '.permissions.deny | length' "$settings")" "17" "without DOTFILES the other rules still merge"
+assert "$(jq '.permissions.deny | length' "$settings")" "18" "without DOTFILES the other rules still merge"
 assert "$(jq '[.permissions.deny[] | select(contains("link/.ssh/keys"))] | length' "$settings")" "0" \
   "without DOTFILES no checkout rule is written"
 assert "${out/*DOTFILES*/found}" "found" "without DOTFILES it says the checkout rule was skipped"
@@ -170,7 +171,7 @@ printf '{"permissions":{"allow":["Bash(ls *)"],"deny":["Bash(rm -rf *)","Edit(~/
 harden
 harden
 assert "$(deny_has 'Bash(rm -rf *)')" "yes" "an existing deny entry is kept"
-assert "$(jq '.permissions.deny | length' "$settings")" "19" "two runs over an overlapping list duplicate nothing"
+assert "$(jq '.permissions.deny | length' "$settings")" "20" "two runs over an overlapping list duplicate nothing"
 assert "$(jq -c '.permissions.allow' "$settings")" '["Bash(ls *)"]' "the allow list is untouched"
 
 printf '{"pluginConfigs":{"cc-plugin-agents-md@builtin":{"options":{"instructionFiles":"claude-md-or-agents-md","x":1}}}}\n' > "$settings"
@@ -182,7 +183,7 @@ rm -f "$settings"
 mv "$HOME/.claude/hooks/work-context.sh" "$workdir/guard"
 harden && rc=0 || rc=$?
 assert "$rc" "0" "hardening runs without the guard script, since it registers no hook"
-assert "$(jq '.permissions.deny | length' "$settings")" "18" "hardening creates a missing file"
+assert "$(jq '.permissions.deny | length' "$settings")" "19" "hardening creates a missing file"
 mv "$workdir/guard" "$HOME/.claude/hooks/work-context.sh"
 
 printf '{"permissions": \n' > "$settings"

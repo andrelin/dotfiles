@@ -58,13 +58,16 @@ S="$root/scratch/s"; mkrepo "$S"
 shims="$root/claude/shims"
 mkdir -p "$shims"
 ln -s "$CHECKOUT/claude/hooks" "$root/claude/hooks"
-for t in git gh glab az fj; do ln -s "$SHIM" "$shims/$t"; done
+for t in git gh glab az; do ln -s "$SHIM" "$shims/$t"; done
 # Every tool the guard checks has its committed link, read from the index so a Windows checkout counts too. HOME has
 # moved, so a CI container's safe.directory, set in the global config, is given again.
-for t in git gh glab az fj; do
+for t in git gh glab az; do
   mode="$("$real_git" -c safe.directory="$CHECKOUT" -C "$CHECKOUT" ls-files -s -- "claude/shims/$t")"
   assert "${mode%% *}" 120000 "claude/shims/$t is a committed link"
 done
+# fj is unguarded until a customer uses Forgejo, so it has no shim.
+[[ ! -e "$CHECKOUT/claude/shims/fj" && ! -L "$CHECKOUT/claude/shims/fj" ]] && e_success "no fj shim" ||
+  e_error "no fj shim: claude/shims/fj exists"
 
 # Stubs stand in for the real tools, so a test sees whether the shim reached them and with what.
 stubs="$root/stubs"
@@ -79,11 +82,7 @@ cat >"$stubs/gh" <<'EOF'
 [ -z "$GH_STUB_DIR" ] || cd "$GH_STUB_DIR" || exit
 git push
 EOF
-cat >"$stubs/fj" <<'EOF'
-#!/bin/sh
-echo "real fj $*"
-EOF
-chmod +x "$stubs/git" "$stubs/gh" "$stubs/fj"
+chmod +x "$stubs/git" "$stubs/gh"
 
 # The guard's own remote lookups use real git; the shim's exec reaches the stub.
 export WORK_CONTEXT_GIT="$real_git"
@@ -126,14 +125,6 @@ assert "$rc" 0 "customer: git log exits 0"
 
 out="$(through "$P" "$TEST_PATH" git push)"
 assert "$out" "real git push" "personal: git push reaches git"
-
-out="$(through "$C" "$TEST_PATH" fj issue create x)"; rc=$?
-assert "$rc" 2 "customer: fj issue create exits 2"
-assert "$out" "" "customer: fj issue create never reaches fj"
-out="$(through "$C" "$TEST_PATH" fj issue view 1)"
-assert "$out" "real fj issue view 1" "customer: fj issue view reaches fj"
-out="$(through "$P" "$TEST_PATH" fj issue create x)"
-assert "$out" "real fj issue create x" "personal: fj issue create reaches fj"
 
 out="$(through "$P" "$TEST_PATH" git -C "$C" push)"; rc=$?
 assert "$rc" 2 "personal cwd: git -C <customer> push exits 2"

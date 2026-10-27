@@ -58,8 +58,8 @@ The `_macos_` marker means it is not selected by default on Linux or WSL, where 
   on row 2.
 - `claude/hooks/` → `~/.claude/hooks/` — hook scripts; `work-context.sh` blocks Claude's commits, pushes and platform
   writes on customer work, which is only what `~/.claude-customers` lists — write it on each machine with customer work,
-  one `host/owner`, directory or customer name per line (syntax: `claude/docs/work-contexts.md`) — and names the context at session start.
-- `claude/shims/` → `~/.claude/shims/` — `git`, `gh`, `glab`, `az` and `fj` shims, first on `PATH` in Claude Code only, so the
+  one `host/owner`, directory or customer name per line (syntax: `claude/docs/customers-file.md`) — and names the context at session start (Tip 24.6).
+- `claude/shims/` → `~/.claude/shims/` — `git`, `gh`, `glab` and `az` shims, first on `PATH` in Claude Code only, so the
   guard sees aliases, functions and scripts too; waive it once with `! WORK_CONTEXT_WAIVE=1 git push` at the prompt.
 
 Only these entries are linked; machine-local state (`projects/`, `sessions/`, `history.jsonl`) stays untouched,
@@ -93,7 +93,7 @@ every other key and every other hook alone.
 
 ```sh
 claude-settings-merge hooks ~/.claude/settings.json       # register the work-context guard
-claude-settings-merge hardening ~/.claude/settings.json   # credential, rc-file and marker deny rules; load AGENTS.md
+claude-settings-merge hardening ~/.claude/settings.json   # credential, rc-file, marker and customers-file deny rules; load AGENTS.md
 ```
 
 Both are safe to repeat, `hardening` never overrides an `instructionFiles` you set, and `dotfiles` runs both.

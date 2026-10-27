@@ -43,7 +43,8 @@ the one running, and step 6 remembers your last selection.
   that after a push to a default branch or a PR merge tells Claude to watch that branch's CI to green. Its `hardening` call adds deny rules: `Read` of
   credential files (`~/.ssh` keys, `~/.aws/credentials`, `~/.kube/config`, git, GnuPG and `gh` credentials, this repo's
   revealed `~/.ssh` files, and the checkout's `link/.ssh/keys` by its `$DOTFILES` path), `Edit`
-  of the shell rc files, and creating the `.claude-files-issues` marker, so issue filing stays the user's opt-in.
+  of the shell rc files, creating the `.claude-files-issues` marker, so issue filing stays the user's opt-in, and
+  `Edit` of `~/.claude-customers`, which only the user changes.
   The `Read` rules also cover Bash's `cat`, `head`, `tail`, `sed` and `<`, but not `grep -r` over a parent directory
   or an interpreter (Python, Node) opening the file itself. The marker rules cover the Write and Edit tools, shell
   redirects and `touch`; `cp` or `mv` from a script and interpreters get past them, and only the guard hook backs

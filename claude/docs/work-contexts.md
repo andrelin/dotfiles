@@ -13,35 +13,9 @@ A customer repo being private makes the reader smaller, not the care looser.
 
 ## Why the resolution order is what it is
 
-- **Customer work is defined by inclusion**, one entry per line in `~/.claude-customers`; `#` at line start or after
-  a space begins a comment. Defining it by exclusion blocked every unrelated folder and unknown owner; the user has
-  customer work rarely, and lists it when it starts. The file is untracked because it names customers, and
-  machine-local because paths differ per machine. Only the user writes it: removing a line loosens the guard, so the
-  guard blocks Claude writing, deleting or `chmod`-ing it, in any letter case or through a glob starting with a dot.
-- **The entry forms:**
-  - a `<host>/<owner>`, or a clone URL (https, ssh with any user or port, scp-style), reduced as a remote is; an `ssh.`
-    host prefix and Azure DevOps' `v3/` are dropped, so `dev.azure.com/<org>` covers both of its clone URLs. It
-    matches that host only, not an SSH host alias for it, and a legacy `<org>.visualstudio.com` is listed as a bare
-    host;
-  - a bare host, every owner on which is customer work, in any letter case; it is also a name, and its label before
-    the TLD marks folders too (`acme.no` marks `acme-portal`); `host:port` is read as the host;
-  - a directory: `/…`, `~`, `~/…`, `$HOME/…`, or a slash path whose first part has no dot or starts with one
-    (`.work/acme`), taken from `$HOME`. Its whole tree is customer work whatever its repos' origins, matched in any
-    letter case; session start reports one naming no existing folder as written;
-  - a bare name or abbreviation, which marks every folder below `$HOME` named for it, and every remote whose owner is
-    named for it — wherever the clone sits, and behind an SSH host alias such as `git@github-acme:acme/app.git`.
-- **A line the guard can't read protects nothing,** such as `~someone`; session start counts such lines and says so,
-  and says when the file is missing or unreadable.
-- **Names match loosely, abbreviations strictly.** A name of five or more letters and digits matches anywhere in a
-  folder name, ignoring case and punctuation (`Fjordvik Kraftlag` marks `fjordvik-kraftlag-api`); a shorter
-  one must be a whole word of it, so `FVK` marks `fvk-portal` but not `fvkx`. Accented and Nordic letters match their
-  ASCII spellings, ø and å as both o/oe and a/aa. A false match only blocks.
-- **A repository is customer work by its own location:** its toplevel and its main worktree, so a linked worktree or a
-  `--git-dir` or `GIT_DIR` from elsewhere still counts. Names are matched against those, never against a subfolder a command runs
-  in, and never outside `$HOME`, where Claude's scratch paths live.
-- **Fail closed only while customers are listed:** a target the guard cannot resolve — a `cd` to a variable, `cd -`, a
-  push target holding a variable, `glab api projects/<id>` — could be a listed customer's, so it is customer while
-  the file lists anything; with no customers listed there is nothing to protect.
+- **Customer work is defined by inclusion,** in `~/.claude-customers`: defining it by exclusion blocked every unrelated
+  folder and unknown owner, and the user has customer work rarely and lists it when it starts. The file's entry forms,
+  how names match and when an unresolvable target fails closed: `~/.claude/docs/customers-file.md`.
 - The company name marker lifts personal-account repos with `uptime` in the name from personal to company.
 - Unknown visibility is public: guessing low is the only guess that can't be taken back.
 - Repo locations differ between machines, so the level comes from the remote, bar three path-based rules: listed
@@ -99,7 +73,7 @@ read it at the root of that customer's tree before starting.
 - The user keeps per-engagement permission rules alongside the engagement's own config; they apply to every subdirectory.
 
 **Apply these only where `~/.claude-customers` lists the work.** Anything unlisted is the user's own, bar a target
-the guard can't resolve while the file lists anything (§ *Why the resolution order is what it is*).
+the guard can't resolve while the file lists anything (`~/.claude/docs/customers-file.md`).
 
 ## An approval covers one action, not a policy
 
@@ -112,9 +86,8 @@ This binds hardest where a repo's own `CLAUDE.md` sets the rule being waived —
 
 `~/.claude/hooks/work-context.sh` is a `PreToolUse` hook on the shell and file-writing tools, registered by `bin/claude-settings-merge`.
 
-- **It blocks at customer level only:** the forbidden git list, and every `gh`, `glab` or Azure DevOps `az` call off its read allowlist;
-  an `fj` call off its read list is judged by the worst of the directory it runs in, the one `-C` names, every
-  remote of the repository there, and the repo `--repo` names on the `-H` host or origin's.
+- **It blocks at customer level only:** the forbidden git list, and every `gh`, `glab` or Azure DevOps `az` call off its read allowlist.
+  It doesn't check `fj` at all: no customer uses Forgejo yet.
 - **Strictest target wins,** so personal and company (§ *company*) block only a write that could reach customer: origin,
   `upstream`, `github` and `gh-resolved` remotes, push URLs, named targets — a personal fork's `gh pr create` to a listed customer's parent.
 - **Exit 2,** because it beats allow rules and every permission mode, bypass included; a crash blocks too.
@@ -122,17 +95,22 @@ This binds hardest where a repo's own `CLAUDE.md` sets the rule being waived —
 - **Shims** in `~/.claude/shims`, first on `PATH` in Claude Code only (session-start writes it to `CLAUDE_ENV_FILE`,
   since the Bash tool's shell snapshot is taken before `CLAUDECODE` is set), check the real argv that aliases, functions and scripts pass.
 - **`issue create`** is allowed at customer level only to origin's own issues, below a `.claude-files-issues` marker
-  in an ancestor of the repo under `$HOME`, for `gh` and `glab` only — it never opens a customer's Forgejo to `fj`;
+  in an ancestor of the repo under `$HOME`, for `gh` and `glab` only — `can-file-issue` never offers `fj` for customer work;
   only the user creates the marker, and the guard blocks Claude's writes to it.
 - **Revealed git-secret files, at every level:** a `Read`, `Grep` `path`, file write or shell word naming a path the
   nearest `.gitsecret/paths/mapping.cfg` lists, and `git secret reveal|cat|changes`; not a `Grep` over a directory or an interpreter opening one.
 - **Accepted gaps:** a script calling `/usr/bin/git` by absolute path, past the shims; a GraphQL mutation sent from a file;
-  `GH_REPO=x; export GH_REPO`; a script writing the marker or the customers file; a git alias's arguments past its
-  first word; `curl` writes, which it never parses; `fj` writes aimed at a customer's Forgejo by `-H` alone,
-  by a positional `<owner>/<repo>` or `<owner>/<repo>#<n>` (`fj repo delete`, `fj issue close`), or by `GIT_DIR` in the
-  environment, from directories that aren't customer work;
-  and a script, a tool outside its list, a glob not starting with a dot, or a name held in a variable (`rm ~/$f`)
-  removing the customers file.
+  `GH_REPO=x; export GH_REPO`; a script or an interpreter (`python3 -c`) writing the marker or the customers file; a git alias's arguments past its
+  first word; `curl` writes, which it never parses; every `fj` call; a script that sets `HOME` elsewhere before a git write,
+  which the shims then judge against that home's customers file; a `git clone` and a write in the new clone in one
+  call, or a `git worktree add` and a write in the new worktree, where the directory doesn't exist yet when the hook
+  runs, or a `git config` that picks a push target and the push in one call, so only the shims judge the write;
+  and a script, a tool outside its list, `xargs` given the name on stdin, a glob not starting with a dot, a name
+  held in a variable (`rm ~/$f`) or built by a command substitution, or a copy or sync of a folder into `$HOME`,
+  removing or overwriting the customers file.
+  More broadly, the guard is built for the plain forms Claude would issue: an evasion form (a glob, brace list,
+  zsh alternation, `eval` prefix, glued redirection or `find` predicate) or a name or URL its matching rules don't
+  anticipate may slip past, and is a gap by design rather than a bug to chase.
   A separator inside quotes blocks falsely, failing safe.
   Hooks don't run before the workspace-trust prompt is accepted, in `claude -p --bare`, or in cloud routines.
 - Use literal paths, never shell variables, in the cd or git -C that precedes a git write:

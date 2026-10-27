@@ -8,8 +8,10 @@ Every call runs from the root of the repo the issue is for, after `~/.claude/hoo
 - **One remote:** no `-R`.
 - **More than one:** origin's target — gh `-R <owner>/<repo>` on `github.com` and `-R <host>/<owner>/<repo>`
   elsewhere, glab `GITLAB_HOST=<host>` plus `-R <project path>` — which the guard still checks on the create.
-- **fj, always:** `-H <host>` before the subcommand and `--repo <owner>/<repo>` after it. fj otherwise derives the API
-  address from the remote URL, which breaks on an SSH remote with a port, such as `ssh://git@host:2222/…`.
+- **fj, always:** `-H <host>` before the subcommand, the host as `fj auth list` prints it (with its port, if it has
+  one), and `--repo <owner>/<repo>` after it where the subcommand takes
+  `--repo`; `issue edit`, `issue comment` and `repo labels` take the repo positionally, as in § *Labels*. fj otherwise derives the
+  API address from the remote URL, which breaks on an SSH remote with a port, such as `ssh://git@host:2222/…`.
 - **Several remotes and no `origin`:** ask which.
 - **No remote:** nothing to file on — the title and body only, no command, and an item gets no `Target:` line.
 
@@ -37,13 +39,15 @@ and draft it for the user at every level, filing nothing, since a comment is a p
 
 - `! gh issue comment <number> -R <target> --body-file <path>`
 - `! GITLAB_HOST=<host> glab issue note <number> -R <project path> --message "$(cat <path>)"`
+- `! fj -H <host> issue comment <owner>/<repo>#<number> --body-file <path>`
 
 On a no, file as planned.
 
 ## Labels
 
 `gh label list --limit 1000` or `glab label list --per-page 100`, with the target rule; pass only labels it lists.
-`fj issue create` takes no labels: file without, then add any with the Forgejo API or web UI.
+`fj issue create` takes no labels: list them with `fj -H <host> repo labels <owner>/<repo> view`, file, then add each
+with `fj -H <host> issue edit <owner>/<repo>#<n> labels --add <label>`.
 A failed search or `label list` is reported and filing still goes ahead, with no `--label`.
 **Never create a repo, remote or label to make filing work.**
 
@@ -54,7 +58,8 @@ answers, and never inline — then run, with the target rule:
 
 - `gh issue create --title '…' --body-file <path>`
 - `glab issue create --title '…' --description "$(cat <path>)" --yes` — `--yes` skips glab's prompts with no TTY
-- `fj -H <host> issue create --repo <owner>/<repo> '…' --body-file <path>` — the title is positional
+- `fj -H <host> issue create --repo <owner>/<repo> '…' --body-file <path> --no-template` — the title is positional;
+  a repo that requires a template fails, so re-run with `--template <name>` from `fj … issue templates --repo …`
 
 and report the URL.
 
@@ -65,7 +70,7 @@ matches the title exactly, so a changed title means reporting the number:
 
 - `! gh issue create -R <owner/repo> --title '…' --body-file <path>` — `-R <host>/<owner>/<repo>` off `github.com`
 - `! GITLAB_HOST=<host> glab issue create -R <project path> --title '…' --description "$(cat <path>)" --yes`
-- `! fj -H <host> issue create --repo <owner>/<repo> '…' --body-file <path>`
+- `! fj -H <host> issue create --repo <owner>/<repo> '…' --body-file <path> --no-template`, or `--template <name>`
 
 **In these `!` lines the target is always named:** the bare `owner/repo` on `github.com`, never with a `github.com/`
 prefix; `<host>/<owner>/<repo>` (gh), `GITLAB_HOST=<host>` (glab) or `-H <host>` with `--repo` (fj) anywhere else — a bare `owner/repo` resolves to

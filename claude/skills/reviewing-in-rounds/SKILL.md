@@ -21,10 +21,13 @@ file, resuming, closing): their formats are literal.
 3. **The name.** A plan not named `plan-*.md` at the repo root is first moved to `plan-<stem>.md` there (a stem
    already starting `plan-` kept as is): `mv` when untracked; when tracked, a copy, and tell the user the original is
    theirs to remove — a staged rename trips `implementing-plans`' clean-tree check.
-4. **Resume or start**, per `review-log.md` § *Resuming*: an open question first, an interrupted round finished, a
+4. **The bar, for a guard, parser or other security check:** get it into the spec before round 1 — which forms it
+   must catch and which are accepted gaps — or the correctness lens keeps finding new bypass forms and the rounds
+   don't converge.
+5. **Resume or start**, per `review-log.md` § *Resuming*: an open question first, an interrupted round finished, a
    due re-evaluation run. A finished open section: say so and ask; on a yes, close it and start at round 1 — from the
    second close that day, the closed names gain `-<n>` before `.md`, `<n>` being that close's count for the day.
-5. **Code only, the leftovers:** before round 1 of a fresh run, record the entries of
+6. **Code only, the leftovers:** before round 1 of a fresh run, record the entries of
    `git status --porcelain -z --no-renames --untracked-files=all --` with the two pathspecs below (`| tr '\0' '\n'`)
    whose worktree column isn't blank — unstaged or untracked — as a `Leftovers before round 1:` line at the top of
    the findings file, so a resumed session has it too. Completion compares against it.

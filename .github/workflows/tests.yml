@@ -46,7 +46,7 @@ jobs:
           - name: RHEL 9
             runner: ubuntu-latest
             container: redhat/ubi9
-            prerequisites: yum install -y sudo git jq procps-ng openssh-clients && git config --global --add safe.directory '*'
+            prerequisites: yum install -y sudo git jq procps-ng openssh-clients diffutils && git config --global --add safe.directory '*'
     steps:
       # Container prerequisites (must run before checkout for git)
       - if: matrix.prerequisites

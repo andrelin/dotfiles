@@ -293,6 +293,20 @@ function setdiff() {
   [[ "$1" ]] && echo "${setdiff_out[@]}"
 }
 
+# Copy files. Above the source-mode return so test/test_copy.sh can reach copy_test.
+function copy_header() { e_header "Copying files into home directory"; }
+function copy_test() {
+  if [[ -e "$2" ]] && cmp -s "$1" "$2"; then
+    echo "same file"
+  elif [[ "$1" -ot "$2" ]]; then
+    echo "destination file newer"
+  fi
+}
+function copy_do() {
+  e_success "Copying ~/$1."
+  cp "$2" ~/
+}
+
 # If this file was being sourced, exit now.
 [[ "$1" == "source" ]] && return
 
@@ -347,20 +361,6 @@ function init_files() {
 function init_do() {
   e_header "Sourcing $(basename "$2")"
   source "$2"
-}
-
-# Copy files.
-function copy_header() { e_header "Copying files into home directory"; }
-function copy_test() {
-  if [[ -e "$2" && ! "$(cmp "$1" "$2" 2> /dev/null)" ]]; then
-    echo "same file"
-  elif [[ "$1" -ot "$2" ]]; then
-    echo "destination file newer"
-  fi
-}
-function copy_do() {
-  e_success "Copying ~/$1."
-  cp "$2" ~/
 }
 
 # Link files.

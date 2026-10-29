@@ -26,3 +26,5 @@ paths:
   the project doesn't configure, and say so rather than silently skipping a broken one. Report pre-existing
   failures in code you didn't touch rather than fixing them, and don't let them block your own work; where the user
   owns the commit their hook is no substitute, so run the tools yourself or hand over a self-rewriting diff.
+- **Mutate a copy of the file under test, never the worktree file,** and never restore with `git checkout --` while
+  it holds uncommitted work: that reverts the work too.

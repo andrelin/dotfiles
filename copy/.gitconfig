@@ -40,3 +40,22 @@
 
 [include]
   path = ~/.gitconfig_credentials
+
+
+# Uptime's repos commit as the company address wherever they are cloned: its GitHub org here (URL matching is
+# case-sensitive, hence both spellings), its own Forgejo in ~/.gitconfig_credentials, which may name its hosts;
+# the gitdir line covers a repo under ~/src/uptime with no remote yet.
+[includeIf "hasconfig:remote.*.url:git@github.com:uptimeconsulting/**"]
+  path = ~/.gitconfig_uptime
+[includeIf "hasconfig:remote.*.url:ssh://git@github.com/uptimeconsulting/**"]
+  path = ~/.gitconfig_uptime
+[includeIf "hasconfig:remote.*.url:https://github.com/uptimeconsulting/**"]
+  path = ~/.gitconfig_uptime
+[includeIf "hasconfig:remote.*.url:git@github.com:UptimeConsulting/**"]
+  path = ~/.gitconfig_uptime
+[includeIf "hasconfig:remote.*.url:ssh://git@github.com/UptimeConsulting/**"]
+  path = ~/.gitconfig_uptime
+[includeIf "hasconfig:remote.*.url:https://github.com/UptimeConsulting/**"]
+  path = ~/.gitconfig_uptime
+[includeIf "gitdir:~/src/uptime/"]
+  path = ~/.gitconfig_uptime

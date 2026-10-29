@@ -62,6 +62,10 @@ Fold setup, configuration, scaffolding and doc updates into the task whose deliv
 
 ## What each task carries
 
+- **Its issue**, by number in the heading (`## Task 2 · #53: …`): search the tracker first, open and closed issues;
+  one close to the task is adapted (its body updated) or left for a new one, whichever leaves each issue one clear
+  piece of work. Two tasks may share one issue. Creating or updating goes through `writing-issues`, so Claude writes
+  only where it may file — personal and company repos, or a tracker the user has allowed — and drafts elsewhere.
 - **Files** — exact paths, split into created and modified, with line ranges (`src/Foo.kt:123-145`) where the
   change is local. Name the test file too. A task's *Files list* is the code spans in this entry, each cut at its
   first `:` or space (`src/Foo.kt:123-145` → `src/Foo.kt`); a span naming a directory, with or without a trailing

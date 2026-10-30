@@ -2,12 +2,14 @@
 #
 # Merge the dotfiles-owned entries into a machine-local Claude Code settings.json, leaving everything else as is.
 #
-# Usage: claude-settings-merge hooks|hardening <settings-file>
+# Usage: claude-settings-merge hooks|hardening|allows <settings-file>
 #   hooks      Register ~/.claude/hooks/work-context.sh for PreToolUse and SessionStart, and
 #              ~/.claude/hooks/watch-main-ci.sh for PostToolUse.
 #   hardening  Add the credential, rc-file, marker and customers-file deny rules, and load AGENTS.md beside CLAUDE.md.
 #              The checkout's link/.ssh/keys rule is expanded from $DOTFILES, written ~/-relative when that is under
 #              $HOME, replaces any earlier such rule, and is skipped when $DOTFILES is unset.
+#   allows     Add the allow rules for cleaning up after a merge: removing a worktree, deleting a branch locally and
+#              on origin. work-context.sh still blocks the push where the remote is the user's (customer).
 #
 # Exit 0 on success; 1 when jq is missing, a hook script is missing (hooks only) or the file isn't valid JSON,
 # with the file untouched; 2 on bad usage.
@@ -15,7 +17,7 @@
 set -euo pipefail
 
 function usage() {
-  echo "Usage: $(basename "$0") hooks|hardening <settings-file>" >&2
+  echo "Usage: $(basename "$0") hooks|hardening|allows <settings-file>" >&2
   exit 2
 }
 
@@ -63,11 +65,19 @@ hardening_filter='
   | .pluginConfigs["cc-plugin-agents-md@builtin"].options.instructionFiles //= "claude-md-and-agents-md"
 '
 
+# Without these the auto-mode classifier blocks the clean-up as destructive, wherever the session started.
+allows_filter='
+  .permissions.allow = (((.permissions.allow // []) + [
+    "Bash(git worktree remove *)", "Bash(git branch -D *)", "Bash(git push origin --delete *)"
+  ]) | unique)
+'
+
 [[ $# -eq 2 ]] || usage
 settings="$2"
 case "$1" in
   hooks) filter="$hooks_filter" ;;
   hardening) filter="$hardening_filter" ;;
+  allows) filter="$allows_filter" ;;
   *) usage ;;
 esac
 

@@ -195,4 +195,19 @@ assert "$(cksum < "$settings")" "$before" "hardening on invalid JSON leaves the 
 "$SCRIPT" hardening 2>/dev/null && rc=0 || rc=$?
 assert "$rc" "2" "hardening without a file is a usage error"
 
+e_header "allows"
+
+function allow() { "$SCRIPT" allows "$settings"; }
+
+echo '{}' > "$settings"
+allow
+assert "$(jq -c '.permissions.allow' "$settings")" \
+  '["Bash(git branch -D *)","Bash(git push origin --delete *)","Bash(git worktree remove *)"]' "{} gains the three clean-up rules"
+
+printf '{"permissions":{"allow":["Bash(ls *)","Bash(git branch -D *)"],"deny":["Bash(rm -rf *)"]}}\n' > "$settings"
+allow
+allow
+assert "$(jq '.permissions.allow | length' "$settings")" "4" "two runs over an overlapping list duplicate nothing"
+assert "$(jq -c '.permissions.deny' "$settings")" '["Bash(rm -rf *)"]' "the deny list is untouched"
+
 test_done

@@ -63,4 +63,10 @@ else
   e_error "Couldn't add the Claude Code deny rules to $settings."
 fi
 
+if "$DOTFILES/bin/claude-settings-merge" allows "$settings"; then
+  e_success "Adding the Claude Code allow rules for post-merge clean-up."
+else
+  e_error "Couldn't add the Claude Code allow rules to $settings."
+fi
+
 unset settings status_line

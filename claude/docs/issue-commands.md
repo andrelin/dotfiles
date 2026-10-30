@@ -5,6 +5,9 @@ Every call runs from the root of the repo the issue is for, after `~/.claude/hoo
 
 ## The target rule, for every gh, glab and fj call
 
+**Count the remotes with `git remote` before the first call** — the search and the label list too, not only the
+create: a second remote such as `upstream` can make a bare call answer for the wrong repo.
+
 - **One remote:** no `-R`.
 - **More than one:** origin's target — gh `-R <owner>/<repo>` on `github.com` and `-R <host>/<owner>/<repo>`
   elsewhere, glab `GITLAB_HOST=<host>` plus `-R <project path>` — which the guard still checks on the create.
@@ -19,6 +22,7 @@ Every call runs from the root of the repo the issue is for, after `~/.claude/hoo
 
 - **Keep `;`, `|`, `&`, backticks and `$(` out of titles and any other inline argument,** bar the `$(cat <path>)` the
   glab form needs: the guard splits commands without honouring quotes, so they can cause a false block.
+  This holds when the user asks for their title kept exactly: say why, and offer the closest title without them.
 - **Every title in a command** — the search, the create, a drafted `!` line — is single-quoted, each `'` written
   `'\''`, so `$` and `"` stay literal: `$HOME isn't "expanded"` becomes `'$HOME isn'\''t "expanded"'`.
   A search string also drops each `"` of the title.
@@ -82,7 +86,7 @@ A target no CLI here files on (Azure DevOps, Bitbucket, Jira) gets the title and
 - **Failed before the request went out** — DNS, connection refused, auth — or a repo that doesn't exist, issues
   disabled, a missing CLI: report it with its error, never as filed. A missing CLI is always a draft.
 - **A repo not found** (gh's `Could not resolve to a Repository`, glab's or fj's `404`): say the target looks wrong and ask
-  before giving the `!` line or writing the item.
+  before giving the `!` line or writing the item. The user keeping that target ("keep it") goes on as *Otherwise*.
 - **Any other error** — a timeout, a dropped connection, `EOF`, a reset — leaves the outcome unknown: say so, give the
   repo's issues URL to check, and neither re-run the create nor write an item until the user reports.
 - **Otherwise** give the user's `!` line as above and, when the user will work on it, write an `(issue to file)`

@@ -2483,6 +2483,25 @@ description: Read before writing, filing or drafting an issue or ticket for any 
 took six lines, not one clause; the `Target:` bullet covers `(issue to file)` items only. `check-md-limits`,
 markdownlint, shellcheck on `init/31` and the `grep` checks pass; every live test above is still to run.
 
+**Live tests on fixtures, 2026-10-30** — headless, an agent playing the tester, every remote unresolvable, nothing
+created on any platform, about $10.60. Pass: the static checks, the three runnable *Lookup* cases, company GitHub
+both ways, personal for someone else, the tightening case, content bar, *Unsure*, and the `$HOME` title's quoting.
+Failed, each fixed in `writing-issues` or `issue-commands.md`:
+
+- With an `upstream` remote (personal, and company GitLab) the first search and label list had no `-R`; the target
+  rule now counts the remotes before the first call. The personal one also wrote no item after "keep it" on a repo
+  not found; keeping the target now goes on as *Otherwise*.
+- Company GitHub Enterprise and Bitbucket with no `## Issues`: no question, no printed section, once
+  `can-file-issue` printed `none`; the company rule now holds whatever it prints.
+- The chore note printed no `ai plan` line; an item-only chore now prints it.
+- A title kept "exactly as written" kept its `$(` and `|`; the quoting rule now holds against that wish.
+
+Inconclusive: every customer case (no `~/.claude-customers` on this machine, so `example--client` resolves as company;
+they need that file or a fake `HOME`, and `/compact` an interactive session), *No remote* and *No tracker* (parallel
+headless sessions without a scratchpad shared `/tmp` drafts — the draft now goes in a per-session `mktemp -d`), and
+company GitLab, whose `$(cat …)` create the headless allowlist blocked. Skipped: *Several equal titles*, which needs
+`gh repo create`. The cases needing a real issue ran on `andrelin/planechaser` (see below).
+
 ## Task 9 · `implementing-plans` skill
 
 **First, before building this skill:** make the edits Task 5's status lists as still to make, among them `top` in

@@ -35,7 +35,8 @@ read before the first search.
   Stop asking the moment that holds; a concise issue needs few answers.
 - **The last turn shows the title and body** and asks only "anything to change, or file it?" — the user's last look,
   which matters most for a world-readable issue — and files only on an explicit yes.
-- **The draft file:** after each answer, the draft and the answers so far go to `<scratchpad>/issue-draft-<n>.md`,
+- **The draft file:** after each answer, the draft and the answers so far go to `<scratchpad>/issue-draft-<n>.md`
+  — the session's scratchpad, or with none a `mktemp -d` made once per session, never a shared `/tmp` path —
   `<n>` the next free number in the session, so a second issue never overwrites the first.
   A compacted session resumes from the highest `<n>` unless that file ends in an `Ended:` line; a new session starts over.
 - **Its last line,** once the issue is filed, handed to the user or dropped:
@@ -46,7 +47,8 @@ read before the first search.
 - **The drafted body lives only in the scratchpad:** when the user files, the last turn says to file it before the session ends.
 - **When the user will work on it, finish by printing the next stage's command** for a fresh session:
   `ai plan <owner/repo#n>` for an issue on `github.com`, `ai plan <issue URL>` on any other host, or
-  `ai plan '<tracker item title>'` while the user has yet to file it, or when there is no issue at all.
+  `ai plan '<tracker item title>'` while the user has yet to file it, or when there is no issue at all — an item-only
+  chore included.
   That title is the heading's only, with its `N.M ·` ref, status badge, branch and `(issue to file)` stripped (a ref
   like `B2.3` is reassigned by the next tracker review), single-quoted with each `'` written `'\''` so nothing
   expands in zsh: ``ai plan 'Fix `$(x)` "y"'``.
@@ -81,8 +83,8 @@ A rule per group of repos, defaulting by level:
 - **No section at customer level:** ask, and write the user's answer into one so the next issue doesn't ask.
   The customer-tree root is the user's answer, never inferred; `$HOME`, or a directory that is, or whose direct
   subdirectories are, a repo `work-context.sh level` doesn't report as customer, is refused and asked again.
-- **No section at company level:** ask, then print the section for the user to add to the repo's `CLAUDE.md` in a
-  change of their own; Claude never writes it.
+- **No section at company level,** whatever `can-file-issue` prints, `none` included: ask, then print the section
+  for the user to add to the repo's `CLAUDE.md` in a change of their own; Claude never writes it.
 - **Where a section says Claude files through `gh` or `glab`,** on `github.com` or a host whose name contains `gitlab`,
   ask the user to run `! touch <tree>/.claude-files-issues` once; below it the guard allows `issue create` to each repo's
   own issues. On any other host (Forgejo, GitHub Enterprise, Azure DevOps, a self-hosted GitLab without `gitlab` in

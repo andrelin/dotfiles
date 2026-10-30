@@ -67,7 +67,7 @@ in § *The staged workflow*. No external spec.
 | 7 · Instruction-set audit | ⏳ PENDING | |
 | 8 · `writing-issues` skill | 🚧 PARTIAL | built 2026-10-23, automated checks pass; the user's live tests pending; deviations in Task 8 |
 | 9 · `implementing-plans` skill | 🚧 PARTIAL | built 2026-10-23 with its first step; trigger evals and every toy run pending; deviations in Task 9 |
-| 10 · `bin/ai` stage launcher | 🚧 PARTIAL | built 2026-10-23, `test/test_ai.sh` passes; the spike, `type -a ai` and the end-to-end run are the user's |
+| 10 · `bin/ai` stage launcher | 🚧 PARTIAL | built 2026-10-23, `test/test_ai.sh` passes; `type -a ai` and the spike passed 2026-10-30; the end-to-end run is the user's |
 | 11 · Claude config on Linux and WSL | ⏳ PENDING | |
 | 12 · Hidden-Unicode check on agent-loaded files | ⏳ PENDING | |
 | M · Machine-local cleanup (untracked, by hand) | ⏳ PENDING | |
@@ -89,13 +89,12 @@ without `Done (plan):` (§ *Review log (plan)*). Tasks 8, 9 and 10 are built, co
 the riskiest thing still untried, so it comes before the scratch-repo batteries, which then cover only what that run
 didn't reach, and what it teaches is folded in before the rest is built on it.
 
-1. **Trigger evals:** `bin/skill-trigger-eval writing-plans` (the flipped `2.11` at most 1 of 3, the rest as in 6b)
-   and `bin/skill-trigger-eval implementing-plans` (`1.1` at least 2 of 3) — from a session that needs neither
-   skill, since a run hides the skill machine-wide.
-2. **Task 10's quick checks, by the user:** `type -a ai` in zsh prints `ai not found`; the spike in a scratch repo,
-   `claude --model sonnet "/writing-plans tidy the tip numbering"`, exit after the first reply, and confirm the
-   first turn loaded `writing-plans`. A failed spike switches `bin/ai` and `test/test_ai.sh` to `Use the <skill>
-   skill: <args>`.
+1. **Trigger evals** — done 2026-10-30, opus/sonnet as `bin/ai` picks: `writing-plans` 20/21, the flipped `2.11`
+   0/3; `1.9` 1/3, down from 2/3 on an unchanged description, taken as noise. `implementing-plans` `1.1` 3/3.
+   While a run hides the personal skill, `/writing-plans` silently resolves to `superpowers:writing-plans`.
+2. **Task 10's quick checks** — passed 2026-10-30: `type -a ai` finds only `bin/ai`; the spike in an empty scratch
+   repo, Claude Code 2.1.308 on sonnet, kept `/writing-plans` and its first reply applied the personal skill's size
+   gate ("needs no plan, so I'd just make it"), so `bin/ai` keeps the slash-command form.
 3. **Task 9's 2026-10-30 iteration tests** (Task 9, *Changed 2026-10-30*), then **Task 10's end-to-end run**
    (Task 10 § *Tests*, *End to end*), which is also Task 5's pending real runs. Fix what it breaks, and run
    `filing-learnings`.

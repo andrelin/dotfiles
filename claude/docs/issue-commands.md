@@ -29,7 +29,10 @@ create: a second remote such as `upstream` can make a bare call answer for the w
 
 ## Search before filing
 
-Ahead of the last turn, so a match is shown there, with the target rule:
+Ahead of the last turn, so a match is shown there, with the target rule. `<title>` is the draft's exact title,
+searched once it is drafted, never keywords of your own: GitHub misses `check_missing_cards` against
+`check_missing_cards.py`. A tracker heading already naming an issue for this problem is checked with
+`gh issue view <n>` (`glab issue view`, `fj issue view`), never assumed missing.
 
 - `gh issue list --state open --limit 10 --search '<title>'`
 - `glab issue list --per-page 10 --search '<title>'`

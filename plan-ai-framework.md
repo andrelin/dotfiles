@@ -65,7 +65,7 @@ in § *The staged workflow*. No external spec.
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ✅ DONE | scored 2026-10-23: 20/20 and 20/21, both descriptions kept; `writing-plans`' `1.11` a known miss until Task 9 |
 | 7 · Instruction-set audit | ⏳ PENDING | |
-| 8 · `writing-issues` skill | 🚧 PARTIAL | built 2026-10-23, automated checks pass; the personal failed-create path passed end to end 2026-10-30, the other live tests pending |
+| 8 · `writing-issues` skill | 🚧 PARTIAL | live tests run 2026-10-30 on fixtures and a real issue, gaps fixed; the customer cases need `~/.claude-customers` or a fake `HOME` |
 | 9 · `implementing-plans` skill | 🚧 PARTIAL | trigger evals, iteration tests and the plain toy run (end to end) passed 2026-10-30; the toy variants pending |
 | 10 · `bin/ai` stage launcher | ✅ DONE | `type -a ai`, the spike and the end-to-end run passed 2026-10-30; results in Task 10 |
 | 11 · Claude config on Linux and WSL | ⏳ PENDING | |
@@ -2500,7 +2500,16 @@ Inconclusive: every customer case (no `~/.claude-customers` on this machine, so 
 they need that file or a fake `HOME`, and `/compact` an interactive session), *No remote* and *No tracker* (parallel
 headless sessions without a scratchpad shared `/tmp` drafts — the draft now goes in a per-session `mktemp -d`), and
 company GitLab, whose `$(cat …)` create the headless allowlist blocked. Skipped: *Several equal titles*, which needs
-`gh repo create`. The cases needing a real issue ran on `andrelin/planechaser` (see below).
+`gh repo create`.
+
+**The real filing, 2026-10-30,** on the user's private `andrelin/planechaser` in place of the public
+`andrelin/dotfiles` (an archived `coding-stuff` refused the create first), about $3.50: issue #73, left open. Pass:
+the create and its checks, the item's `issue #73` and `ai plan andrelin/planechaser#73`, *Search match*'s "yes"
+comment draft, *No match* and the *Lookup*. *Search match* failed on the search: sessions searched their own
+keywords (`check_missing_cards`, which GitHub doesn't match against `check_missing_cards.py`), and one called the
+tracker's `#73` nonexistent without checking. `issue-commands.md` now searches the drafted title exactly and checks a
+heading's issue with `gh issue view`. The lookup wrote `(#73)` where the filing wrote `(issue #73)`;
+`maintaining-follow-up-trackers` now names `writing-follow-up-items`' form.
 
 ## Task 9 · `implementing-plans` skill
 

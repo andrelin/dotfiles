@@ -29,9 +29,9 @@ merge/split provenance go in the HTML comments; the body stays the user's own re
    `gh issue list -R <host>/<owner>/<repo> --search 'in:title "<title>"' --author @me --state all --limit 100`, or
    `GITLAB_HOST=<host> glab issue list -R <project path> --in title --search '<title>' --all --per-page 100 --output json`,
    or `fj -H <host> issue search --repo <owner>/<repo> -s all --all -c <fj whoami's user> '<title>'`.
-   It gets the number only from the one issue whose title equals the item's title — on glab also whose
-   `author.username` is `glab api user`'s `username`; several equal titles → ask, and an item with no `Target:` is
-   listed for the user, unchanged.
+   It gets the number, written `issue #<n>` as `writing-follow-up-items` says, only from the one issue whose title
+   equals the item's title — on glab also whose `author.username` is `glab api user`'s `username`; several equal
+   titles → ask, and an item with no `Target:` is listed for the user, unchanged.
 3. **Delete items whose code is on `main`** (step 2) outright — don't check them off; the list is always just
    what is still open. **Partly landed is not done:** rewrite the item to cover only what is missing and move it
    to the backlog. Anything dropped on purpose rather than left behind is step 5's question, not a deletion here.

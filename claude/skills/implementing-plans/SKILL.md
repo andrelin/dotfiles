@@ -18,6 +18,9 @@ column isn't blank (unstaged or untracked); staged paths are not leftovers.
 - **Only a reviewed plan.** No plan file given, or one that doesn't exist → stop, listing the root's `plan-*.md`.
   Its open `## Review log (plan)` section — not a `closed` one — must end in a `Done (plan):` line; else stop and
   say so. A task already ✅ DONE is skipped on any start.
+- **Approvals,** from the plan's `## Approvals`: a recorded yes is acted on without asking. Anything the run will
+  need that isn't there — a tool permission for the suite, a by-hand step — is asked once, all together, before the
+  first task, and recorded there, so the run then goes without stopping for permission.
 - **The level**, from `~/.claude/hooks/work-context.sh level`. At company and customer level, add `/plan-*.md` to
   `$(git rev-parse --git-path info/exclude)` unless it is there.
 

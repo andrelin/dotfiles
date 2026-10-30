@@ -88,7 +88,8 @@ the spec requires, and stopping because the remaining findings don't affect corr
    one commit of `git diff --cached --name-only --no-renames`.
 3. **If `git diff -- <paths>` is non-empty, stop** and list those paths: `git commit -- <paths>` would take their
    unstaged edits too.
-4. **Personal and company:** offer the commit, run it only on a yes. **Customer:** draft it for the user.
+4. **Personal and company:** offer the commit, run it only on a yes — one recorded in the plan's `## Approvals`
+   counts. **Customer:** draft it for the user.
    **Company, no plan, on the default branch:** offer none, and say the company bar wants a branch.
 5. **Flip the plan's `Final code review` row** to ✅ DONE, the `Done (code):` round in its notes.
 6. **After the commit runs** — yours on a yes, or the drafted one once the user says it ran — delete every

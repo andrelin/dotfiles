@@ -33,7 +33,9 @@ Before customer work read the `CLAUDE.md` at the root of that tree; how a level 
 
 ## Approvals
 
-**An approval covers what it names, once** — never its neighbour or the next one: ask for each explicitly, above all a git or platform write.
+**An approval covers what it names** — never its neighbour or the next one: ask for each explicitly, above all a git or platform write.
+**Ask in bulk, up front:** list every approval a stretch of work will need, each named with its scope ("commit each
+task on branch `x`"), in one question, so it runs without stopping; ask again only for what nobody could foresee.
 
 ## Durable context lives in the repo
 

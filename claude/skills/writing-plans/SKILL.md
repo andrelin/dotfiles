@@ -93,6 +93,9 @@ Fold setup, configuration, scaffolding and doc updates into the task whose deliv
 
 At handover, and not before, run the placeholder patterns and three-pass self-review in
 `~/.claude/docs/plan-handover-checklist.md` — each is a decision the plan should have made, left for a guess.
+**Approvals, in one question:** list in the plan's `## Approvals` every approval it will need — commits, pushes, PRs,
+platform writes, external calls, by-hand steps, tool permissions for its commands — ask once, all together, and
+record each answer with its date; later stages act on a recorded yes without asking, never past § *Work contexts*.
 **Then run `reviewing-in-rounds plan <file>`** — the author cannot see the ambiguity they already know the answer to;
 **ready to implement means its log ends in `Done (plan):`**. Then move its tracker item, if it has one, to in-flight
 (`writing-follow-up-items`), and print `ai implement <plan-file>` for a fresh session.

@@ -11,6 +11,9 @@ The conventions this fills in are the `writing-plans` skill; this is the skeleto
 ## Global constraints
 - version floors, dependency limits, naming rules, platform targets — exact values
 
+## Approvals
+- <what, with its scope> — yes, <YYYY-MM-DD> | no | not asked
+
 ## Implementation status
 | Task | Status |
 | Final code review | ⏳ PENDING |

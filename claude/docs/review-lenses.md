@@ -7,46 +7,51 @@ One lens per reviewer: a reviewer given every question skims all of them, one gi
 
 Every finding carries one, chosen by its worst plausible outcome, not by how sure the reviewer is.
 
-| Severity | Means |
-| --- | --- |
-| `blocking` | a wrong result, data loss, a secret or a forbidden write, or an executor who can't proceed |
-| `major` | a likely wrong guess by an executor, a bug on a plausible path, or a requirement with no test that can fail |
-| `minor` | real, but cheap to live with |
-| `nit` | wording and style |
+| Severity | In a code review | In a plan review |
+| --- | --- | --- |
+| `blocking` | a wrong result, data loss, a secret or a forbidden write | builds the wrong thing, a forbidden write, or an executor who can't start |
+| `major` | a bug on a plausible path, or a requirement with no test that can fail | an unverified assumption the approach rests on, or a decision costly to reverse once built |
+| `minor` | real, but cheap to live with | real, but cheap to settle while implementing |
+| `nit` | wording and style | wording and style |
 
 A finding names a concrete failure scenario or the requirement it violates; one that names neither is unsupported.
 
+## What a plan review leaves to the code
+
+Plans are cut into small tasks that are implemented, tested, reviewed and learned from, so a plan review asks
+whether the plan is sound, not whether it has foreseen every bug: the task reviews and the code review meet those
+in real code, where they can be fixed for real.
+**Out of scope in a plan review**, and dropped by the verifier as `left to the code`: exact test cases and
+assertions, edge-case inputs, error handling, command flags and output formats, any choice the executor can
+make and a reviewer can check in the diff, and a `Sketch:` task's missing detail.
+Left to the code is never left out: the implementer handles every error path and tests the edge cases of each task,
+the task review checks it, and the code review hunts down what slipped through.
+
 ## Plan lenses
 
-### Scope
+### Grounding
 
-- Is each task the narrowest change that meets its requirement?
+- Is the problem real, and does the approach solve it? Name the simpler approach it should have taken, if any.
+- Which claim about the codebase, a tool or a platform does the approach rest on unverified? Check it.
+- Does every spec requirement trace back to the issue or the user, and every task to a requirement?
+
+### Scope and slicing
+
+- Is each task the narrowest change that meets its requirement, and is anything built that nothing asks for?
+- Does each task end in something that runs, and name the behaviour its tests prove?
+- Does the order put the riskiest assumption first, so it is learned from before the rest is built on it?
 - Is what is out of scope stated, where an executor would otherwise reach for it?
-- What is built that no requirement asks for?
-- What obvious part is missing — a migration, a doc, the other platform, the error path?
 
-### Clarify
+### Decisions an executor can't make
 
-- Where would an executor have to guess? Write each as the question they would ask.
-- Which name, path, value or version is left for the executor to choose?
-- Which instruction has two plausible readings that produce different code?
-
-### Data flow and failure modes
-
-- For each new boundary — a file, a process, a network call, user input — what crosses it, in what shape?
-- What happens when it is missing, empty, malformed, too large or slow?
-- Which failure is silent, and who notices it?
-
-### Test matrix
-
-- Which requirement has no named test, or only a test that cannot fail (`writing-tests`)?
-- Does each test name its input and its expected result exactly?
-- Are the boundaries tested: empty, one, many, the limit and one past it?
+- Which decision is left open that is the user's, visible to users, or costly to reverse — an interface, a data
+  format, a name another task consumes? Write each as the question the executor would ask.
+- Which instruction has two plausible readings that build different things?
 
 ### Consistency
 
-- Does every spec requirement map to a task, and every task to a requirement?
 - Does every name a later task consumes match what the earlier task produces, exactly?
+- Has an iteration folded in what the built tasks taught — their deviations and `Deferred:` lines?
 - Do the status table, the order and the task sections agree?
 
 ### Work context
@@ -57,15 +62,20 @@ A finding names a concrete failure scenario or the requirement it violates; one 
 
 ## Code lenses
 
+The thorough review is this one: everything a plan review left to the code is in scope here.
+
 ### Correctness and failure modes
 
 - Which input produces a wrong result? Name it.
+- For each new boundary — a file, a process, a network call, user input — what happens when what crosses it is
+  missing, empty, malformed, too large or slow? Which failure is silent?
 - What happens on the error path, the empty case and the boundary?
 - What breaks under the other platform, shell or locale the project supports?
 
 ### Tests
 
-- Does each changed behaviour have a test that fails without the change (`writing-tests`)?
+- Does each changed behaviour and each spec requirement have a test that fails without the change (`writing-tests`)?
+- Are the boundaries tested: empty, one, many, the limit and one past it?
 - Was an assertion removed, loosened or skipped? That is always `blocking`.
 - Does a test assert a literal it restates, or a stub's own return value?
 
@@ -80,6 +90,12 @@ A finding names a concrete failure scenario or the requirement it violates; one 
 - Does the diff do what its task says — all of it?
 - Does it do anything its task doesn't say?
 - Is a test the task names missing from the diff?
+
+### The change as a whole
+
+- Do the tasks work together end to end? Run the plan's end-to-end verification, and the path between two tasks.
+- Which plan assumption did the code prove wrong, and does anything still rest on it?
+- Is each `Deferred:` line and deviation in the plan handled, or named in the report?
 
 ### Fit with the surrounding code
 

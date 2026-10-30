@@ -13,6 +13,7 @@ The conventions this fills in are the `writing-plans` skill; this is the skeleto
 
 ## Implementation status
 | Task | Status |
+| Final code review | ⏳ PENDING |
 
 ## Task 1 · <name>
 **Files:** created / modified (`path:line-range`) / test

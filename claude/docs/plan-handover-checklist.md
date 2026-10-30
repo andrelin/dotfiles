@@ -7,7 +7,7 @@ Every item here hands a decision the plan was supposed to make back to the imple
 
 - `TBD`, `TODO`, "implement later", "fill in details".
 - "Add appropriate error handling", "add validation", "handle edge cases" — appropriate how, which cases?
-- "Write tests for the above", with nothing about what they assert.
+- "Write tests for the above", with nothing about which behaviour they prove.
 - "Same as task 3." Tasks get read out of order and implemented in isolation. Say it again.
 - A reference to a type, function or config key that no task defines and that isn't already in the codebase.
 

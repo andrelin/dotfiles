@@ -24,7 +24,7 @@ At company and customer level, `/plan-*.md` is in `$(git rev-parse --git-path in
 | 1 | 6 | 0 | 2 | 3 | 1 | 5 |
 
 Re-evaluation after round 15: continue as is — counts falling, no lens conflict.
-Done (code): round 16; nits: R16-3, R16-4
+Done (code): round 16; unfixed: R16-3, R16-4
 ```
 
 - **One row per finished round:** how many lenses ran, its *verified* findings by severity — a test failure after its
@@ -32,7 +32,7 @@ Done (code): round 16; nits: R16-3, R16-4
 - **Below the table,** in the order they happened: `Re-evaluation after round <n>: <recommendation>`, a stop reading
   `Re-evaluation after round <n>: user decision needed — <question>`; `User decision after round <n>: <answer>`;
   `Note after round <n>: <text>`.
-- **`Done (<kind>): round <n>; nits: <ids or none>`** is always the section's last line.
+- **`Done (<kind>): round <n>; unfixed: <ids or none>`** is always the section's last line.
 - A row with no round in the findings file — run by hand, or the file lost — is history: it counts, and is never
   re-checked.
 
@@ -66,8 +66,8 @@ Read the open section of the kind being run — one whose heading has no `, clos
   before anything else.
 - **The findings file holds a round the log has no row for:** that round was interrupted after its reviewers ran.
   Apply its unfixed findings, write its row, then go on — never dispatch its reviewers again.
-- **A re-evaluation is due** (the last row is round 15, 20, 25, … and no `Re-evaluation after` line names it): run
-  it before the next round.
+- **A re-evaluation is due** (the last row is round 3, 6, 9, … of a plan or 15, 20, 25, … of code, and no
+  `Re-evaluation after` line names it): run it before the next round.
 - **The section ends in `Done (<kind>):`:** say the run is finished and ask whether to start a fresh one.
 - **No open section of this kind:** start at round 1 — a finished log of the other kind doesn't count.
 

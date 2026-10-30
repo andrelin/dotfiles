@@ -50,20 +50,25 @@ file, resuming, closing): their formats are literal.
    > Do not invoke any skill or open `plan-*` or `00-follow-ups-*` files in the repo. Change nothing in the repo;
    > run any experiment in a fresh `mktemp -d`, and delete nothing but that directory, by the path it printed.
    > A scratch repo there: `git init` in a Bash call of its own, then literal paths, never `cd "$var"` or `git -C`.
-   > Lens: `<the lens's heading and questions>`. Severity: `<the scale>`. Report every finding you see, each with a
-   > severity, the location, and the failure scenario or requirement it breaks.
+   > Lens: `<the lens's heading and questions>`. Severity: `<the scale for the kind>`. `[Out of scope: <§ What a
+   > plan review leaves to the code>.]` Report every finding you see, each with a severity, the location, and the
+   > failure scenario or requirement it breaks.
 2. **Verifiers:** one fresh Agent per lens, given that lens's findings, the artifact and the scale, told to refute
    each: drop or downgrade only with a written refutation. Same prohibitions. Unsupported findings — no failure
-   scenario, no requirement — are dropped.
+   scenario, no requirement — are dropped, and in a plan review so is one the out-of-scope line covers.
 3. **Record** the verified findings in the findings file under `## Round <n>`, refutations beside theirs.
-4. **Fix** every surviving `blocking`, `major` and `minor` — yourself, or one fixer Agent told it may edit, makes no git
-   writes, invokes no skill, and reports the paths it changed. Mark each entry `Fixed:`. **Leave nits alone:** every
-   fix is new text the next round reviews, and polishing wording is how a review stops converging.
+4. **Fix** every surviving `blocking` and `major`, and in a code review every `minor` too — yourself, or one fixer
+   Agent told it may edit, makes no git writes, invokes no skill, and reports the paths it changed. Mark each entry
+   `Fixed:`. **Leave the rest alone:** every fix is new text the next round reviews, and polishing a plan or its
+   wording is how a review stops converging.
 5. **Code only:** run the project's tests. A failure is a `blocking` finding of this round; record it, fix it, rerun.
-6. **Log the row.** Then, if the round is 15, 20, 25, … and didn't finish the review, the re-evaluation.
+6. **Log the row.** Then, if the review isn't finished and the round is 3, 6, 9, … of a plan or 15, 20, 25, … of
+   code, the re-evaluation.
 
-**Done** when a round's verified findings hold no `blocking` or `major` and its minors are fixed: write
-`Done (<kind>):` with the round and the unfixed nits' ids. Final — those last fixes are not re-reviewed.
+**Done** when a round's verified findings hold no `blocking` or `major`, and in a code review its minors are fixed:
+write `Done (<kind>):` with the round and the unfixed findings' ids. Final — those last fixes are not re-reviewed.
+**Weight goes on the code review:** a plan is reviewed to be sound and small enough to learn from, and the bugs are
+found in the code it becomes, so a plan review that keeps finding detail is reviewing the wrong artifact.
 
 ## Re-evaluation
 
@@ -84,16 +89,18 @@ the spec requires, and stopping because the remaining findings don't affect corr
    unstaged edits too.
 4. **Personal and company:** offer the commit, run it only on a yes. **Customer:** draft it for the user.
    **Company, no plan, on the default branch:** offer none, and say the company bar wants a branch.
-5. **After the commit runs** — yours on a yes, or the drafted one once the user says it ran — delete every
+5. **Flip the plan's `Final code review` row** to ✅ DONE, the `Done (code):` round in its notes.
+6. **After the commit runs** — yours on a yes, or the drafted one once the user says it ran — delete every
    `refs/checkpoints/<branch>/*` with `git update-ref -d`. A declined commit keeps them, and the report says so.
-6. **The report** names the changed files no verified finding touched — where the user's own read should start.
-7. Then `filing-learnings`, before reporting the review done.
+7. **The report** names the changed files no verified finding touched — where the user's own read should start.
+8. Then `filing-learnings`, before reporting the review done.
 
 ## Red flags
 
 | Thought | Reality |
 | --- | --- |
-| "One more round will settle it." | Past round 15 that is the re-evaluation's call, not yours. |
+| "One more round will settle it." | Past round 3 of a plan or 15 of code, that is the re-evaluation's call. |
+| "The plan doesn't say which test covers this edge case." | The implementer writes it and the code review judges it. |
 | "This major is really a minor." | Only a verifier's written refutation downgrades. Downgrading to end the loop hides it. |
 | "Tell round 2 what round 1 found, to save time." | A reviewer primed with findings re-finds them and misses the rest. |
 | "Only report serious issues." | Models follow a threshold literally and recall drops. Filtering is the verifier's job. |

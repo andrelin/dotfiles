@@ -72,6 +72,7 @@ in § *The staged workflow*. No external spec.
 | 12 · Hidden-Unicode check on agent-loaded files | ⏳ PENDING | |
 | M · Machine-local cleanup (untracked, by hand) | ⏳ PENDING | |
 | 13 · Fold the plan into durable docs and delete it | ⏳ PENDING | |
+| Final code review | ⏳ PENDING | `reviewing-in-rounds code` over the whole plan, before Task 13 deletes it |
 
 Order: 1 → 2 → 2b → 3 → 3b, then 6 → 6b, then 5 → 5b → 8 → 9 → 10 (each builds on the one before;
 Task 9 starts with Task 5's pending edits and runnable-now tests; the rest wait for the end of 10, which flips its row),
@@ -84,7 +85,9 @@ End of 2026-10-23: Tasks 6b and 5b are done. This plan's review ran rounds 6–9
 without `Done (plan):` (§ *Review log (plan)*). Tasks 8, 9 and 10 are built, committed and pushed (`c8a87de`,
 `01a69d0`, `d88e665`), CI green, each 🚧 with its as-built note; nothing in them has had a live run.
 
-**Start next session here, in this order:**
+**Start next session here, in this order** — revised 2026-10-30 to the agile workflow: the real end-to-end run is
+the riskiest thing still untried, so it comes before the scratch-repo batteries, which then cover only what that run
+didn't reach, and what it teaches is folded in before the rest is built on it.
 
 1. **Trigger evals:** `bin/skill-trigger-eval writing-plans` (the flipped `2.11` at most 1 of 3, the rest as in 6b)
    and `bin/skill-trigger-eval implementing-plans` (`1.1` at least 2 of 3) — from a session that needs neither
@@ -93,12 +96,18 @@ without `Done (plan):` (§ *Review log (plan)*). Tasks 8, 9 and 10 are built, co
    `claude --model sonnet "/writing-plans tidy the tip numbering"`, exit after the first reply, and confirm the
    first turn loaded `writing-plans`. A failed spike switches `bin/ai` and `test/test_ai.sh` to `Use the <skill>
    skill: <args>`.
-3. **Task 9's toy runs and Task 5's runnable-now list** (Task 9's first step), then Task 5b's *By number*. The toy
-   repo is set up in the session scratchpad, `build9/toy` with `build9/toy-pristine` to copy variants from; the
-   scratchpad may be gone, in which case rebuild it from Task 9 § *Tests*.
-4. **Task 8's live tests** (about 21; the first files a real public issue on `andrelin/dotfiles`).
-5. **Task 10's end-to-end run,** then Task 5's pending real runs, which flip Task 5's row.
-6. **Then 4 → 7 → 11**, with 12 and M any time, and 13 last.
+3. **Task 9's 2026-10-30 iteration tests** (Task 9, *Changed 2026-10-30*), then **Task 10's end-to-end run**
+   (Task 10 § *Tests*, *End to end*), which is also Task 5's pending real runs. Fix what it breaks, and run
+   `filing-learnings`.
+   **Revisit · what did the real run teach?** Iterate this plan with `ai plan plan-ai-framework.md` before step 4:
+   fold the run's findings into Tasks 4, 7, 11 and 12, and cut every step-4 and step-5 test the run already covered.
+4. **Task 9's toy runs and Task 5's runnable-now list** (Task 9's first step), then Task 5b's *By number* — each
+   only where step 3 didn't already exercise it. The toy repo is set up in the session scratchpad, `build9/toy`
+   with `build9/toy-pristine` to copy variants from; the scratchpad may be gone, in which case rebuild it from
+   Task 9 § *Tests*.
+5. **Task 8's live tests** (about 21; the first files a real public issue on `andrelin/dotfiles`), likewise only
+   where step 3 didn't reach.
+6. **Then 4 → 7 → 11**, with 12 and M any time, and 13 last, each a small change through the workflow it builds.
 
 Also: remove the three merged agent worktrees under `.claude/worktrees/` (`git worktree list`), and run
 `filing-learnings` for this session's detours: a verifier's `mktemp -d` experiment blocked by the guard as customer
@@ -117,8 +126,8 @@ Task 12; and the user's characterisation-tests requirement, in Tasks 5 and 9.
 
 Answered by the user on 2026-10-16:
 
-- **No hard round cap** on review loops: the round-15 re-evaluation, and every 5 rounds after, stays the only brake,
-  and a recommendation to stop is always the user's decision (Task 5).
+- **No hard round cap** on review loops: the re-evaluation stays the only brake, and a recommendation to stop is
+  always the user's decision (Task 5). Since 2026-10-30 it comes after round 3 of a plan, round 15 of code.
 - **Start Task 1:** yes, now done. Whole-plan review by hand stops here; Tasks 5b and 8–11 get their next review from
   `reviewing-in-rounds` once Task 5 is built.
 - **Company level gets personal-level rights:** commit, push, open and merge PRs, every tracker write. The guard
@@ -253,6 +262,16 @@ The user's requirements, verbatim in substance:
 - **Review runs in rounds of fresh adversarial agents** on several angles, until every angle comes back with nothing
   but minor findings. Round 15 is not a stop: it triggers a re-evaluation of the review process itself before
   continuing, and from then on one every 5 rounds (20, 25, …).
+- **The workflow is agile** (2026-10-30): small tasks done quickly — implement, test, review, learn, iterate — so a
+  plan can't settle every problem up front. A plan review checks that the plan is sound, well founded and sliced
+  small, and leaves implementation detail, tests included, to the code; the code review at the end is where the
+  thoroughness goes, and where every bug is hunted.
+- **Planning is iterative too** (2026-10-30): the plan is revisited between tasks and at the end of each section,
+  folding in what the built tasks taught, and only what is next is planned in full; later tasks may be sketches.
+- **Both code reviews are mandatory** (2026-10-30): the task review after every task, and the final
+  `reviewing-in-rounds code` after the whole plan — agents had been skipping the final one.
+- **Error handling and edge-case tests are the implementer's, never dropped** (2026-10-30): not designed up front,
+  but added for every task whether listed or not, checked by the task review and hunted by the final review.
 - **Models per stage are configurable defaults,** the user's suggestions being Haiku for issues, Opus for plans and
   reviews, Sonnet for implementation — suggestions only.
 
@@ -271,6 +290,12 @@ Decisions:
 - **Rejected: `opusplan`.** It switches Opus→Sonnet inside one session, which gives up the clean context per stage.
 - **The handoff is an artifact, never chat:** issue or tracker item → `plan-<n>-<slug>.md` → branch plus the plan's
   status table → review log appended to the plan.
+- **An iteration loops back through the stages** (2026-10-30): `implementing-plans` stops at a `## Revisit` heading,
+  before a `Sketch:` task, or when what it learned changes an upcoming requirement, and prints `ai plan <plan-file>`,
+  `ai review plan <plan-file>` and `ai implement <plan-file>`. A re-review is a fresh run, closing the old log, so
+  `implementing-plans`' `Done (plan):` gate holds unchanged.
+- **The status table's last row is `Final code review`,** ⏳ PENDING until `reviewing-in-rounds code` ends in
+  `Done (code):` and flips it, so a skipped final review is visible in the plan itself.
 - **Company level is unguarded since 2026-10-16** (the user's call: the employer wants AI-driven development
   explored). Claude commits, pushes, opens and merges PRs and writes to the tracker there, as on personal work, and
   the guard blocks only a write whose strictest target is customer. What company adds instead is a quality bar:
@@ -290,15 +315,19 @@ Decisions:
   asked holds on personal and company work too. The superpowers execution skills commit per task, which the guard
   would block mid-run at customer level.
 - **Deviation from the user's wording: "only very minor" is read as "no `blocking` or `major` left, and the round's
-  minors fixed in place"** (Task 5's *Done is final*). The alternative, re-reviewing until only nits remain, costs a
+  minors fixed in place"** for code (Task 5's *Done is final*); a plan review fixes no minors at all, since each fix
+  is new plan text for the next round and a minor is cheap to settle while implementing. The alternative, re-reviewing until only nits remain, costs a
   round per minor fix.
 - **A new session restarts the issue interview;** only compaction resumes it, from the scratchpad draft.
 - **Deviation from "filed automatically": the interview's last turn shows the draft and asks "anything to change?"**
   before Claude files. A world-readable issue is the one place a last look is worth a turn.
-- **The round-15 re-evaluation applies its own recommendation and continues;** it stops for the user only when the
+- **A plan review re-evaluates after round 3, and every 3 rounds after;** a code review after round 15, every 5 after.
+  Rounds 6–9 of this plan, 88–134 findings each and mostly test cases and data-flow details of code not yet written,
+  are what a plan review must not turn into.
+- **The re-evaluation applies its own recommendation and continues;** it stops for the user only when the
   recommendation is a decision that is theirs.
-- **One review loop for plans and code.** `writing-plans`' existing "review until nothing load-bearing" becomes a call
-  to `reviewing-in-rounds` with the plan lenses (Task 5).
+- **One review loop for plans and code, with a scale and a lens set per kind.** `writing-plans`' existing "review
+  until nothing load-bearing" becomes a call to `reviewing-in-rounds` with the plan lenses (Task 5).
 - **Reviewing the user's own work and someone else's are two skills** (the user's call, after round 4): rounds that
   fix between them only make sense on the user's own branches; on anyone else's, Claude writes a report for the user
   to give as feedback and changes nothing (Task 5b). They share the lenses and severity scale.
@@ -1429,13 +1458,13 @@ and 10:
   | 1 | 6 | 0 | 2 | 3 | 1 | 5 |
 
   Re-evaluation after round 15: continue as is — counts falling, no lens conflict.
-  Done (code): round 16; nits: R16-3, R16-4
+  Done (code): round 16; unfixed: R16-3, R16-4
   ```
 
   The counts are the round's *verified* findings, a test failure after its fixes included; `Fixed` is how many were
   fixed that round. Below the table, in the order they happened: `Re-evaluation after round <n>: <recommendation>` (a stop reads
   `…: user decision needed — <question>`), `User decision after round <n>: …`, `Note after round <n>: …`; and
-  `Done (<kind>): round <n>; nits: <ids or none>` is always the section's last line. Task 9 checks for `Done (plan):`.
+  `Done (<kind>): round <n>; unfixed: <ids or none>` is always the section's last line. Task 9 checks for `Done (plan):`.
 - **The findings file** `<plan-stem>-review-findings-<kind>.md`: every round's verified findings in full, with ids
   `R<round>-<n>`. Reviewers never see it; the re-evaluation and a resumed session read it.
 - **Per kind:** round numbers, `Done`, resuming and the re-evaluation count. A fresh run after `Done (<kind>):`
@@ -1455,20 +1484,26 @@ and 10:
   first plan or review file is written, by whichever skill writes it (`writing-plans`, `reviewing-in-rounds`,
   `implementing-plans`).
 
-**`review-lenses.md`:** the severity scale, then a plan lens set and a code lens set, each lens a heading with three
-to five questions.
+**`review-lenses.md`:** the severity scale, what a plan review leaves to the code, then a plan lens set and a code
+lens set, each lens a heading with two to four questions. Changed 2026-10-30, for the agile workflow (§ *The staged
+workflow*); the set before it is in the deviation below.
 
-- Severity: `blocking` — wrong result, data loss, a secret or a forbidden write, or an executor who can't proceed;
-  `major` — a likely wrong guess by an executor, a bug on a plausible path, or a requirement with no test that can
-  fail; `minor` — real but cheap to live with; `nit` — wording and style.
-- Plan lenses: scope (narrowest change, out-of-scope stated, gold-plating, the missing obvious part); clarify (every
-  point an executor would guess, as a question); data flow and failure modes per new boundary; test matrix (every
-  requirement ↔ a named test, per `writing-tests`); consistency (spec → task coverage, produced/consumed names);
-  work context (no forbidden write, nothing customer-identifying on a public repo).
-- Code lenses: correctness and failure modes; tests (`writing-tests`; a removed or loosened assertion is always
-  `blocking`); security and work context (secrets, anything
-  customer-identifying on a public repo, forbidden writes in scripts or CI); plan conformance (the diff does what its
-  task says, no more); fit with the surrounding code (naming, idiom, `cutting-comments`); docs ship with the change.
+- Severity, one column per kind. Code: `blocking` — wrong result, data loss, a secret or a forbidden write; `major`
+  — a bug on a plausible path, or a requirement with no test that can fail. Plan: `blocking` — builds the wrong
+  thing, a forbidden write, or an executor who can't start; `major` — an unverified assumption the approach rests
+  on, or a decision costly to reverse once built. Both: `minor` — real but cheap; `nit` — wording and style.
+- Out of scope in a plan review, dropped by the verifier as `left to the code`: exact test cases and assertions,
+  edge-case inputs, error handling, command flags and output formats, and any choice the executor can make and a
+  reviewer can check in the diff.
+- Plan lenses: grounding (the approach solves a real problem, its assumptions checked, requirements traced);
+  scope and slicing (narrowest tasks, each runnable and naming the behaviour its tests prove, riskiest first,
+  out-of-scope stated); decisions an executor can't make (the user's, user-visible or costly to reverse);
+  consistency (produced/consumed names, status table and order); work context.
+- Code lenses, the thorough review: correctness and failure modes, which takes the per-boundary questions the plan's
+  data-flow lens asked; tests (`writing-tests`; every requirement and boundary tested; a removed or loosened
+  assertion is always `blocking`); security and work context; plan conformance; the change as a whole (tasks
+  working end to end, plan assumptions the code proved wrong, `Deferred:` lines); fit with the surrounding code;
+  docs ship with the change.
 
 **Front matter:**
 
@@ -1509,13 +1544,15 @@ description: Read before reviewing your own plan or a branch this workflow built
    question before anything else, and runs a due re-evaluation before the next round. A run on a kind whose open
    section already ends in `Done (<kind>):` says so and asks whether to start a fresh run; on a yes it closes that
    section and starts at round 1.
-7. **Done** when a round's verified findings hold no `blocking` or `major` and its minors are fixed. Done is final:
-   those last fixes aren't re-reviewed — the accepted cost of stopping at "only very minor".
-8. **Re-evaluation after round 15, and every 5 rounds after** (20, 25, …), only when that round didn't finish the
-   review. A fresh subagent reads the log and findings file and recommends continue as is, change a lens, or a
-   decision for the user; the first two are applied, logged, and the loop goes on; the third stops for the user. A
-   change to the severity scale, two lenses in conflict over what the spec requires, and a recommendation to stop
-   because the remaining findings don't affect correctness or the requirements, are always the third.
+7. **Done** when a round's verified findings hold no `blocking` or `major`, and in a code review its minors are
+   fixed; a plan review fixes only `blocking` and `major`. Done is final: those last fixes aren't re-reviewed — the
+   accepted cost of stopping at "only very minor".
+8. **Re-evaluation after round 3 of a plan and every 3 rounds after, or round 15 of code and every 5 after**
+   (20, 25, …), only when that round didn't finish the review. A fresh subagent reads the log and findings file and
+   recommends continue as is, change a lens, or a decision for the user; the first two are applied, logged, and the
+   loop goes on; the third stops for the user. A change to the severity scale, two lenses in conflict over what the
+   spec requires, and a recommendation to stop because the remaining findings don't affect correctness or the
+   requirements, are always the third.
 9. **Completion of a code review:** stage the paths the fixes changed — the leftovers (Task 9 § *The listing*) at
    completion that weren't leftovers when round 1 started, never `plan-*`; one that was a leftover both times is
    named in the report as not staged. On personal and company work offer the commit and run it only on the user's
@@ -1675,6 +1712,10 @@ red flags for the parts an agent argues its way out of.
 
 **Deviation:** `review-lenses.md` is 94 lines, not ≤ 80: twelve lenses as headings with three questions each don't
 fit 80, and the lens shape was kept over the line count.
+**Deviation, 2026-10-30:** the plan lenses were scope, clarify, data flow and failure modes, test matrix,
+consistency and work context, on one severity scale whose `major` included "a likely wrong guess by an executor" and
+"a requirement with no test that can fail". On this plan they produced rounds of 88–134 findings, mostly test cases
+and edge cases of code not yet written, and never converged; the spec above is the replacement, now 107 lines.
 
 With the skill, the same scratch setups (headless needs `--add-dir` for `~/.claude/docs`, or the session stops for
 want of the lens file — which it did, rightly, rather than invent lenses):
@@ -1701,6 +1742,9 @@ Still to run, needing Tasks 8–10 (Task 10's end runs them): intake against Tas
 Runnable now, in scratch repos (Task 9's first step runs them, and the next list): re-evaluation, verification,
 closed names, no plan, exclude, tests after fixes, test tampering, the remaining whose-work cases,
 the tracker-ref intake cases bar `B1.2`, and this plan's next review to `Done (plan):`.
+Added 2026-10-30, runnable now: a plan whose test section lists no cases, only behaviours → no finding about missing
+cases survives verification; a plan review seeded with 2 rows → `Re-evaluation after round 3:` is logged; a round
+holding only minors → `Done (plan):` with those minors' ids and none of them fixed.
 Untested behaviours rounds 6 and 7 found, also runnable now: a review that drops a seeded refutable finding, a lens
 change applied by a re-evaluation, a severity-scale change going to the user, rounds 16 and 21 logging no
 re-evaluation, the explicit `model` on each subagent, and overlapping Files lists making one commit.
@@ -2646,6 +2690,31 @@ level" sentence went; it also overrides SDD's "rulings, not stalls", which would
 `writing-plans`' intake omits "the tracker item then holds the link", which no list asked for.
 `check-md-limits`, markdownlint, `jq` and the `grep` checks pass; the toy setup is ready for the user's runs.
 
+**Changed 2026-10-30, for the agile workflow** (§ *The staged workflow*):
+
+- Every task gets its task review, a one-line task included; none is checkpointed without one passing.
+- The implementer's prompt carries, verbatim, "handle every error path and test the edge cases and boundaries of
+  what you build, whether or not the task lists them", and the task reviewer's brief asks whether it did.
+- New § *Between tasks, revisit the plan*: after each checkpoint, fold what the task taught into the upcoming
+  tasks; stop for an iteration at a `## Revisit` heading, before a `Sketch:` task, or when a fold-in would change
+  a requirement or the approach.
+- § *Finish* is now *Finish by handing over to the final review*: the report opens "Not done: the final code review
+  is next" and leaves the `Final code review` row ⏳ PENDING; red flags for skipping either review.
+- Elsewhere: `writing-plans` gains § *Planning in iterations* (sketches, `## Revisit`, `/writing-plans <plan-file>`)
+  and the `Final code review` row; `reviewing-in-rounds` flips that row at completion; `review-lenses.md` says
+  what a plan review leaves to the code is still the implementer's, and consistency checks an iteration folded in
+  what was learned.
+
+Tests, runnable on the toy repo, the iteration ones before the end-to-end run since it relies on them:
+
+- A toy plan with a `## Revisit · …` heading after task 1 → the run stops after task 1's checkpoint, printing the
+  three lines, task 2 not started; the same with task 2 a `Sketch:` → it stops before task 2.
+- A one-line task → its task reviewer is dispatched; the implementer's prompt holds the error-path line verbatim.
+- A finished run → the report's first line is "Not done: the final code review is next", the `Final code review`
+  row ⏳ PENDING; after `reviewing-in-rounds code` to `Done (code):`, it is ✅ DONE.
+- `/writing-plans plan-<toy>.md` after the stop → task 2 detailed with task 1's `Deferred:` line folded in, and the
+  plan review a fresh run with the old log closed.
+
 ## Task 10 · `bin/ai` stage launcher
 
 **Files:**
@@ -2964,3 +3033,5 @@ Note after round 9: verified majors rose (19 → 25), several from round 8's own
 baseline), and five defects were found by two or three lenses each.
 User decision after round 9: stop reviewing and build Tasks 8–10; the review stays open without `Done (plan):`, and
 what it would still find is left to the build and the code review.
+Note after round 9: on 2026-10-30 the plan review was rescoped for the agile workflow (§ *The staged workflow*,
+Task 5's 2026-10-30 deviation); rounds 6–9 were its evidence. A next run starts at round 1 with the new lenses.

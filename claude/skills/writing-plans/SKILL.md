@@ -33,11 +33,13 @@ These are this user's conventions, not a plugin's plan format: where `superpower
 - **Except when a human implements it: write the imports out in full**, one symbol per line, never a wildcard —
   they have no auto-import, so a bare symbol costs a lookup per line and a guessed package is a compile error.
   **Assume an agent executor unless the plan is explicitly for a person**; that case is rare, so don't pay for it by default.
-- **Spell out the tests.** Every plan that changes code says which unit and integration tests to write, following
-  the project's conventions. A plan without its test plan is incomplete.
+- **Name what the tests prove, not the cases.** Each task says which behaviours its unit and integration tests pin,
+  following the project's conventions; the cases and assertions are the implementer's, judged in the code review.
+  Error handling and edge-case tests are never left out, only left to the implementer, who adds what the code needs.
+- **Small tasks, riskiest first:** order them so the assumption most likely to be wrong is built and learned from
+  before the rest rests on it. A plan doesn't settle what its first task will teach; it gets updated instead.
 - **Weakly tested code gets tests first:** the first task pins the current behaviour of what the plan touches, before
   any task changes it. Every plan ends with an end-to-end verification step.
-- Terse and code-reference-heavy. No "what this code does" recaps — the reader has the codebase.
 
 ## Structure
 
@@ -46,11 +48,22 @@ tell whether their piece fits), **the spec it argues from**, and **global constr
 requirements every task inherits (version floors, dependency limits, naming rules, platform targets), as exact
 values. Stated once there, they aren't repeated in, or forgotten by, each task.
 They name the test suite on a line of its own, `Suite: <command>` or `Suite: none`, which `implementing-plans` runs.
-Any non-trivial plan also carries an implementation status table.
+Any non-trivial plan also carries an implementation status table, whose last row is always `Final code review`.
 
 Then map which files each task creates or modifies **before** writing the tasks: that is where the decomposition
 is decided, and doing it up front surfaces two tasks fighting over one file while it's cheap to fix.
 Creating the file from scratch? The skeleton is `~/.claude/docs/plan-file-template.md`.
+
+## Planning in iterations
+
+The plan is revisited between tasks and sections as the work teaches, so only what is next is planned in full.
+
+- **Detail the tasks up to the first thing still to learn;** later ones may be sketches: heading, issue and a
+  `Sketch:` line with the goal and rough scope, no Files, Interfaces or Tests. A sketch is never implemented.
+- **End a section with `## Revisit · <the question its tasks answer>`** between tasks, where what is built should
+  change what comes next. `implementing-plans` stops there, and at a sketch, for an iteration.
+- **Iterating** (`/writing-plans <plan-file>`): read its deviations, `Deferred:` lines and the code built so far; fold
+  them into the upcoming tasks, detail the next sketches, then review it as at handover — a fresh run of the review.
 
 ## Sizing a task
 
@@ -73,7 +86,7 @@ Fold setup, configuration, scaffolding and doc updates into the task whose deliv
 - **Interfaces** — what this task consumes from earlier tasks and what later ones will rely on, exact names and
   types. Load-bearing for an agent executor: it sees its own task and the codebase, not the neighbouring tasks,
   so anything a neighbour depends on has to be written where it will actually be read.
-- **The tests to write**, per § *Writing one*.
+- **The tests to write**, per § *Writing one*. Terse and code-reference-heavy, no recaps of what code does.
 
 ## Before handing it over
 

@@ -49,10 +49,14 @@ Then, in this order:
 Use `superpowers:subagent-driven-development` (7.0.0) for its loop: per task a fresh implementer
 (`implementer-prompt.md`), then a fresh task reviewer (`task-reviewer-prompt.md`; after each fix
 `re-review-prompt.md`), each review given the whole task's input re-captured, never a fix-only diff.
+**Every task gets its task review**, a one-line task included: none is checkpointed or ✅ DONE without one passing.
 
 - **The implementer** gets that task's text, § *Global constraints*, the interfaces it consumes and any
   starting-point leftovers; its prompt, like every fixer's, carries this line verbatim:
   "no git writes; never delete or loosen an existing test; report the paths you changed".
+  The implementer's also carries, verbatim: "handle every error path and test the edge cases and boundaries of what
+  you build, whether or not the task lists them" — the plan leaves them to implementation, never out. The task
+  reviewer's brief asks whether they are.
   An existing test is any in the tree when that subagent starts, its own task's included.
 - **The review input** replaces `scripts/review-package`, since nothing is committed and `BASE..HEAD` is empty:
   `git diff -- <paths>` plus the full content of each new file (`git ls-files --others --exclude-standard -- <paths>`),
@@ -100,23 +104,40 @@ the run with the whole batch unstaged.
   restores the index, `git checkout <ref> -- <paths>` the tree. Then the task's row becomes ✅ DONE.
 - **The plan file is never staged.** The final report lists the refs; the code review deletes them after the commit.
 
+## Between tasks, revisit the plan
+
+The plan is iterated as the work teaches, not settled up front (`writing-plans` § *Planning in iterations*).
+After each checkpoint, before the next batch:
+
+- **Fold in what the task taught:** a wrong assumption, a `Deferred:` line, an interface that came out different —
+  into every upcoming task it touches, each edit noted as a deviation in that task.
+- **Stop for a plan iteration** at a `## Revisit` heading, before a `Sketch:` task, or when a fold-in would change an
+  upcoming task's requirement or the approach: print `ai plan <plan-file>` to iterate it, then
+  `ai review plan <plan-file>`, then `ai implement <plan-file>` to resume; the run's report says why it stopped.
+
 ## Keeping the plan in sync
 
 Per `writing-plans` § *Keeping it in sync*, per task: status, and any deviation inline. Never edit a task's spec to
 match what was built without saying so in that task. A task review that flags a deviation from the plan stops the
 run, the batch unstaged; the user's ruling goes in that task's section.
 
-## Finish by handing over, not reviewing
+## Finish by handing over to the final review
 
-Run `filing-learnings`, then print `ai review code <plan-file>` for a fresh session — a review in this session
-anchors on its own reasoning. The final report lists the refs, each task's reported paths, the `Deferred:` lines,
-the unstaged suite or ignored artifacts, and whether a baseline ran. A run that stopped part-way prints no
+**The work isn't finished until the final code review says `Done (code):`**, whatever the task reviews found — they
+each saw one task, never the whole. Run `filing-learnings`, then print `ai review code <plan-file>` for a fresh
+session — a review in this session anchors on its own reasoning — and open the report with "Not done: the final
+code review is next". The status table's `Final code review` row stays ⏳ PENDING; only that review flips it.
+The final report lists the refs, each task's reported paths, the `Deferred:` lines, the unstaged suite or ignored
+artifacts, and whether a baseline ran. A run that stopped part-way prints no
 `ai review code` line; it says which tasks aren't ✅ DONE.
 
 ## Red flags
 
 | Thought | Reality |
 | --- | --- |
+| "Every task passed its review, so it's done." | Not until the final code review ends in `Done (code):`. |
+| "This task is too small to review." | Every task gets its task review. |
+| "The task doesn't mention error handling." | The implementer adds it, and the edge-case tests, anyway. |
 | "A checkpoint commit is safer." | Nothing is committed here. The index and the ref are the checkpoint. |
 | "`git add -A` is quicker." | It stages the user's stray files as the plan's. Stage each task's Files list. |
 | "`git stash`, then `stash pop`." | Without `--index` the pop unstages every checkpoint. |

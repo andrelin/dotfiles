@@ -56,6 +56,7 @@ file, resuming, closing): their formats are literal.
 2. **Verifiers:** one fresh Agent per lens, given that lens's findings, the artifact and the scale, told to refute
    each: drop or downgrade only with a written refutation. Same prohibitions. Unsupported findings — no failure
    scenario, no requirement — are dropped, and in a plan review so is one the out-of-scope line covers.
+   A plan lens that reported no `blocking` or `major` needs no verifier, since nothing it found gets fixed.
 3. **Record** the verified findings in the findings file under `## Round <n>`, refutations beside theirs.
 4. **Fix** every surviving `blocking` and `major`, and in a code review every `minor` too — yourself, or one fixer
    Agent told it may edit, makes no git writes, invokes no skill, and reports the paths it changed. Mark each entry

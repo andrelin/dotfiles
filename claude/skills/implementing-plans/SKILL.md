@@ -55,8 +55,8 @@ Use `superpowers:subagent-driven-development` (7.0.0) for its loop: per task a f
   starting-point leftovers; its prompt, like every fixer's, carries this line verbatim:
   "no git writes; never delete or loosen an existing test; report the paths you changed".
   The implementer's also carries, verbatim: "handle every error path and test the edge cases and boundaries of what
-  you build, whether or not the task lists them" — the plan leaves them to implementation, never out. The task
-  reviewer's brief asks whether they are.
+  you build, whether or not the task lists them" — the plan leaves them to implementation, never out. Every task
+  review's brief, re-reviews included, asks whether they are.
   An existing test is any in the tree when that subagent starts, its own task's included.
 - **The review input** replaces `scripts/review-package`, since nothing is committed and `BASE..HEAD` is empty:
   `git diff -- <paths>` plus the full content of each new file (`git ls-files --others --exclude-standard -- <paths>`),

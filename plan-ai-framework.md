@@ -60,14 +60,14 @@ in § *The staged workflow*. No external spec.
 | 3 · User-level settings hardening | ✅ DONE | merged into the real settings 2026-10-16; marker check 2026-10-19 |
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
-| 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real-run tests pending; Task 9's first-step edits made 2026-10-23 |
+| 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real runs passed in Task 10's end-to-end run 2026-10-30; runnable-now list pending |
 | 5b · `reviewing-for-feedback` skill | ✅ DONE | first review, re-review and hand-over tested 2026-10-23; the PR-number case written 2026-10-23, its *By number* test pending |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ✅ DONE | scored 2026-10-23: 20/20 and 20/21, both descriptions kept; `writing-plans`' `1.11` a known miss until Task 9 |
 | 7 · Instruction-set audit | ⏳ PENDING | |
-| 8 · `writing-issues` skill | 🚧 PARTIAL | built 2026-10-23, automated checks pass; the user's live tests pending; deviations in Task 8 |
-| 9 · `implementing-plans` skill | 🚧 PARTIAL | built 2026-10-23 with its first step; trigger evals and every toy run pending; deviations in Task 9 |
-| 10 · `bin/ai` stage launcher | 🚧 PARTIAL | built 2026-10-23, `test/test_ai.sh` passes; `type -a ai` and the spike passed 2026-10-30; the end-to-end run is the user's |
+| 8 · `writing-issues` skill | 🚧 PARTIAL | built 2026-10-23, automated checks pass; the personal failed-create path passed end to end 2026-10-30, the other live tests pending |
+| 9 · `implementing-plans` skill | 🚧 PARTIAL | trigger evals, iteration tests and the plain toy run (end to end) passed 2026-10-30; the toy variants pending |
+| 10 · `bin/ai` stage launcher | ✅ DONE | `type -a ai`, the spike and the end-to-end run passed 2026-10-30; results in Task 10 |
 | 11 · Claude config on Linux and WSL | ⏳ PENDING | |
 | 12 · Hidden-Unicode check on agent-loaded files | ⏳ PENDING | |
 | M · Machine-local cleanup (untracked, by hand) | ⏳ PENDING | |
@@ -99,8 +99,10 @@ didn't reach, and what it teaches is folded in before the rest is built on it.
    **Task 10's end-to-end run**
    (Task 10 § *Tests*, *End to end*), which is also Task 5's pending real runs. Fix what it breaks, and run
    `filing-learnings`.
-   **Revisit · what did the real run teach?** Iterate this plan with `ai plan plan-ai-framework.md` before step 4:
-   fold the run's findings into Tasks 4, 7, 11 and 12, and cut every step-4 and step-5 test the run already covered.
+   **Revisit · what did the real run teach?** Done 2026-10-30, every stage passing (Task 10, *End to end, run
+   2026-10-30*): its two skill gaps fixed, the plugin fallback folded into Task 4, the plan-detail drift and the
+   skill's length into Task 7, nothing for 11 or 12. Covered now, so off steps 4 and 5: Task 5's "Still to run" list,
+   Task 9's plain *Toy run, personal*, and Task 8's personal failed-create and "keep it" path.
 4. **Task 9's toy runs and Task 5's runnable-now list** (Task 9's first step), then Task 5b's *By number* — each
    only where step 3 didn't already exercise it. The toy repo is set up in the session scratchpad, `build9/toy`
    with `build9/toy-pristine` to copy variants from; the scratchpad may be gone, in which case rebuild it from
@@ -116,8 +118,11 @@ spurious "pushed to main, watch CI" hook after read-only commands; the guard's `
 workers stealing each other's candidate command; and round 8's fixes seeding round 9's majors.
 
 Headless test runs: `claude -p … --output-format stream-json --verbose`, with `--add-dir ~/.claude/docs` (and the
-checkout's `claude/docs`) or the skill stops for want of its docs; `--permission-mode bypassPermissions` where the
-point is that nothing changes, since the guard still runs. Cost so far: a full in-rounds review of a toy plan is
+checkout's `claude/docs`) or the skill stops for want of its docs. Auto mode refuses to launch an agent that runs
+them with `bypassPermissions`, even on the user's yes (2026-10-30), so each gets `--permission-mode acceptEdits` and
+an `--allowedTools` list of `Bash(<cmd>:*)` patterns. Compound commands, heredocs and `$(…)` still fall outside it,
+so subagents mostly lose Bash and the stage's main session runs the suites; `chmod` and `mv` were needed besides.
+Resume a stage that asks a question with `claude -p --resume <session_id> "<answer>"`. Cost so far: a full in-rounds review of a toy plan is
 about $2 a round on opus; a feedback review about $1.
 
 Done in the first session: review rounds 1–5 on this plan (§ *Review log (plan)*, every round-5 finding fixed); the
@@ -1337,6 +1342,10 @@ anchor by its quoted text.
 
 **Interfaces:** none.
 
+**Folded in 2026-10-30:** while a personal skill is missing — `bin/skill-trigger-eval` moves it out for a run — a
+same-named plugin skill answers its slash command silently: `/writing-plans` ran `superpowers:writing-plans`. The doc
+says so where it explains shadowing, so a run that reads like the plugin's is checked for a missing personal skill.
+
 **Change.** Replace § *The `superpowers` plugin, specifically*, from "Twelve of its fourteen" through the end of its table.
 Rewrite the paragraph after it ("Two personal skills cover the same ground…") too: `reviewing-in-rounds` (own work)
 and `reviewing-for-feedback` (someone else's) are now the personal counterparts of
@@ -2078,6 +2087,11 @@ description: Read before writing or changing any skill's description, even a one
 **Files:** modified only where the audit finds something, most likely `claude/skills/*/SKILL.md` front matter.
 
 **Interfaces:** none.
+
+**Folded in 2026-10-30, from the end-to-end run:** the audit also checks whether `writing-plans` still pulls plans
+into implementation detail — the toy plan fixed leading zeros, an 18-digit limit and `-0` up front, user-visible but
+the kind of choice the agile workflow leaves to implementing — and trims `implementing-plans`, now 117 lines against
+the 100 aim, at a seam such as § *By hand* and *Models* into a doc.
 
 **Change:**
 
@@ -2839,6 +2853,21 @@ exactly; one naming only one of them checks that line, the model's line being th
 the plan file, then `claude` on `PATH`, so `CLAUDECODE=1 ai bogus` names the terminal; an absolute plan path is
 checked as given; a missing `claude` prints `ai: claude: command not found`. `test/test_ai.sh` (52 assertions) also
 greps the docs edits and compares the defaults with `bin/skill-trigger-eval`.
+
+**End to end, run 2026-10-30** — headless, an agent playing the user, scoped allowlists (§ *Handover*), about $11:
+
+- *Issue* (sonnet): interviewed, the create failed on "Could not resolve to a Repository", "keep it" left an
+  `(issue to file)` item with `Target: github.com/andrelin/x`, and printed `ai plan '<title>'`. Pass.
+- *Plan* (opus): offered to just make it, then wrote `plan-double.md` ending in the `Final code review` row; review
+  round 1 fixed its one major, round 2 found only minors and nits, fixed none, `Done (plan): round 2`; item moved to
+  in-flight, `ai implement plan-double.md` printed. Pass. It skipped verifiers on a round with no `blocking` or
+  `major`, unsanctioned then; `reviewing-in-rounds` now allows it for a plan lens, since nothing it found is fixed.
+- *Implement* (sonnet): rerun once with `chmod` and `mv` allowed; branch `double`, both files staged, nothing
+  committed, `Base:`, Task 1 ✅ DONE with its ref, the row ⏳ PENDING, first line `Not done: the final code review is
+  next.`, a task review and re-review dispatched. Pass. The re-review prompt lacked the error-path question, now
+  in every task review's brief.
+- *Review* (opus): 7 lenses, 3 minors fixed, `Done (code): round 1`, the row flipped, one commit on the yes with
+  exactly the two files, no checkpoint refs left. Pass.
 
 ## Task 11 · Claude config on Linux and WSL
 

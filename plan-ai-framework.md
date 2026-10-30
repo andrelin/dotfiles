@@ -100,8 +100,8 @@ didn't reach, and what it teaches is folded in before the rest is built on it.
    (Task 10 § *Tests*, *End to end*), which is also Task 5's pending real runs. Fix what it breaks, and run
    `filing-learnings`.
    **Revisit · what did the real run teach?** Done 2026-10-30, every stage passing (Task 10, *End to end, run
-   2026-10-30*): its two skill gaps fixed, the plugin fallback folded into Task 4, the plan-detail drift and the
-   skill's length into Task 7, nothing for 11 or 12. Covered now, so off steps 4 and 5: Task 5's "Still to run" list,
+   2026-10-30*): its two skill gaps fixed, the plugin fallback folded into Task 4, the skill's length into Task 7,
+   nothing for 11 or 12. Covered now, so off steps 4 and 5: Task 5's "Still to run" list,
    Task 9's plain *Toy run, personal*, and Task 8's personal failed-create and "keep it" path.
 4. **Task 9's toy runs and Task 5's runnable-now list** (Task 9's first step), then Task 5b's *By number* — each
    only where step 3 didn't already exercise it. The toy repo is set up in the session scratchpad, `build9/toy`
@@ -2088,10 +2088,10 @@ description: Read before writing or changing any skill's description, even a one
 
 **Interfaces:** none.
 
-**Folded in 2026-10-30, from the end-to-end run:** the audit also checks whether `writing-plans` still pulls plans
-into implementation detail — the toy plan fixed leading zeros, an 18-digit limit and `-0` up front, user-visible but
-the kind of choice the agile workflow leaves to implementing — and trims `implementing-plans`, now 117 lines against
-the 100 aim, at a seam such as § *By hand* and *Models* into a doc.
+**Folded in 2026-10-30, from the end-to-end run:** the audit trims `implementing-plans`, now 117 lines against the
+100 aim, at a seam such as § *By hand* and *Models* into a doc. A plan settling a few edge cases up front is fine
+(the user, 2026-10-30); what the workflow must avoid is a plan review that keeps finding more to solve, which the
+round-3 re-evaluation catches.
 
 **Change:**
 

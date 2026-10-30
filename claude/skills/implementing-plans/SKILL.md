@@ -125,8 +125,8 @@ run, the batch unstaged; the user's ruling goes in that task's section.
 
 **The work isn't finished until the final code review says `Done (code):`**, whatever the task reviews found — they
 each saw one task, never the whole. Run `filing-learnings`, then print `ai review code <plan-file>` for a fresh
-session — a review in this session anchors on its own reasoning — and open the report with "Not done: the final
-code review is next". The status table's `Final code review` row stays ⏳ PENDING; only that review flips it.
+session — a review in this session anchors on its own reasoning — and make the report's first line, verbatim,
+`Not done: the final code review is next.` The status table's `Final code review` row stays ⏳ PENDING; only that review flips it.
 The final report lists the refs, each task's reported paths, the `Deferred:` lines, the unstaged suite or ignored
 artifacts, and whether a baseline ran. A run that stopped part-way prints no
 `ai review code` line; it says which tasks aren't ✅ DONE.

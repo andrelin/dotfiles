@@ -95,7 +95,8 @@ didn't reach, and what it teaches is folded in before the rest is built on it.
 2. **Task 10's quick checks** — passed 2026-10-30: `type -a ai` finds only `bin/ai`; the spike in an empty scratch
    repo, Claude Code 2.1.308 on sonnet, kept `/writing-plans` and its first reply applied the personal skill's size
    gate ("needs no plan, so I'd just make it"), so `bin/ai` keeps the slash-command form.
-3. **Task 9's 2026-10-30 iteration tests** (Task 9, *Changed 2026-10-30*), then **Task 10's end-to-end run**
+3. **Task 9's 2026-10-30 iteration tests** — run 2026-10-30, two fixes made (Task 9, *Changed 2026-10-30*) — then
+   **Task 10's end-to-end run**
    (Task 10 § *Tests*, *End to end*), which is also Task 5's pending real runs. Fix what it breaks, and run
    `filing-learnings`.
    **Revisit · what did the real run teach?** Iterate this plan with `ai plan plan-ai-framework.md` before step 4:
@@ -2713,6 +2714,22 @@ Tests, runnable on the toy repo, the iteration ones before the end-to-end run si
   row ⏳ PENDING; after `reviewing-in-rounds code` to `Done (code):`, it is ✅ DONE.
 - `/writing-plans plan-<toy>.md` after the stop → task 2 detailed with task 1's `Deferred:` line folded in, and the
   plan review a fresh run with the old log closed.
+
+Run 2026-10-30, headless on sonnet with a scoped tool allowlist (auto mode refuses `bypassPermissions` agents), about
+$6.30 in all:
+
+- Revisit stop and Sketch stop: pass — task 1 checkpointed and ✅ DONE, task 2 untouched, the three lines printed and
+  no `ai review code` line.
+- One-line task: pass — a task reviewer and re-review dispatched, the error-path line verbatim in the implementer and
+  fixer prompts, and the implementers added input validation the task never listed.
+- Finished run: the row stayed ⏳ PENDING and `reviewing-in-rounds code` flipped it at `Done (code): round 1`, but the
+  report paraphrased its opening line; it is now a verbatim first line. The row was flipped before the commit offer
+  was answered, which is harmless while the plan file is never committed.
+- Iteration: the sketch detailed, the `Deferred:` line folded in, and the fresh review fixed only its major; but a
+  full rewrite of the plan dropped the old review log rather than leaving it for the review to close.
+  `writing-plans` § *Iterating* now says every review log section stays as it is.
+- Caveat: the allowlist matched no compound Bash command, so subagents' Bash was denied and the main session ran
+  the suites; rerun the finished-run and iteration cases once the end-to-end run has shown them interactively.
 
 ## Task 10 · `bin/ai` stage launcher
 

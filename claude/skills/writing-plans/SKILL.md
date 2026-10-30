@@ -64,6 +64,7 @@ The plan is revisited between tasks and sections as the work teaches, so only wh
   change what comes next. `implementing-plans` stops there, and at a sketch, for an iteration.
 - **Iterating** (`/writing-plans <plan-file>`): read its deviations, `Deferred:` lines and the code built so far; fold
   them into the upcoming tasks, detail the next sketches, then review it as at handover — a fresh run of the review.
+  Every `## Review log (` section stays as it is, even through a full rewrite: the review closes the old one.
 
 ## Sizing a task
 

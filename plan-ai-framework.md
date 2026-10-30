@@ -91,52 +91,45 @@ Task 9 starts with Task 5's pending edits and runnable-now tests; the rest wait 
 then 4 (it names Task 9's skill), then 7 so its audit covers the new skills, and 11 last, being low priority.
 12 is independent and small: any time after 0. M is by hand, any time after 3. 13 comes after every other task, M included.
 
-## Handover — where the session of 2026-10-23 stopped
+## Handover — where the session of 2026-10-30 stopped
 
-End of 2026-10-23: Tasks 6b and 5b are done. This plan's review ran rounds 6–9 and stopped by the user's decision
-without `Done (plan):` (§ *Review log (plan)*). Tasks 8, 9 and 10 are built, committed and pushed (`c8a87de`,
-`01a69d0`, `d88e665`), CI green, each 🚧 with its as-built note; nothing in them has had a live run.
+End of 2026-10-30, wrapped up for the week. The day reworked the workflow itself — agile plan reviews, plans
+iterated between tasks, mandatory task and final code reviews, approvals asked in bulk (§ *The staged workflow*) — and
+ran every test step of the old handover: trigger evals, Task 10's quick checks and end-to-end run (✅), Task 9's
+iteration and toy variants, Task 5's runnable-now lists, Task 5b's *By number*, and Task 8's live tests on fixtures
+and a real issue (`andrelin/planechaser#73`). Each failure was fixed in the skills; the results sit in each task.
+Everything is committed and pushed. The bulk approvals in § *Approvals* cover all of the steps below.
 
-**Start next session here, in this order** — revised 2026-10-30 to the agile workflow: the real end-to-end run is
-the riskiest thing still untried, so it comes before the scratch-repo batteries, which then cover only what that run
-didn't reach, and what it teaches is folded in before the rest is built on it.
+**Start next session here, in this order:**
 
-1. **Trigger evals** — done 2026-10-30, opus/sonnet as `bin/ai` picks: `writing-plans` 20/21, the flipped `2.11`
-   0/3; `1.9` 1/3, down from 2/3 on an unchanged description, taken as noise. `implementing-plans` `1.1` 3/3.
-   While a run hides the personal skill, `/writing-plans` silently resolves to `superpowers:writing-plans`.
-2. **Task 10's quick checks** — passed 2026-10-30: `type -a ai` finds only `bin/ai`; the spike in an empty scratch
-   repo, Claude Code 2.1.308 on sonnet, kept `/writing-plans` and its first reply applied the personal skill's size
-   gate ("needs no plan, so I'd just make it"), so `bin/ai` keeps the slash-command form.
-3. **Task 9's 2026-10-30 iteration tests** — run 2026-10-30, two fixes made (Task 9, *Changed 2026-10-30*) — then
-   **Task 10's end-to-end run**
-   (Task 10 § *Tests*, *End to end*), which is also Task 5's pending real runs. Fix what it breaks, and run
-   `filing-learnings`.
-   **Revisit · what did the real run teach?** Done 2026-10-30, every stage passing (Task 10, *End to end, run
-   2026-10-30*): its two skill gaps fixed, the plugin fallback folded into Task 4, the skill's length into Task 7,
-   nothing for 11 or 12. Covered now, so off steps 4 and 5: Task 5's "Still to run" list,
-   Task 9's plain *Toy run, personal*, and Task 8's personal failed-create and "keep it" path.
-4. **Task 9's toy runs and Task 5's runnable-now list** (Task 9's first step), then Task 5b's *By number* — each
-   only where step 3 didn't already exercise it. Run 2026-10-30, 39 of 58 passing and two fixes made; what is left
-   is in Tasks 5 and 9, *Step 4*, and 5b's *By number* passed. The toy repo is set up in the session scratchpad, `build9/toy`
-   with `build9/toy-pristine` to copy variants from; the scratchpad may be gone, in which case rebuild it from
-   Task 9 § *Tests*.
-5. **Task 8's live tests** (about 21; the first files a real public issue on `andrelin/dotfiles`), likewise only
-   where step 3 didn't reach.
-6. **Then 4 → 7 → 11**, with 12 and M any time, and 13 last, each a small change through the workflow it builds.
+1. **Rerun what the day left unfinished,** headless as in the paragraph below, no spending cap — each fix since has
+   not been rerun: Task 5's code-review re-evaluation cases (seeded 14, 19 and 15 rows; the four that died on the
+   usage limit), closed names' and no plan's runs to `Done`, *Completion*, *Tests after fixes*, the remaining
+   *Whose work* cases; Task 9's two *Deviation* forms, *Failing task* on opus (both runs so far let the implementer
+   escape the planted failure), and the six inconclusive guard cases with the bad instruction where only the
+   implementer reads it; `/writing-plans` stopping on a failed exclude write; Task 8's failed fixture cases and
+   *Search match* against #73. The stopped rerun's notes are in that session's scratchpad, likely gone.
+2. **Task 8's customer cases** with a throwaway `HOME` holding a `~/.claude-customers` that lists `example--client`;
+   the `/compact` steps need an interactive session.
+3. **Close `andrelin/planechaser#73`**, then remove the three merged agent worktrees under `.claude/worktrees/`
+   (`git worktree list`), checking first that they hold nothing unmerged.
+4. **Then 4 → 7 → 11**, with 12, M and Task 3b's real-settings merge any time, and 13 last, each a small change
+   through the workflow it builds — the plan iterated between them, both code reviews run. Task 7 needs the user to
+   run `/doctor prompt-audit`.
 
-Also: remove the three merged agent worktrees under `.claude/worktrees/` (`git worktree list`), and run
-`filing-learnings` for this session's detours: a verifier's `mktemp -d` experiment blocked by the guard as customer
-level; `review-log.md`'s literal format has no blank line after headings where markdownlint (MD022) adds one; a
-spurious "pushed to main, watch CI" hook after read-only commands; the guard's `git -C $var` gap; run_eval's parallel
-workers stealing each other's candidate command; and round 8's fixes seeding round 9's majors.
+Also run `filing-learnings` for the 2026-10-23 detours still unfiled: a verifier's `mktemp -d` experiment blocked by
+the guard as customer level; `review-log.md`'s literal format has no blank line after headings where markdownlint
+(MD022) adds one; a spurious "pushed to main, watch CI" hook after read-only commands; the guard's `git -C $var` gap;
+run_eval's parallel workers stealing each other's candidate command.
 
 Headless test runs: `claude -p … --output-format stream-json --verbose`, with `--add-dir ~/.claude/docs` (and the
 checkout's `claude/docs`) or the skill stops for want of its docs. Auto mode refuses to launch an agent that runs
 them with `bypassPermissions`, even on the user's yes (2026-10-30), so each gets `--permission-mode acceptEdits` and
 an `--allowedTools` list of `Bash(<cmd>:*)` patterns. Compound commands, heredocs and `$(…)` still fall outside it,
 so subagents mostly lose Bash and the stage's main session runs the suites; `chmod` and `mv` were needed besides.
-Resume a stage that asks a question with `claude -p --resume <session_id> "<answer>"`. Cost so far: a full in-rounds review of a toy plan is
-about $2 a round on opus; a feedback review about $1.
+Resume a stage that asks a question with `claude -p --resume <session_id> "<answer>"`, and give each session its own
+scratchpad via `--add-dir`, or parallel ones share `/tmp` drafts. Costs seen: a toy plan's in-rounds review about $2 a
+round on opus, the end-to-end run about $11, a 58-case battery about $39. No spending caps (global `CLAUDE.md`).
 
 Done in the first session: review rounds 1–5 on this plan (§ *Review log (plan)*, every round-5 finding fixed); the
 split of Task 5 from 5b; the best-practices research, folded in as § *What the 2026-10-16 research changes* plus

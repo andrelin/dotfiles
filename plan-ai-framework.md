@@ -61,7 +61,7 @@ in § *The staged workflow*. No external spec.
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
 | 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real runs passed in Task 10's end-to-end run 2026-10-30; runnable-now list pending |
-| 5b · `reviewing-for-feedback` skill | ✅ DONE | first review, re-review and hand-over tested 2026-10-23; the PR-number case written 2026-10-23, its *By number* test pending |
+| 5b · `reviewing-for-feedback` skill | ✅ DONE | first review, re-review and hand-over tested 2026-10-23; the PR-number case written 2026-10-23, its *By number* test passed 2026-10-30 |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ✅ DONE | scored 2026-10-23: 20/20 and 20/21, both descriptions kept; `writing-plans`' `1.11` a known miss until Task 9 |
 | 7 · Instruction-set audit | ⏳ PENDING | |
@@ -104,7 +104,8 @@ didn't reach, and what it teaches is folded in before the rest is built on it.
    nothing for 11 or 12. Covered now, so off steps 4 and 5: Task 5's "Still to run" list,
    Task 9's plain *Toy run, personal*, and Task 8's personal failed-create and "keep it" path.
 4. **Task 9's toy runs and Task 5's runnable-now list** (Task 9's first step), then Task 5b's *By number* — each
-   only where step 3 didn't already exercise it. The toy repo is set up in the session scratchpad, `build9/toy`
+   only where step 3 didn't already exercise it. Run 2026-10-30, 39 of 58 passing and two fixes made; what is left
+   is in Tasks 5 and 9, *Step 4*, and 5b's *By number* passed. The toy repo is set up in the session scratchpad, `build9/toy`
    with `build9/toy-pristine` to copy variants from; the scratchpad may be gone, in which case rebuild it from
    Task 9 § *Tests*.
 5. **Task 8's live tests** (about 21; the first files a real public issue on `andrelin/dotfiles`), likewise only
@@ -1754,6 +1755,15 @@ the tracker-ref intake cases bar `B1.2`, and this plan's next review to `Done (p
 Added 2026-10-30, runnable now: a plan whose test section lists no cases, only behaviours → no finding about missing
 cases survives verification; a plan review seeded with 2 rows → `Re-evaluation after round 3:` is logged; a round
 holding only minors → `Done (plan):` with those minors' ids and none of them fixed.
+Step 4, 2026-10-30, opus, headless (about $17), passing: all three added cases, verification (drops and a downgrade,
+each refuted in writing), a resumed interrupted round 3, a lens change applied by a re-evaluation, closed names'
+`-2`, no plan with test tampering (both tamperings `blocking`), the untracked `proposal.md` move, the intake cases
+`B9.9`, `ABC-1`, a GitLab URL and a `B1.3` with no `Target:`, and every prompt carrying `model`, none `isolation`.
+`/writing-plans` wrote its plan after a failed exclude write; it now stops. A blank line split a log table; the
+log format now says rows are contiguous. Inconclusive: closed names' and no plan's runs to `Done` (the $4 cap per
+session), `B1.1` (the size gate answered instead), the duplicate-heading intake (a fixture error). Not run, for the
+$40 cap: the code-review re-evaluation cases, *Completion*, *Tests after fixes*, the remaining *Whose work* cases
+and this plan's next review.
 Untested behaviours rounds 6 and 7 found, also runnable now: a review that drops a seeded refutable finding, a lens
 change applied by a re-evaluation, a severity-scale change going to the user, rounds 16 and 21 logging no
 re-evaluation, the explicit `model` on each subagent, and overlapping Files lists making one commit.
@@ -2669,8 +2679,10 @@ description: Read before implementing any plan file, or any part of one - in thi
 - **Nothing to stage:** a task whose implementer is told to change nothing and report success → the run stops naming
   that task, nothing staged, its row not ✅ DONE.
 - **Ignored path:** a task whose Files list names a new file that `.gitignore` matches → the run stops naming it.
-- **Deviation:** a toy task whose spec says to edit `README`'s line 3, `README` having one line → the run stops for
-  the user; answered "append it" → that task's section gains a line naming the deviation, its spec text unchanged.
+- **Deviation** (changed 2026-10-30: only a change in what a task delivers stops): a toy task whose spec says to
+  edit `README`'s line 3, `README` having one line → a deviation in how, so that task's section gains a line naming
+  it, its spec text unchanged, and the run goes on (run 2026-10-30, as here); a task whose spec says `a.sh` prints
+  `ok` while its test, already in the tree, asserts `fine` → the run stops for the user, nothing staged.
 - **Failing task:** a sonnet session, a task whose spec says to add a test requiring `test -f /nonexistent/x` and
   forbids creating it → two failed attempts with `model: "sonnet"`, a third with `model: "opus"`, then the run stops,
   prints no `ai review code` line and names that task as not ✅ DONE; each fix is followed by a review holding
@@ -2744,6 +2756,16 @@ $6.30 in all:
   `writing-plans` § *Iterating* now says every review log section stays as it is.
 - Caveat: the allowlist matched no compound Bash command, so subagents' Bash was denied and the main session ran
   the suites; rerun the finished-run and iteration cases once the end-to-end run has shown them interactively.
+- Rerun in step 4: the iteration case passes, the old log closed as `## Review log (plan, closed 2026-10-30)`.
+
+Step 4, 2026-10-30, sonnet, headless (about $22): every refusal, both suite-source cases, red baseline, no suite, the
+dispatch cases (shared `build/`, overlapping Files, sequential, parallel), part of a plan, by hand, suite artifacts,
+save points, the `example-client` origin, resume RS0–RS11, company-level exclude, the pair-test pinned failure and
+the ignored path pass. *Deviation* failed — it adapted and went on — which led to the rule change above.
+Inconclusive, to rerun with the bad instruction where only the implementer reads it (the orchestrator read it in
+the plan and stopped up front or dropped it): out-of-list path, subagent `git add`, subagent `git commit`, nothing to
+stage, failing task, and task 1's test against task 2's pinned failure; customer-level exclude, since headless runs
+can't write `.git/info/exclude`. Not run: *Failing task* on opus.
 
 ## Task 10 · `bin/ai` stage launcher
 

@@ -27,8 +27,8 @@ Re-evaluation after round 15: continue as is — counts falling, no lens conflic
 Done (code): round 16; unfixed: R16-3, R16-4
 ```
 
-- **One row per finished round:** how many lenses ran, its *verified* findings by severity — a test failure after its
-  fixes included — and how many were fixed that round.
+- **One row per finished round,** no blank line between rows: how many lenses ran, its *verified* findings by
+  severity — a test failure after its fixes included — and how many were fixed that round.
 - **Below the table,** in the order they happened: `Re-evaluation after round <n>: <recommendation>`, a stop reading
   `Re-evaluation after round <n>: user decision needed — <question>`; `User decision after round <n>: <answer>`;
   `Note after round <n>: <text>`.

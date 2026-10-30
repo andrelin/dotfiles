@@ -118,8 +118,10 @@ After each checkpoint, before the next batch:
 ## Keeping the plan in sync
 
 Per `writing-plans` § *Keeping it in sync*, per task: status, and any deviation inline. Never edit a task's spec to
-match what was built without saying so in that task. A task review that flags a deviation from the plan stops the
-run, the batch unstaged; the user's ruling goes in that task's section.
+match what was built without saying so in that task. A deviation in what a task delivers — its behaviour, interface
+or tests — stops the run, the batch unstaged, whoever finds it: this session, an implementer or a task review; the
+user's ruling goes in that task's section. One in how — a stale line number, a renamed helper — is noted inline
+and the run goes on, for the final review to check.
 
 ## Finish by handing over to the final review
 
@@ -145,4 +147,4 @@ artifacts, and whether a baseline ran. A run that stopped part-way prints no
 | "Give the implementer `isolation: worktree`." | It branches from the remote default branch, not this work. |
 | "Run the formatter over the repo." | Only the current task's files; the rest belongs to no task. |
 | "These two can share the file, in parallel." | Parallel subagents share no file and run no git. |
-| "The review flagged a deviation, but it's fine." | A deviation is the user's ruling. Stop. |
+| "The spec can't be met as written; I'll pick the closest." | A change in what it delivers is the user's. Stop. |

@@ -62,6 +62,8 @@ quote a colleague's Bokmål verbatim rather than correcting it. Default to Engli
 - **Every file ends with a trailing newline.** Tests, comments, imports, proving a cause and running the project's
   formatters are `~/.claude/rules/writing-code.md`, which loads when you open a source file.
 - **Gradle:** `gradle`, not `./gradlew` (oh-my-zsh resolves the wrapper). **Docker** not running: ask the user to start it and wait; never launch it.
+- **No spending caps the user didn't ask for** — no `--max-budget-usd`, no "stop at $N" in an agent's brief: a cap
+  cuts runs short and leaves their results inconclusive.
 - **Branches:** cut one from a remote base with `git switch --no-track -c <branch> origin/<base>` and push only with
   `git push -u origin <branch>`: with `push.default = tracking`, a bare push lands on the base branch.
 - **Forgejo work:** every task has a Forgejo issue before work starts, filed with `writing-issues` if none exists, and you

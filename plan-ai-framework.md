@@ -49,6 +49,18 @@ in § *The staged workflow*. No external spec.
   never `cd "$var"` or `git -C <path>` for a write — the guard blocks a write after `git init` in the same call, after
   `cd "$var"`, and some `git -C <path>` writes.
 
+## Approvals
+
+Asked in bulk, answered 2026-10-30, for the rest of this plan — all yes:
+
+- Commit each change to `main`, keeping the user's own uncommitted edits out; push to `origin main` and watch CI.
+- Remove the three merged agent worktrees under `.claude/worktrees/`, after checking they hold nothing unmerged.
+- Close the test issue `andrelin/planechaser#73` once nothing reads it; file further safe-to-close test issues there.
+- Headless test agents on throwaway repos, scoped tool lists, no spending cap; a throwaway `HOME` with a
+  `~/.claude-customers` listing `example--client` for the customer cases; Docker for Task 11, started by the user.
+- Merge the real `~/.claude/settings.json` for Task 3b, backed up first; do Task M's cleanup, each removal reported;
+  add allow rules to this repo's `.claude/settings.json` for repeated test and lint commands.
+
 ## Implementation status
 
 | Task | Status | Notes |
@@ -276,6 +288,10 @@ The user's requirements, verbatim in substance:
   folding in what the built tasks taught, and only what is next is planned in full; later tasks may be sketches.
 - **Both code reviews are mandatory** (2026-10-30): the task review after every task, and the final
   `reviewing-in-rounds code` after the whole plan — agents had been skipping the final one.
+- **Approvals are asked in bulk, up front** (2026-10-30): small tasks must not mean the user babysits every one, so a
+  stretch of work lists every approval it will need, each named with its scope, in one question. A plan records the
+  answers in its `## Approvals` section, which `implementing-plans` and `reviewing-in-rounds` act on without asking
+  again; the global § *Approvals* says the same for work with no plan.
 - **Error handling and edge-case tests are the implementer's, never dropped** (2026-10-30): not designed up front,
   but added for every task whether listed or not, checked by the task review and hunted by the final review.
 - **Models per stage are configurable defaults,** the user's suggestions being Haiku for issues, Opus for plans and

@@ -68,8 +68,9 @@ quote a colleague's Bokmål verbatim rather than correcting it. Default to Engli
   cuts runs short and leaves their results inconclusive.
 - **Branches:** cut one from a remote base with `git switch --no-track -c <branch> origin/<base>` and push only with
   `git push -u origin <branch>`: with `push.default = tracking`, a bare push lands on the base branch.
-- **Forgejo work:** every task has a Forgejo issue before work starts, filed with `writing-issues` if none exists, and you
-  name the work by its issue and PR numbers (#53, PR #112), never a plan's task numbers: the issue is what colleagues see.
+- **Forgejo work:** every task has a Forgejo issue before work starts — not a small chore such as a docs fix — filed with
+  `writing-issues` if none exists, and you name the work by its issue and PR numbers (#53, PR #112), never a plan's task
+  numbers: the issue is what colleagues see.
 - **Dependabot and Renovate PRs:** never close one by hand or target one with `closes #N` — `dependency-bot-prs`.
   **Skills:** a personal skill shadows a same-named project one, and **where a plugin skill covers the same ground
   as a personal one, invoke the personal one** — `writing-plans` over `superpowers:writing-plans`,

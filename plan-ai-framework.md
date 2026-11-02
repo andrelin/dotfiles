@@ -50,6 +50,8 @@ in § *The staged workflow*. No external spec.
   never `cd "$var"` or `git -C <path>` for a write — the guard blocks a write after `git init` in the same call, after
   `cd "$var"`, and some `git -C <path>` writes.
 
+Suite: `failed=; for t in test/test_*.sh; do bash "$t" > /dev/null 2>&1 || { echo "FAIL $t"; failed=1; }; done; [[ -z "$failed" ]]`
+
 ## Approvals
 
 Asked in bulk, answered 2026-10-30, for the rest of this plan — all yes:
@@ -62,6 +64,15 @@ Asked in bulk, answered 2026-10-30, for the rest of this plan — all yes:
 - Merge the real `~/.claude/settings.json` for Task 3b, backed up first; do Task M's cleanup, each removal reported;
   add allow rules to this repo's `.claude/settings.json` for repeated test and lint commands.
 
+Asked and answered 2026-11-02, for the `implementing-plans` run over Tasks 4, 12, 11 and 7 — all yes:
+
+- That run builds 4 and 12 in parallel, then 11, then 7, overriding plan order;
+  it works on branch `ai-framework` and commits after the final code review, as `reviewing-in-rounds` lays
+  out; then `main` is fast-forwarded to it, pushed, and CI watched. This replaces the first bullet above for that run.
+- A red CI leg on `main` after that push is fixed by a commit of its own on `main`, pushed, and CI watched again.
+- Docker is running for Task 11. Task 7's `/doctor prompt-audit` and its eval-set review are the user's, by hand,
+  as are Task 11's manual checks.
+
 ## Implementation status
 
 | Task | Status | Notes |
@@ -72,24 +83,28 @@ Asked in bulk, answered 2026-10-30, for the rest of this plan — all yes:
 | 2b · Command shims for aliases, functions and scripts (spike first) | ✅ DONE | on `PATH` through `CLAUDE_ENV_FILE`, not `source/`; see Task 2b |
 | 3 · User-level settings hardening | ✅ DONE | merged into the real settings 2026-10-16; marker check 2026-10-19 |
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
-| 4 · Rewrite the superpowers precedence doc | ⏳ PENDING | |
+| 4 · Rewrite the superpowers precedence doc | ✅ DONE | checkpoint `refs/checkpoints/ai-framework/4`; two `Deferred:` lines |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real runs passed in Task 10's end-to-end run 2026-10-30; runnable-now list pending |
 | 5b · `reviewing-for-feedback` skill | ✅ DONE | first review, re-review and hand-over tested 2026-10-23; the PR-number case written 2026-10-23, its *By number* test passed 2026-10-30 |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ✅ DONE | scored 2026-10-23: 20/20 and 20/21, both descriptions kept; `writing-plans`' `1.11` a known miss until Task 9 |
-| 7 · Instruction-set audit | ⏳ PENDING | |
+| 7 · Instruction-set audit | ✅ DONE | checkpoint `refs/checkpoints/ai-framework/7`; scores in Task 7, no description changed; `unslop` pointer added |
 | 8 · `writing-issues` skill | 🚧 PARTIAL | live tests run 2026-10-30 on fixtures and a real issue, gaps fixed; the customer cases need `~/.claude-customers` or a fake `HOME` |
 | 9 · `implementing-plans` skill | 🚧 PARTIAL | trigger evals, iteration tests and the plain toy run (end to end) passed 2026-10-30; the toy variants pending |
 | 10 · `bin/ai` stage launcher | ✅ DONE | `type -a ai`, the spike and the end-to-end run passed 2026-10-30; results in Task 10 |
-| 11 · Claude config on Linux and WSL | ⏳ PENDING | |
-| 12 · Hidden-Unicode check on agent-loaded files | ⏳ PENDING | |
+| 11 · Claude config on Linux and WSL | ✅ DONE | checkpoint `refs/checkpoints/ai-framework/11`; CI on `main` and the manual checks pending |
+| 12 · Hidden-Unicode check on agent-loaded files | ✅ DONE | checkpoint `refs/checkpoints/ai-framework/12`; bash 3.2 deviation, two `Deferred:` lines |
 | M · Machine-local cleanup (untracked, by hand) | ⏳ PENDING | |
 | 13 · Fold the plan into durable docs and delete it | ⏳ PENDING | |
-| Final code review | ⏳ PENDING | `reviewing-in-rounds code` over the whole plan, before Task 13 deletes it |
+| Final code review | ⏳ IN PROGRESS | round 1 of this run's review (Tasks 4, 12, 11, 7) verified, its fixes not yet applied; resume with `ai review code plan-ai-framework.md` |
+
+Base: 0ad40a97af50f095963f430d12e61ebd084c47c1
 
 Order: 1 → 2 → 2b → 3 → 3b, then 6 → 6b, then 5 → 5b → 8 → 9 → 10 (each builds on the one before;
 Task 9 starts with Task 5's pending edits and runnable-now tests; the rest wait for the end of 10, which flips its row),
 then 4 (it names Task 9's skill), then 7 so its audit covers the new skills, and 11 last, being low priority.
+The 2026-11-02 run overrides plan order: 4 and 12 in parallel, then 11, then 7 last, since its evals hide skills
+the run drives and its by-hand steps stop it.
 12 is independent and small: any time after 0. M is by hand, any time after 3. 13 comes after every other task, M included.
 
 ## Handover — where the session of 2026-10-30 stopped
@@ -101,7 +116,8 @@ iteration and toy variants, Task 5's runnable-now lists, Task 5b's *By number*, 
 and a real issue (`andrelin/planechaser#73`). Each failure was fixed in the skills; the results sit in each task.
 Everything is committed and pushed. The bulk approvals in § *Approvals* cover all of the steps below.
 
-**Start next session here, in this order:**
+**Start next session here, in this order** — the 2026-11-02 run builds only Tasks 4, 12, 11 and 7 (§ *Approvals*),
+leaving steps 1–3 for after it:
 
 1. **Rerun what the day left unfinished,** headless as in the paragraph below, no spending cap — each fix since has
    not been rerun: Task 5's code-review re-evaluation cases (seeded 14, 19 and 15 rows; the four that died on the
@@ -440,6 +456,8 @@ Research into Anthropic's docs and engineering posts, practitioner writing and s
 | `test/skill-triggers/tuning-skill-descriptions.json`, `writing-plans.json` (new) | 6b, 9 (`writing-plans.json`) |
 | `test/skill-triggers/implementing-plans.json` (new) | 9, 7 |
 | `test/skill-triggers/writing-issues.json`, `reviewing-in-rounds.json` (new) | 7 |
+| `claude/docs/implementing-plans-reference.md` (new) | 7 |
+| `claude/skills/writing-mr-descriptions/SKILL.md` | 7 |
 | `bin/check-hidden-unicode`, `test/test_check_hidden_unicode.sh` (new), `.github/workflows/markdown.yml`, `hooks/pre-commit` | 12 |
 | `README.md` § *Scripts* | 10, 12 |
 | `claude/docs/staged-workflow.md` (new), `claude/docs/work-contexts.md`; this plan and its findings file (deleted) | 13 |
@@ -1375,9 +1393,9 @@ and `reviewing-for-feedback` (someone else's) are now the personal counterparts 
 `tuning-skill-descriptions` (Task 6b), `writing-agent-instructions` keeps where an instruction lives, its length budget
 and its front matter, and `superpowers:writing-skills` stays the one for testing a skill.
 
-**New counts:** 15 skills — the 8 in the table below need adapting at customer level, and these 7 never
+**New counts:** 15 skills — the 9 in the table below need adapting at customer level, and these 6 never
 write history or a remote:
-`dispatching-parallel-agents`, `receiving-code-review`, `requesting-code-review` (reads only: `git merge-base`, `rev-parse`, `log`),
+`dispatching-parallel-agents`, `requesting-code-review` (reads only: `git merge-base`, `rev-parse`, `log`),
 `systematic-debugging`, `test-driven-development`, `verification-before-completion`, `using-superpowers` (its
 `references/codex-tools.md` commits and pushes, but only as Codex instructions, which never load in Claude Code).
 
@@ -1390,14 +1408,17 @@ write history or a remote:
 | `executing-plans`, `subagent-driven-development` | Use the personal `implementing-plans`; see below the table. |
 | `using-git-worktrees` | Worktrees and branches are fine. Ignore `.worktrees` via `$(git rev-parse --git-path info/exclude)`, never a committed `.gitignore`. |
 | `finishing-a-development-branch` | Stop before push, PR or merge into base; draft the commands. |
-| `writing-skills` | The "commit and push to your fork" step is personal-only; a PR to the upstream repo is a third-party target the guard blocks at every level, so draft it. |
-| `diagnosing-superpowers` | Never file an upstream issue built from a company or customer session, scrubbed or not; from a personal one, draft it, since the guard blocks the third-party target at every level. |
+| `writing-skills` | The "commit and push to your fork" step is personal-only; a PR to the upstream repo, at any level, is drafted for the user — a third-party repo is published under their name, and the guard rates an unlisted owner company, so nothing blocks it. |
+| `receiving-code-review` | Its *GitHub Thread Replies* step posts with `gh api …/comments/{id}/replies`: draft the replies for the user and post nothing, per the global § *Code review*. |
+| `diagnosing-superpowers` | Never file an upstream issue built from a company or customer session, scrubbed or not; from a personal one, draft it. The guard rates the upstream repo company, so this rests on the rule alone. |
 
 **Below the table,** two sentences. First: `executing-plans` and `subagent-driven-development` are replaced by the
 personal `implementing-plans` *at every level* — it keeps their loop and checkpoints in the index instead of
-committing, and the commit waits for the user. Second: on company work every row applies except
-`finishing-a-development-branch`, which there pushes and opens the PR but merges into `main` only after `/code-review` at
-least and green CI — never a push straight to `main`.
+committing, and the commit waits for the user. Second: on company work the rows don't apply — company keeps personal-level rights — bar the
+drafting of an upstream PR
+or issue (`writing-skills`, `diagnosing-superpowers`), which holds at every level, and `finishing-a-development-branch`,
+which there pushes and opens the PR but merges into `main` only after `/code-review` at least and green CI — never a
+push straight to `main` (the user's call, 2026-11-02).
 Amend the anchor "on **personal and company work every part of all of this is fine**, push included" (as edited on
 2026-10-16) to match: it gains "— except that the workflow skills commit only after the user's yes, and company work
 reaches `main` only reviewed and green".
@@ -1419,7 +1440,8 @@ reaches `main` only reviewed and green".
 Keep the existing first table and the "§ *Work contexts* outranks every skill" paragraph, but rewrite that paragraph's
 last sentence (`skill-precedence.md:44-45`, "the commit step in `superpowers:writing-plans` — is whatever that
 section's own list allows"), which contradicts the new `writing-plans` row: name instead the merges a skill may do
-locally (a clean, zero-conflict one). Add one sentence that the Task 1 hook blocks the forbidden steps regardless, so
+locally (a clean, zero-conflict one). Add one sentence that the Task 1 hook blocks the forbidden steps on customer targets regardless — never a
+third-party one, which it rates company — so
 the table is about *adapting* a skill rather than failing.
 
 **Tests:**
@@ -1431,11 +1453,13 @@ the table is about *adapting* a skill rather than failing.
 
   ```sh
   d=$(jq -r '.plugins["superpowers@claude-plugins-official"][0].installPath' ~/.claude/plugins/installed_plugins.json)/skills
-  for s in "$d"/*/; do grep -rqiE 'commit|git push|worktree add|gh (issue|pr)' "$s" && basename "$s"; done
+  for s in "$d"/*/; do grep -rqiE 'commit|git push|worktree add|gh (issue|pr|api)|glab' "$s" && basename "$s"; done
   ```
 
   Every table row must be printed. Every other name printed is a mention, not a write: record each in this task's
-  status note with the matching line and why, not in the doc. On 7.0.0 it prints 13 names (checked 2026-10-23), so five are expected
+  status note with the matching line and why, not in the doc. On 7.0.0 it printed 13 names (checked 2026-10-23, before `gh api` and `glab` joined
+  the pattern, which add
+  `receiving-code-review` at least), so five are expected
   mentions: `requesting-code-review` (`code-reviewer.md:52` runs `git worktree add /tmp/review-<sha>`, a local write
   the rules allow at every level), `systematic-debugging`, `test-driven-development`, `using-superpowers` and
   `verification-before-completion`. A table row that isn't printed, or a printed name whose match is a real write
@@ -1448,6 +1472,14 @@ the table is about *adapting* a skill rather than failing.
   `claude/CLAUDE.md` holds "`reviewing-in-rounds` over", no longer holds "`reviewing-locally` over" and passes `bin/check-md-limits`.
 - § *Overlaps that both fire* has four bullets:
   `awk '/^## Overlaps that both fire/{f=1;next} /^## /{f=0} f && /^- /' claude/docs/skill-precedence.md | wc -l` prints 4.
+
+**Built 2026-11-02:** `skill-precedence.md` 74 lines, the check grep printing 14 names on 7.0.0 (the 9 table skills
+and the 5 expected mentions); the `CLAUDE.md` line names both `reviewing-in-rounds` and `reviewing-for-feedback`, the
+count unchanged, so its literal "`reviewing-in-rounds` over" check gives way to that settled wording.
+
+Deferred: the `finishing-a-development-branch` row doesn't bar its cleanup step's commit option on customer work.
+Deferred: "on company work the rows don't apply" reads as freeing `superpowers:writing-plans`' commit steps; the general
+"invoke the personal one" rule covers it, but the `writing-plans` row should say every level.
 
 ## Task 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion
 
@@ -2060,7 +2092,8 @@ Deviations:
    JSON withheld.
 5. **Model:** `--model`, else the model `bin/ai` would use for the four stage skills — `AI_MODEL_ISSUE`,
    `AI_MODEL_PLAN`, `AI_MODEL_IMPLEMENT`, `AI_MODEL_REVIEW` with Task 10's defaults (`writing-issues` sonnet,
-   `writing-plans` opus, `implementing-plans` sonnet, `reviewing-in-rounds` opus) — else `opus`.
+   `writing-plans` opus, `implementing-plans` sonnet, `reviewing-in-rounds` opus) — else `opus`. Changed 2026-11-02:
+   `implementing-plans` is scored on `AI_MODEL_REVIEW`, opus, the model `ai implement` now runs on.
 6. **Hiding the installed copy** (only if the spike found competition): the skill dir is moved into the temp project
    for the run and back on exit, and a run refuses to start while a previous one's `.skill-trigger-eval-moved`
    marker in `$DOTFILES/caches/` says a skill is still out. It goes outside the temp project's `.claude/`, where it
@@ -2115,12 +2148,17 @@ description: Read before writing or changing any skill's description, even a one
 
 ## Task 7 · Instruction-set audit
 
-**Files:** modified only where the audit finds something, most likely `claude/skills/*/SKILL.md` front matter.
+**Files:** modified only where the audit finds something, most likely `claude/skills/*/SKILL.md` front matter;
+created `test/skill-triggers/writing-issues.json`, `reviewing-in-rounds.json`, modified `implementing-plans.json`;
+`claude/skills/writing-mr-descriptions/SKILL.md` for the `unslop` pointer;
+`claude/skills/implementing-plans/SKILL.md` and, created, `claude/docs/implementing-plans-reference.md` for the trim.
 
 **Interfaces:** none.
 
-**Folded in 2026-10-30, from the end-to-end run:** the audit trims `implementing-plans`, now 117 lines against the
-100 aim, at a seam such as § *By hand* and *Models* into a doc. A plan settling a few edge cases up front is fine
+**Folded in 2026-10-30, from the end-to-end run:** the audit trims `implementing-plans`, now 125 counted lines against the
+100 aim, at a seam the executor picks (the SDD overrides paragraph, or the *By hand* and *Models* bullets) into
+`claude/docs/implementing-plans-reference.md`, which the skill points at under the condition for reading it — the one
+body split the bounded-fix rule below allows. A plan settling a few edge cases up front is fine
 (the user, 2026-10-30); what the workflow must avoid is a plan review that keeps finding more to solve, which the
 round-3 re-evaluation catches.
 
@@ -2133,16 +2171,25 @@ round-3 re-evaluation catches.
   (extending Task 9's `implementing-plans.json`), reviewed by the user, then its scores with `skill-trigger-eval`'s
   default model for that skill (its requirement 5), and a new description only where a candidate beats it.
   For each, also score one candidate in Anthropic's what-and-when form, and record whether it beats the when-only one:
-  the convention is then measured. Changing the convention is the user's call.
+  the convention is then measured. It is scored and recorded, never adopted: a winning what-and-when candidate is
+  reported, and the best when-only candidate is the only one that can replace a description (the user, 2026-11-02).
   Every other personal skill gets the audit only, and an eval set once a real misfire is seen (6b).
+  `skill-trigger-eval` hides the scored skill machine-wide, and three of the four drive this run, so each eval runs in
+  the foreground, one at a time, after the trim, with no agent in flight; after each,
+  `git status --porcelain -- claude/skills` must match its output taken just before that eval, and the skill be back
+  in place, or the run stops.
   A run that exits 1 is re-run once for that skill; a second failure is recorded under this task and the skill skipped.
-- Fix in place only: a markdown-limit breach, a broken path or reference, a front-matter field outside the six
-  portable ones, and a stage skill's description through the eval above.
+- Fix in place only, in tracked files: a markdown-limit breach, a broken path or reference, a front-matter field outside
+  the six portable ones, a stage skill's description through the eval above, the `implementing-plans` trim folded in
+  above, and the `unslop` pointer below. A finding in a machine-local file is reported to the user, never fixed.
   Anything else — a description change to any other skill, a body rewrite, a rename or a split — is recorded under
   this task with why it was left, not made.
 - Specifically decide `unslop`, which has `disable-model-invocation: true` against an upstream description saying it
   "must always apply". It is vendored, so the only options are invoking it by hand or a pointer from
-  `writing-mr-descriptions`. Record which.
+  `writing-mr-descriptions`. The pointer, the user's call on 2026-11-02 — `disable-model-invocation` blocks a Skill call,
+  so the line has Claude read `~/.claude/skills/unslop/SKILL.md` and apply it: one line in `writing-mr-descriptions` that
+  sends MR and PR titles and bodies through `unslop` as a last pass; where they conflict, `writing-mr-descriptions`'
+  structure (headings, bullets, bold lead-ins) wins (the user, 2026-11-02) — the one body edit to a non-stage skill the rule below allows.
 
 **Tests:**
 
@@ -2153,10 +2200,37 @@ round-3 re-evaluation catches.
   task's status note holds a score for each, its what-and-when candidate's included; every changed description scores
   at least as well as the one it replaced, on both should-fire and near-miss queries.
 - **Bounded fixes:** no `SKILL.md` outside the four stage skills has a diff touching its `description:` line
-  (`git diff -U0 -- <file> | grep -c '^[-+]description:'` prints 0), and `git diff --name-only -- claude/skills/unslop/`
+  (`git diff -U0 HEAD -- <file> | grep -c '^[-+]description:'` prints 0), and `git diff --name-only HEAD -- claude/skills/unslop/`
   prints nothing.
 - **Recorded decisions:** the status note names which `unslop` option was taken, and lists every skill whose eval
   exited 1 with its re-run's exit status; a skill whose re-run also failed has an unchanged description.
+
+**Audit, 2026-11-02:** `/doctor prompt-audit`, run by the user, handed off to the `claude-api` skill in this session,
+which ran it as one read-only agent over the scope it names; nothing High in this repo's files. Four Medium findings fall
+outside the fix-in-place classes, so are recorded, not made: `.claude/rules/scripts.md:10`'s "both are sourced, never
+executed" under a `paths:` that also covers `bin/`; `implementing-plans`' line pin "(SKILL.md:282)" into superpowers,
+which breaks on the next release; an incident sentence in `cutting-comments`; "removed years ago" in
+`.claude/rules/app-config.md`. One conflict goes to the user: `claude/CLAUDE.md`'s § *Code review* says a `/code-review`
+run "loads its own skill and not this file", while `reviewing-locally` relies on `CLAUDE.md` loading there. Low flags:
+the model-alias lists omit `fable`; `filing-learnings` bars memory where the global file allows one pointer memory.
+Plugin skills (report only): caps emphasis and "you MUST" descriptions in superpowers' `using-superpowers`,
+`brainstorming` and `writing-skills`. No machine-local finding.
+
+**Scores, 2026-11-02,** passed of total, three runs each at the default model, the user having reviewed the sets;
+every eval exited 0, so none was re-run, and `claude/skills` matched its snapshot after each:
+
+| Skill | Current (when only) | What-and-when candidate | Its misses |
+| --- | --- | --- | --- |
+| `writing-issues` | 20/20 | 19/20 | should-fire "stack trace into a bug report" 1/3 |
+| `writing-plans` | 21/21 | 21/21 | — |
+| `implementing-plans` | 20/20 | 19/20 | near-miss "explain the status table and checkpoint refs" fired 3/3 |
+| `reviewing-in-rounds` | 20/20 | 18/20 | should-fire "take a look at plan-…md" 1/3, "quick sanity pass" 0/3 |
+
+The what-and-when form beats the current description nowhere: it ties once, loses three should-fire queries and adds a
+near-miss false trigger. With every current description at 100%, no when-only candidate was scored and no
+description changed. `unslop`: the pointer from `writing-mr-descriptions`, as decided above.
+The trim moved the *By hand* and *Models* bullets: `implementing-plans` counts 120 lines, still over the 100 aim, and
+the SDD overrides paragraph would only bring it to about 112, so it is left there, under the 150 cap.
 
 ## Task 8 · `writing-issues` skill
 
@@ -2954,13 +3028,13 @@ the init script's name keeps it from being selected there. Windows-native Claude
 **Files:**
 
 - Renamed: `init/52_macos_claude.sh` → `init/52_claude.sh` (`git mv`), dropping the `_macos_` marker so it is
-  selected by default everywhere
+  selected by default everywhere, RHEL included (the user's call, 2026-11-02)
 - Modified: `bin/dotfiles` — a `migrate_init_selection` function, taking no arguments and rewriting the global
   `menu_selects` array in place, defined, with its `renamed_init_scripts` list, above the
-  `[[ "$1" == "source" ]] && return` guard (`bin/dotfiles:297`) so a test can source both, mapping each old name in
+  `[[ "$1" == "source" ]] && return` guard (`bin/dotfiles:311`) so a test can source both, mapping each old name in
   that list (`52_macos_claude.sh:52_claude.sh`) to its new one and dropping a duplicate it creates;
   `init_files()` calls it on `menu_selects` right after reading
-  `caches/init/selected` (`bin/dotfiles:325`). Without it, every machine that has run `bin/dotfiles` — this one
+  `caches/init/selected` into it (`bin/dotfiles:338`). Without it, every machine that has run `bin/dotfiles` — this one
   included — would come up with the renamed script unticked, since a cache, when present, replaces the defaults.
 - Created: `test/test_init_selection.sh` — it resolves its own checkout first, then `export DOTFILES="$checkout"`
   and `source "$DOTFILES/test/helper.sh"`, which sources `$DOTFILES/bin/dotfiles` through `source/01_dotfiles.sh` — so it tests the checkout,
@@ -2972,9 +3046,11 @@ the init script's name keeps it from being selected there. Windows-native Claude
   default on Linux or WSL … where you tick it by hand:" sentence, which introduces the list at lines 49-58, with
   "It links:" plus one sentence: a Linux or WSL machine that ran `bin/dotfiles` before this change ticks `52_claude.sh`
   once, since its saved selection never held the old name; every other reference `git grep 52_macos_claude` finds,
-  bar `bin/dotfiles`' `renamed_init_scripts` entry and `test/test_init_selection.sh`'s fixtures
+  bar `bin/dotfiles`' `renamed_init_scripts` entry, `test/test_init_selection.sh`'s fixtures and `plan-*.md`
 
 **Interfaces:** none. Tasks 2 and 3 edit the script under its old name; this task renames it after them.
+Deviation (2026-11-02, how): Task 12 edited Tip 24.3 and added Tip 24.9 to `tips/24_claude_code.md`, so its line
+numbers here have shifted; find each anchor by its quoted text.
 
 **Check first,** recorded in a status note in this task:
 
@@ -2983,21 +3059,37 @@ the init script's name keeps it from being selected there. Windows-native Claude
   `statusLine`), or each hit gets a portable form.
 - The CI matrix already runs every `test/test_*.sh` on Ubuntu and RHEL (`tests.yml:158`), so Tasks 1, 2, 2b and 6b's
   tests cover Linux; confirm they pass there, `/bin/bash` being bash 5 on both.
-- The Linux legs now run `52_claude.sh` during install, and CI's error scan (`tests.yml:88-92`) fails on any line
+- The Linux legs now run `52_claude.sh` during install, and CI's error scan (`tests.yml:98`) fails on any line
   matching `error` or `fatal`: its messages, `claude-settings-merge`'s no-`jq` path included, must avoid both words
   unless they report a real failure. `tests-wsl.yml` runs it too, with its own error scan and no `jq` installed, so
   the no-`jq` path is the one that runs there.
 
 **Tests:**
 
+- **Before the task review, in Docker** (running, per § *Approvals*): the Ubuntu and RHEL legs' install and error
+  scan as `tests.yml` runs them, in `ubuntu-latest`'s nearest image and `redhat/ubi9`, from this working tree — no
+  error-scan hit from `52_claude.sh`, and the suite passing. WSL has no container; it is covered by CI below.
 - CI green on `tests.yml`'s three legs and on `tests-wsl.yml`, with no error-scan hit from `52_claude.sh` in either.
+  This runs only after `main` is pushed at the end of the run, so the task review can't tick it; a red leg is fixed
+  by a follow-up commit.
 - A deliberately failing assertion in `test/test_init_selection.sh` makes it fail (then revert): the helper's
   wrapped `e_error` is the one in force.
 - `test/test_init_selection.sh` passes.
 - **Manual, here and on an Ubuntu or WSL machine:** `bin/dotfiles` shows `52_claude.sh` pre-ticked, from the migrated
   cache here and from the defaults on a machine without one; after it runs, the
   `work-context.sh` hook entries are in `~/.claude/settings.json`, and in a scratch repo with origin
-  `git@github.com:example-client/x.git` a Claude session's `git commit` is blocked with the Task 1 message.
+  `git@github.com:example-client/x.git` a Claude session's `git commit` is blocked with the Task 1 message — with
+  `example-client` added to that machine's `~/.claude-customers` by the user for the check, and removed after,
+  since an unlisted owner resolves to company and commits.
+
+**Built 2026-11-02:** `test/test_init_selection.sh`, 11 assertions; Docker on native arm64, from tracked files: Ubuntu
+24.04 and RHEL 9 reached "All done!" with `52_claude.sh` sourced and no error-scan hit from it, the other hits from the
+container's fresh `git init` and arm64 Homebrew; `test_claude_shims.sh` failed only on that empty index and passes
+after `git add -A`. CI on `main` and the manual checks remain.
+Deviation (2026-11-02): the user's own edit to `claude/CLAUDE.md` § *Language* (Norwegian text on the default branch
+stays Norwegian) was staged with this batch, on the user's word, though that file is Task 4's.
+
+Deferred: the comment above the last assertion in `test/test_init_selection.sh` stops mid-sentence.
 
 ## Task 12 · Hidden-Unicode check on agent-loaded files
 
@@ -3007,6 +3099,8 @@ This repo's agent-loaded files are public and copied by others, so a check costs
 **Files:**
 
 - Created: `bin/check-hidden-unicode` (executable, bash 5), `test/test_check_hidden_unicode.sh`
+- Deviation (2026-11-02, how): the script is bash-3.2-safe instead, since `hooks/pre-commit` runs it through
+  `env bash`, so `.claude/rules/scripts.md` joins this Files list to name it among the 3.2 exceptions.
 - Modified: `.github/workflows/markdown.yml` (a step after *Line and file length limits*, running
   `bin/check-hidden-unicode`, and `claude/**`, `.claude/**`, `bin/check-hidden-unicode` and
   `test/test_check_hidden_unicode.sh` added to its `paths:`, so a non-markdown file in the default set triggers it);
@@ -3057,6 +3151,13 @@ script, and fails the commit on exit 1.
   `bin/check-hidden-unicode`, the hook run with `claude/a.sh` staged holding U+200B → non-zero, naming it; staged
   clean with U+200B unstaged → 0; only `docs/d.md` staged, holding U+200B, with the default set clean → 0.
 - The real repo passes today.
+
+**Built 2026-11-02:** 91 assertions, passing under Homebrew bash and `/bin/bash` 3.2; `--cached` batched through one
+`git cat-file --batch` and one perl, 0.04 s on this repo; Tip 24.9.
+
+Deferred: in the default set, a tracked symlink to a directory, a file deleted but not staged, or (with `--cached`) a
+gitlink under `claude/` reports "no such file" and exits 2; only named files should get that error.
+Deferred: no test runs `--cached` from a subdirectory, so the `:./` prefix is untested; Tip 24.3's rewrap is uneven.
 
 ## Task M · Machine-local cleanup (untracked, by hand)
 
@@ -3161,3 +3262,38 @@ Note after round 9: closed 2026-11-02 and its findings file deleted, once accoun
 every blocking, major and minor was fixed or refuted; the 107 nits left were unfixed by design. Those on built Tasks
 8–10 are superseded by the code; on pending tasks, R6-118's stale line numbers in Task 11 are fixed, R6-73 no longer
 matches Task 4's text, and the rest are wording the implementer settles.
+
+## Review log (plan)
+
+| Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 5 | 0 | 3 | 16 | 1 | 3 |
+| 2 | 5 | 0 | 2 | 7 | 1 | 2 |
+| 3 | 5 | 1 | 0 | 19 | 8 | 1 |
+| 4 | 5 | 0 | 0 | 14 | 3 | 0 |
+
+Note after round 1: scoped to Tasks 4, 12, 11 and 7, the run's tasks, the rest read as context, as after round 7 of
+the closed log; verifiers ran through one workflow, not five Agent calls.
+User decision after round 2: Task 4's rows apply at customer level only, bar the upstream drafting and
+`finishing-a-development-branch`'s company merge rule; the `unslop` pointer is made; a what-and-when winner is
+recorded, never adopted; Task 11's script is pre-ticked on RHEL too.
+Re-evaluation after round 3: change the process — majors falling (3, 2, 0); the one blocking came from round 2's own
+fix, and five minors were re-raised every round and downgraded each time; fix those recurring minors in place, and
+make round 4 a confirmation round.
+Note after round 3: applied, minus the recommended brief line telling reviewers to read the findings file first,
+which `reviewing-in-rounds` forbids; fixed in place: Task 11's manual check, its sweep and anchors, the run order and
+handover, Task 6b's requirement 5, the `unslop` pointer's wording and Files, Task 7's bounded-fix checks against `HEAD`.
+User decision after round 4: a red CI leg on `main` is fixed by a commit of its own there; where `unslop` and
+`writing-mr-descriptions` conflict, the latter's structure wins.
+Done (plan): round 4; unfixed: R4-1, R4-2, R4-3, R4-4
+
+## Review log (code)
+
+| Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
+| --- | --- | --- | --- | --- | --- | --- |
+
+Note after round 1: stopped on 2026-11-02 at the user's request, after round 1's reviewers and verifiers, before any
+fix; round 1 is in the findings file with no row here, so a resumed session applies its findings and then writes the
+row. Tasks 4, 12, 11 and 7 are committed on `ai-framework` and pushed, with `main` untouched: the fixes go in a commit
+of their own, and `main` is fast-forwarded only after `Done (code):`, per § *Approvals*. The checkpoint refs were
+deleted once that commit existed; the review's diff is still against `Base:`.

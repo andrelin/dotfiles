@@ -5,11 +5,13 @@
 # Usage: ai [--model <m>] <stage> [args…]
 #   issue [words…]                     /writing-issues        AI_MODEL_ISSUE, default sonnet
 #   plan [issue or words…]             /writing-plans         AI_MODEL_PLAN, default opus
-#   implement <plan file> [words…]     /implementing-plans    AI_MODEL_IMPLEMENT, default sonnet
+#   implement <plan file> [words…]     /implementing-plans    AI_MODEL_REVIEW, default opus
 #   review plan <plan file> [words…]   /reviewing-in-rounds   AI_MODEL_REVIEW, default opus
 #   review code [plan file] [words…]
 #
 # --model beats the stage's variable, which beats the default; an empty variable counts as unset.
+# implement runs on the review model: it drives the run, plan iterations and code review included.
+# AI_MODEL_IMPLEMENT (default sonnet) is the model its implementer subagents run on, read by the skill.
 # bin/skill-trigger-eval copies the four defaults, so change both together.
 #
 # Exit 2 on bad usage, a missing plan file or when run inside Claude; 127 when claude isn't found.
@@ -63,7 +65,7 @@ case "$stage" in
   issue) skill=writing-issues; default_model="${AI_MODEL_ISSUE:-sonnet}" ;;
   plan) skill=writing-plans; default_model="${AI_MODEL_PLAN:-opus}" ;;
   implement)
-    skill=implementing-plans; default_model="${AI_MODEL_IMPLEMENT:-sonnet}"
+    skill=implementing-plans; default_model="${AI_MODEL_REVIEW:-opus}"
     require_plan_file "${args[0]:-}" ;;
   review)
     skill=reviewing-in-rounds; default_model="${AI_MODEL_REVIEW:-opus}"

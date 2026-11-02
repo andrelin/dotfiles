@@ -3,15 +3,16 @@
 # AI framework — plan
 
 **Goal:** turn the `claude/` config from prose-only guidance into a framework whose work-context guardrails are
-enforced by the harness, and that carries one piece of work from issue to reviewed change in four clean sessions,
-without importing a second methodology.
+enforced by the harness, and that carries one piece of work from issue to reviewed change through four stages
+without stopping between them, and without importing a second methodology.
 
 **Approach:** one remote-aware hook script decides the work context deterministically. It *blocks* history and
 remote writes on customer repos, and *tells* every session which level it is in. The global prose stays
 as the reasoning behind the hook.
 On top of it sits a four-stage workflow — write the issue, plan it, implement it, review it in rounds — where each
-stage is a personal skill run in a fresh session, launched by `bin/ai` with that stage's model, and hands the next
-one an artifact (an issue or tracker item, a plan file, a branch) rather than chat history.
+stage is a personal skill that hands the next one an artifact (an issue or tracker item, a plan file, a branch)
+rather than chat history. From the plan on, one session drives the rest without stopping between stages, the
+clean context living in its fresh subagents; `bin/ai` starts or resumes a stage on its model.
 Around that, adopt *ideas*, not files, from gstack and the wider ecosystem: review lenses, a learning-capture
 step and a plan-completion step. Correct the superpowers precedence doc, which is now out of date.
 
@@ -287,6 +288,9 @@ The user's requirements, verbatim in substance:
   again; the global § *Approvals* says the same for work with no plan.
 - **Error handling and edge-case tests are the implementer's, never dropped** (2026-10-30): not designed up front,
   but added for every task whether listed or not, checked by the task review and hunted by the final review.
+- **The workflow runs on its own between stages** (2026-11-02): small tasks with reviews had turned into a stop
+  after every stage and three at every `## Revisit`, each waiting for the user to start the next session. The agent
+  works through the iterations itself and stops only for a decision that is the user's.
 - **Models per stage are configurable defaults,** the user's suggestions being Haiku for issues, Opus for plans and
   reviews, Sonnet for implementation — suggestions only.
 
@@ -305,10 +309,18 @@ Decisions:
 - **Rejected: `opusplan`.** It switches Opus→Sonnet inside one session, which gives up the clean context per stage.
 - **The handoff is an artifact, never chat:** issue or tracker item → `plan-<n>-<slug>.md` → branch plus the plan's
   status table → review log appended to the plan.
-- **An iteration loops back through the stages** (2026-10-30): `implementing-plans` stops at a `## Revisit` heading,
-  before a `Sketch:` task, or when what it learned changes an upcoming requirement, and prints `ai plan <plan-file>`,
-  `ai review plan <plan-file>` and `ai implement <plan-file>`. A re-review is a fresh run, closing the old log, so
-  `implementing-plans`' `Done (plan):` gate holds unchanged.
+- **One driver session from the plan on** (2026-11-02, the user's choice over chaining headless `claude -p` stages):
+  `writing-plans` goes straight on to `implementing-plans` after `Done (plan):`, unless the user asked for the plan
+  alone. At a `## Revisit` heading, before a `Sketch:` task, or when what it learned changes an upcoming requirement,
+  `implementing-plans` has a fresh plan agent iterate the plan, runs `reviewing-in-rounds plan` itself and carries on;
+  at the end it runs `reviewing-in-rounds code` itself. Reviewers and verifiers stay fresh agents, so only the
+  fixing is the driver's — the anchoring a fresh session per stage guarded against is accepted for that part.
+  The re-review is still a fresh run, closing the old log, so `implementing-plans`' `Done (plan):` gate holds.
+  Subagents can't dispatch subagents, so a stage that fans out stays in the main session, never a subagent.
+- **Models in the driver** (2026-11-02): `ai implement` runs on `AI_MODEL_REVIEW` (opus), since it fixes review
+  findings and iterates the plan; implementers and fixers run on `AI_MODEL_IMPLEMENT` (sonnet), read by the skill,
+  task reviewers and plan agents on the session's model. `writing-issues` still prints `ai plan …`: the interview
+  needs the user anyway.
 - **The status table's last row is `Final code review`,** ⏳ PENDING until `reviewing-in-rounds code` ends in
   `Done (code):` and flips it, so a skipped final review is visible in the plan itself.
 - **Company level is unguarded since 2026-10-16** (the user's call: the employer wants AI-driven development
@@ -2644,6 +2656,8 @@ description: Read before implementing any plan file, or any part of one - in thi
 - **Keep the plan in sync per task**, per `writing-plans` § *Keeping it in sync*: status, and any deviation inline.
   Never edit a task's spec to match what was built without saying so in that task. A task review that flags a
   deviation from the plan stops the run for the user, the batch unstaged; the user's ruling goes in that task's section.
+- **Changed 2026-11-02** (§ *The staged workflow*, *One driver session*): the run iterates the plan and runs the final
+  code review itself, and implementers run on `AI_MODEL_IMPLEMENT`; the two bullets below are the original.
 - **Finish by handing over, not reviewing:** print `ai review code <plan-file>` for a fresh session, since a review in
   the implementing session anchors on its own reasoning. (A plan review can run in the planning session because its
   reviewers are fresh subagents and only the fixer is the author; code review gets a fresh session for the same
@@ -2928,6 +2942,10 @@ greps the docs edits and compares the defaults with `bin/skill-trigger-eval`.
 - *Review* (opus): 7 lenses, 3 minors fixed, `Done (code): round 1`, the row flipped, one commit on the yes with
   exactly the two files, no checkpoint refs left. Pass.
 
+**Changed 2026-11-02:** `ai implement` runs on `AI_MODEL_REVIEW`, default opus, and `AI_MODEL_IMPLEMENT` picks the
+implementer subagents' model instead (§ *The staged workflow*, *Models in the driver*); `test/test_ai.sh` and
+`bin/skill-trigger-eval` follow.
+
 ## Task 11 · Claude config on Linux and WSL
 
 Low priority, so last. Claude Code installed *inside* Linux or WSL runs the same hooks under the same shells; only
@@ -2942,7 +2960,7 @@ the init script's name keeps it from being selected there. Windows-native Claude
   `[[ "$1" == "source" ]] && return` guard (`bin/dotfiles:297`) so a test can source both, mapping each old name in
   that list (`52_macos_claude.sh:52_claude.sh`) to its new one and dropping a duplicate it creates;
   `init_files()` calls it on `menu_selects` right after reading
-  `caches/init/selected` (`bin/dotfiles:323-325`). Without it, every machine that has run `bin/dotfiles` — this one
+  `caches/init/selected` (`bin/dotfiles:325`). Without it, every machine that has run `bin/dotfiles` — this one
   included — would come up with the renamed script unticked, since a cache, when present, replaces the defaults.
 - Created: `test/test_init_selection.sh` — it resolves its own checkout first, then `export DOTFILES="$checkout"`
   and `source "$DOTFILES/test/helper.sh"`, which sources `$DOTFILES/bin/dotfiles` through `source/01_dotfiles.sh` — so it tests the checkout,
@@ -2963,7 +2981,7 @@ the init script's name keeps it from being selected there. Windows-native Claude
 - The script body uses nothing macOS-only: `git grep -nwE 'brew|stat'` and `git grep -nE 'readlink -f|sed -i'` over it
   and `bin/claude-settings-merge` find nothing (true of the script on 2026-10-15; a plain `stat` grep matches
   `statusLine`), or each hit gets a portable form.
-- The CI matrix already runs every `test/test_*.sh` on Ubuntu and RHEL (`tests.yml:150`), so Tasks 1, 2, 2b and 6b's
+- The CI matrix already runs every `test/test_*.sh` on Ubuntu and RHEL (`tests.yml:158`), so Tasks 1, 2, 2b and 6b's
   tests cover Linux; confirm they pass there, `/bin/bash` being bash 5 on both.
 - The Linux legs now run `52_claude.sh` during install, and CI's error scan (`tests.yml:88-92`) fails on any line
   matching `error` or `fatal`: its messages, `claude-settings-merge`'s no-`jq` path included, must avoid both words
@@ -3073,7 +3091,7 @@ The user runs every step; Claude may draft the edits, and step 2's `bin/dotfiles
 After every other task, M included, in one commit, per `writing-plans` § *Plans are temporary*.
 
 **Files:** created `claude/docs/staged-workflow.md` (≤ 100 lines); modified `claude/docs/work-contexts.md`; deleted
-`plan-ai-framework.md` and `plan-ai-framework-review-findings-plan.md`.
+`plan-ai-framework.md` (its findings file was deleted on 2026-11-02).
 
 **Change:** `staged-workflow.md` holds the durable decisions of § *Findings and decisions* and § *The staged workflow*:
 the four stages with their skills, models and hand-over artifacts, why a fresh session per stage, the index
@@ -3103,7 +3121,7 @@ and the trigger queries only name it).
 - **Windows-native Claude Code:** Linux and WSL are Task 11, but on Windows itself the PreToolUse matcher has no
   `PowerShell`, and the hook's `/bin/bash` doesn't exist. Separate change if ever needed.
 
-## Review log (plan)
+## Review log (plan, closed 2026-11-02)
 
 | Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -3139,3 +3157,7 @@ User decision after round 9: stop reviewing and build Tasks 8–10; the review s
 what it would still find is left to the build and the code review.
 Note after round 9: on 2026-10-30 the plan review was rescoped for the agile workflow (§ *The staged workflow*,
 Task 5's 2026-10-30 deviation); rounds 6–9 were its evidence. A next run starts at round 1 with the new lenses.
+Note after round 9: closed 2026-11-02 and its findings file deleted, once accounted for: of 510 verified findings,
+every blocking, major and minor was fixed or refuted; the 107 nits left were unfixed by design. Those on built Tasks
+8–10 are superseded by the code; on pending tasks, R6-118's stale line numbers in Task 11 are fixed, R6-73 no longer
+matches Task 4's text, and the rest are wording the implementer settles.

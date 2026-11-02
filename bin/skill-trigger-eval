@@ -83,7 +83,7 @@ if [[ -z "$model" ]]; then
   case "$skill" in
     writing-issues) model="${AI_MODEL_ISSUE:-sonnet}" ;;
     writing-plans) model="${AI_MODEL_PLAN:-opus}" ;;
-    implementing-plans) model="${AI_MODEL_IMPLEMENT:-sonnet}" ;;
+    implementing-plans) model="${AI_MODEL_REVIEW:-opus}" ;;
     reviewing-in-rounds) model="${AI_MODEL_REVIEW:-opus}" ;;
     *) model=opus ;;
   esac

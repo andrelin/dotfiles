@@ -127,21 +127,23 @@ skill says how to use the numbers.
 
 From `bin/skill-trigger-eval`.
 
-## Tip 24.8: `ai` — one fresh session per stage
+## Tip 24.8: `ai` — start a stage of the workflow
 
-Carries a piece of work from issue to reviewed change in four clean sessions, each on its stage's model, handing
-the next an artifact rather than chat history.
-Each command starts an interactive `claude` running that stage's skill, and the session ends by printing the next one.
+Carries a piece of work from issue to reviewed change, handing each stage an artifact rather than chat history.
+Each command starts an interactive `claude` running that stage's skill. From the plan on, one session drives the
+rest: it implements, iterates the plan at each `## Revisit`, and runs the final code review, stopping only for
+your decisions; the other commands start or resume a stage on its own.
 
 ```sh
 ai issue "login fails on Safari"     # /writing-issues, sonnet: interviews you, then files or drafts
 ai plan 12                           # /writing-plans, opus: an issue number, title or plain words
-ai implement plan-login.md           # /implementing-plans, sonnet: plan files resolve against the repo root
+ai implement plan-login.md           # /implementing-plans, opus: resumes a run; plan files resolve against the repo root
 ai review code plan-login.md         # /reviewing-in-rounds, opus; `ai review plan <file>` reviews a plan
 ```
 
 The models are suggestions: override one per call with `ai --model haiku issue`, before the stage, or per shell
-with `export AI_MODEL_PLAN=sonnet` (also `AI_MODEL_ISSUE`, `AI_MODEL_IMPLEMENT`, `AI_MODEL_REVIEW`).
+with `export AI_MODEL_PLAN=sonnet` (also `AI_MODEL_ISSUE`, `AI_MODEL_REVIEW`, and `AI_MODEL_IMPLEMENT` for the
+implementer subagents, default sonnet).
 Run it from a terminal: inside a Claude session it refuses.
 
 From `bin/ai`.

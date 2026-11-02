@@ -70,9 +70,10 @@ Use `superpowers:subagent-driven-development` (7.0.0) for its loop: per task a f
 - **By hand:** a task only the user or a fresh session can do — done by hand, a spike the user judges, a test
   needing a fresh or interactive session or a `!` line — never goes to a subagent, which would simulate it. Stop
   before its batch, give the commands, and once the user reports back, check what its **Tests** name.
-- **Models:** `model` on every Agent call, this session's alias (a full model ID passes its family's), never the
-  cheapest that might do. An attempt fails when the implementer reports itself blocked, or the task's review or
-  tests still fail after its fix loop. Twice failed → once more with `model: "opus"` unless already on Opus, then
+- **Models:** `model` on every Agent call — implementers and fixers on `$AI_MODEL_IMPLEMENT`, else `sonnet`;
+  task reviewers and plan agents on this session's alias (a full model ID passes its family's).
+  An attempt fails when the implementer reports itself blocked, or the task's review or tests still fail after its
+  fix loop. Twice failed → once more with `model: "opus"` unless already on Opus, then
   the user. Each new attempt starts from the failed one's tree, told what failed; nothing is reverted.
 
 **Overridden in SDD 7.0.0:** every commit step, whatever `skill-precedence.md` says; its ban on parallel
@@ -114,9 +115,11 @@ After each checkpoint, before the next batch:
 
 - **Fold in what the task taught:** a wrong assumption, a `Deferred:` line, an interface that came out different —
   into every upcoming task it touches, each edit noted as a deviation in that task.
-- **Stop for a plan iteration** at a `## Revisit` heading, before a `Sketch:` task, or when a fold-in would change an
-  upcoming task's requirement or the approach: print `ai plan <plan-file>` to iterate it, then
-  `ai review plan <plan-file>`, then `ai implement <plan-file>` to resume; the run's report says why it stopped.
+- **Iterate the plan in this run** at a `## Revisit` heading, before a `Sketch:` task, or when a fold-in would change
+  an upcoming task's requirement or the approach. A fresh plan agent, told to follow `writing-plans`
+  § *Planning in iterations* up to its review, to edit only the plan file and to make no git writes, iterates it;
+  then `reviewing-in-rounds plan <plan-file>` here, and on its `Done (plan):` the next batch. An approval the
+  iteration adds that § *Approvals* lacks, or a review stopping for a user decision, stops the run.
 
 ## Keeping the plan in sync
 
@@ -126,21 +129,21 @@ or tests — stops the run, the batch unstaged, whoever finds it: this session, 
 user's ruling goes in that task's section. One in how — a stale line number, a renamed helper — is noted inline
 and the run goes on, for the final review to check.
 
-## Finish by handing over to the final review
+## Finish with the final review, in this run
 
 **The work isn't finished until the final code review says `Done (code):`**, whatever the task reviews found — they
-each saw one task, never the whole. Run `filing-learnings`, then print `ai review code <plan-file>` for a fresh
-session — a review in this session anchors on its own reasoning — and make the report's first line, verbatim,
-`Not done: the final code review is next.` The status table's `Final code review` row stays ⏳ PENDING; only that review flips it.
+each saw one task, never the whole. Run `filing-learnings`, then `reviewing-in-rounds code <plan-file>` here, without
+stopping: its reviewers and verifiers are fresh agents, so only the fixing is this session's.
 The final report lists the refs, each task's reported paths, the `Deferred:` lines, the unstaged suite or ignored
-artifacts, and whether a baseline ran. A run that stopped part-way prints no
-`ai review code` line; it says which tasks aren't ✅ DONE.
+artifacts, and whether a baseline ran. A run that stopped part-way runs no code review; it says which tasks aren't
+✅ DONE and prints `ai implement <plan-file>` to resume.
 
 ## Red flags
 
 | Thought | Reality |
 | --- | --- |
 | "Every task passed its review, so it's done." | Not until the final code review ends in `Done (code):`. |
+| "I'll stop so the user can start the next stage." | Plan iterations and the code review run here; stop only for the user's decisions. |
 | "This task is too small to review." | Every task gets its task review. |
 | "The task doesn't mention error handling." | The implementer adds it, and the edge-case tests, anyway. |
 | "A checkpoint commit is safer." | Nothing is committed here. The index and the ref are the checkpoint. |

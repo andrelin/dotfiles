@@ -61,7 +61,7 @@ The plan is revisited between tasks and sections as the work teaches, so only wh
 - **Detail the tasks up to the first thing still to learn;** later ones may be sketches: heading, issue and a
   `Sketch:` line with the goal and rough scope, no Files, Interfaces or Tests. A sketch is never implemented.
 - **End a section with `## Revisit · <the question its tasks answer>`** between tasks, where what is built should
-  change what comes next. `implementing-plans` stops there, and at a sketch, for an iteration.
+  change what comes next. `implementing-plans` iterates the plan there, and at a sketch, then goes on.
 - **Iterating** (`/writing-plans <plan-file>`): read its deviations, `Deferred:` lines and the code built so far; fold
   them into the upcoming tasks, detail the next sketches, then review it as at handover — a fresh run of the review.
   Every `## Review log (` section stays as it is, even through a full rewrite: the review closes the old one.
@@ -98,7 +98,8 @@ platform writes, external calls, by-hand steps, tool permissions for its command
 record each answer with its date; later stages act on a recorded yes without asking, never past § *Work contexts*.
 **Then run `reviewing-in-rounds plan <file>`** — the author cannot see the ambiguity they already know the answer to;
 **ready to implement means its log ends in `Done (plan):`**. Then move its tracker item, if it has one, to in-flight
-(`writing-follow-up-items`), and print `ai implement <plan-file>` for a fresh session.
+(`writing-follow-up-items`), and go straight on to `implementing-plans <plan-file>` in this session — unless the user
+asked for the plan alone, or it has no task ready to implement: then print `ai implement <plan-file>`.
 
 ## Keeping it in sync
 

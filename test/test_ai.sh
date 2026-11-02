@@ -41,7 +41,7 @@ assert "$(out)" $'--model\nopus\n/writing-plans 12' "ai plan 12"
 run issue
 assert "$(model)" "sonnet" "the issue stage defaults to sonnet"
 run implement p.md
-assert "$(out)" $'--model\nsonnet\n/implementing-plans p.md' "ai implement p.md"
+assert "$(out)" $'--model\nopus\n/implementing-plans p.md' "ai implement p.md"
 run review plan p.md
 assert "$(out)" $'--model\nopus\n/reviewing-in-rounds plan p.md' "ai review plan p.md"
 
@@ -50,8 +50,10 @@ AI_MODEL_PLAN=sonnet run plan 12
 assert "$(model)" "sonnet" "AI_MODEL_PLAN beats the default"
 AI_MODEL_ISSUE=haiku run issue
 assert "$(model)" "haiku" "AI_MODEL_ISSUE beats the default"
-AI_MODEL_IMPLEMENT=opus run implement p.md
-assert "$(model)" "opus" "AI_MODEL_IMPLEMENT beats the default"
+AI_MODEL_REVIEW=sonnet run implement p.md
+assert "$(model)" "sonnet" "the implement stage runs on AI_MODEL_REVIEW"
+AI_MODEL_IMPLEMENT=haiku run implement p.md
+assert "$(model)" "opus" "AI_MODEL_IMPLEMENT leaves the implement session's model alone"
 AI_MODEL_REVIEW=sonnet run review plan p.md
 assert "$(model)" "sonnet" "AI_MODEL_REVIEW beats the default"
 AI_MODEL_REVIEW=sonnet run --model haiku review code
@@ -60,8 +62,8 @@ AI_MODEL_PLAN='' run plan 12
 assert "$(model)" "opus" "an empty AI_MODEL_PLAN counts as unset"
 AI_MODEL_ISSUE='' run issue
 assert "$(model)" "sonnet" "an empty AI_MODEL_ISSUE counts as unset"
-AI_MODEL_IMPLEMENT='' run implement p.md
-assert "$(model)" "sonnet" "an empty AI_MODEL_IMPLEMENT counts as unset"
+AI_MODEL_REVIEW='' run implement p.md
+assert "$(model)" "opus" "an empty AI_MODEL_REVIEW counts as unset for implement"
 AI_MODEL_REVIEW='' run review code
 assert "$(model)" "opus" "an empty AI_MODEL_REVIEW counts as unset"
 run review code p.md

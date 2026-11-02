@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+#
+# Flag invisible Unicode in the files an agent loads.
+#
+# Hidden characters in a rules file have steered agents into writing malicious code
+# (claude/docs/best-practices/safety.md), and these files are public and copied by others.
+#
+# Kept to bash 3.2 syntax, no re-exec: hooks/pre-commit runs this as its own process, where
+# #!/usr/bin/env bash is Apple's bash unless Homebrew is on the PATH.
+#
+# Usage: check-hidden-unicode [--cached] [--] [file ...]
+#   No files    every tracked file under claude/ and .claude/, plus every tracked CLAUDE.md and
+#               AGENTS.md, except the vendored claude/skills/unslop/.
+#   --cached    read each file's staged blob instead of the working tree.
+# One perl and, with --cached, one git cat-file serve every file, since a commit would otherwise spawn two
+# processes per file.
+# Output: <file>:<line>: U+<HEX> <NAME>, one line per hit. Exit 1 on any hit, 2 if a named file
+# is missing (the others are still checked), else 0 and silent.
+#
+# Flagged: zero-width and invisible characters (U+200B-200D, U+2060-2064, U+FEFF past byte 0,
+# U+180E, U+00AD), bidirectional controls (U+202A-202E, U+2066-2069, U+200E, U+200F), variation
+# selectors (U+FE00-FE0E, U+E0100-E01EF; the emoji selector U+FE0F passes) and tag characters
+# (U+E0000-E007F). Matching is on UTF-8 byte sequences, so malformed UTF-8 or binary content
+# elsewhere in a file cannot stop the scan.
+
+set -euo pipefail
+
+cached=0
+files=()
+while (($# > 0)); do
+  case "$1" in
+    --cached) cached=1 ;;
+    --) shift; while (($# > 0)); do files+=("$1"); shift; done; break ;;
+    -*) echo "check-hidden-unicode: unknown option: $1" >&2; exit 2 ;;
+    *) files+=("$1") ;;
+  esac
+  shift
+done
+
+if ((${#files[@]} == 0)); then
+  if ! top="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+    echo "check-hidden-unicode: no files given and not in a git repository" >&2
+    exit 2
+  fi
+  cd "$top"
+  while IFS= read -r -d '' f; do
+    files+=("$f")
+  done < <(git ls-files -z -- claude .claude ':(glob)**/CLAUDE.md' ':(glob)**/AGENTS.md' \
+    ':(exclude)claude/skills/unslop/')
+  # Nothing tracked in the default set is a clean pass.
+  ((${#files[@]} > 0)) || exit 0
+fi
+
+# perl alone. $ARGV[0] is the mode, w (open each file) or b (read `git cat-file --batch` output on
+# stdin); the rest are the labels, in order, which are also the paths in mode w.
+read -r -d '' scanner <<'PERL' || true
+use strict; use warnings; use charnames ();
+my $mode = shift;
+my $re = qr/
+    \xE2\x80[\x8B-\x8F\xAA-\xAE]    | \xE2\x81[\xA0-\xA4\xA6-\xA9]
+  | \xC2\xAD | \xE1\xA0\x8E | \xEF\xBB\xBF | \xEF\xB8[\x80-\x8E]
+  | \xF3\xA0[\x80\x81][\x80-\xBF]   | \xF3\xA0[\x84-\x86][\x80-\xBF] | \xF3\xA0\x87[\x80-\xAF]
+/x;
+my $status = 0;
+sub missing { print STDERR "$_[0]: no such file\n"; $status = 2; }
+sub scan {
+  my ($label, $content) = @_;
+  my $n = 0;
+  for my $line (split /\n/, $content, -1) {
+    $n++;
+    while ($line =~ /($re)/g) {
+      my $seq = $1;
+      my $pos = $-[1];
+      my @b = map { ord } split //, $seq;
+      my $cp = @b == 2 ? (($b[0] & 0x1F) << 6) | ($b[1] & 0x3F)
+             : @b == 3 ? (($b[0] & 0x0F) << 12) | (($b[1] & 0x3F) << 6) | ($b[2] & 0x3F)
+             : (($b[0] & 0x07) << 18) | (($b[1] & 0x3F) << 12) | (($b[2] & 0x3F) << 6) | ($b[3] & 0x3F);
+      next if $cp == 0xFEFF && $n == 1 && $pos == 0;
+      my $name = charnames::viacode($cp);
+      $name = '(no name)' unless defined $name && length $name;
+      printf "%s:%d: U+%04X %s\n", $label, $n, $cp, $name;
+      $status = 1 if $status == 0;
+    }
+  }
+}
+binmode STDIN;
+for my $label (@ARGV) {
+  my $content;
+  if ($mode eq 'w') {
+    my $fh;
+    unless (-f $label && open($fh, '<:raw', $label)) { missing($label); next; }
+    local $/;
+    $content = <$fh>;
+    $content = '' unless defined $content;
+  } else {
+    my $header = <STDIN>;
+    die "git cat-file ended early\n" unless defined $header;
+    # "<spec> missing" for a path not in the index (a directory included); a non-blob body is skipped.
+    unless ($header =~ /^[0-9a-f]{40,64} (\w+) (\d+)\n\z/) { missing($label); next; }
+    my ($type, $size) = ($1, $2);
+    if ($type ne 'blob') { read(STDIN, my $skip, $size + 1); missing($label); next; }
+    my $got = read(STDIN, $content, $size);
+    die "git cat-file ended early\n" unless defined $got && $got == $size;
+    read(STDIN, my $nl, 1);
+  }
+  scan($label, $content);
+}
+exit $status;
+PERL
+
+if ((cached)); then
+  if [[ -z "${top:-}" ]] && ! top="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+    echo "check-hidden-unicode: --cached needs a git repository" >&2
+    exit 2
+  fi
+  specs=()
+  for f in "${files[@]}"; do
+    if [[ "$f" == *$'\n'* ]]; then
+      echo "check-hidden-unicode: cannot read a staged file whose name has a newline: $f" >&2
+      exit 2
+    fi
+    if [[ "$f" == /* ]]; then
+      # Resolve the directory physically, so /var/... matches git's /private/var/... on macOS.
+      d="$(cd "$(dirname "$f")" 2>/dev/null && pwd -P)" || d=""
+      abs="$d/$(basename "$f")"
+      case "$abs" in
+        "$top"/*) specs+=(":${abs#"$top"/}") ;;
+        *) specs+=(":/nonexistent-outside-the-repo") ;;
+      esac
+    else
+      specs+=(":./$f")
+    fi
+  done
+  printf '%s\n' "${specs[@]}" | git cat-file --batch | perl -e "$scanner" -- b "${files[@]}" && exit 0 || exit $?
+fi
+perl -e "$scanner" -- w "${files[@]}" && exit 0 || exit $?

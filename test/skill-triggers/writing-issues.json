@@ -1,0 +1,22 @@
+[
+  {"id": "1.1", "query": "Users on the example-client project report that CSV exports silently drop rows with commas in the name field. File a ticket for it in our GitHub repo.", "should_trigger": true},
+  {"id": "1.2", "query": "Draft a Jira ticket for adding rate limiting to the public API on api.example.com, including what's out of scope.", "should_trigger": true},
+  {"id": "1.3", "query": "I want to track the flaky checkout test somewhere. Should that be an issue in the tracker or just a note in my own follow-ups?", "should_trigger": true},
+  {"id": "1.4", "query": "Write up an issue for migrating the nightly report job off cron onto the scheduler, with acceptance criteria, then tell me how to start planning it.", "should_trigger": true},
+  {"id": "1.5", "query": "There's a bug where the retry worker double-sends emails after a timeout. Open an Azure Boards work item for it and interview me about the details first.", "should_trigger": true},
+  {"id": "1.6", "query": "Create a GitLab issue from the third item in my follow-up tracker, the one about pagination in the audit log view.", "should_trigger": true},
+  {"id": "1.7", "query": "We keep getting asked for dark mode in the dashboard. Help me turn that into a proper feature request issue.", "should_trigger": true},
+  {"id": "1.8", "query": "Before I file this, is it big enough for a ticket in the task tracker, or is it just a chore for my own list?", "should_trigger": true},
+  {"id": "1.9", "query": "Draft an issue for upgrading the Postgres client library across the services, and ask me whatever you need to make the acceptance criteria concrete.", "should_trigger": true},
+  {"id": "1.10", "query": "Turn this stack trace and my notes into a bug report I can post on the project's issue tracker.", "should_trigger": true},
+  {"id": "2.1", "query": "Add 'look into the slow login page' to my follow-up tracker under the in-flight half, with a next-step line.", "should_trigger": false},
+  {"id": "2.2", "query": "Reword item B2.3 in my follow-ups so the heading is shorter and the next step is clearer.", "should_trigger": false},
+  {"id": "2.3", "query": "Write plan-export-retry.md for the issue we just filed, with tasks and the tests that prove each one.", "should_trigger": false},
+  {"id": "2.4", "query": "Review the merge request from my colleague that fixes the pagination bug and give me feedback on it.", "should_trigger": false},
+  {"id": "2.5", "query": "Write the pull request description for the branch that adds rate limiting, with the issue number in the title.", "should_trigger": false},
+  {"id": "2.6", "query": "Renumber the items in my personal follow-up tracker and delete the resolved ones.", "should_trigger": false},
+  {"id": "2.7", "query": "Set up a follow-up tracker in this new project directory with the backlog and in-flight files.", "should_trigger": false},
+  {"id": "2.8", "query": "Implement Task 2 from plan-audit-log.md and checkpoint it when the tests pass.", "should_trigger": false},
+  {"id": "2.9", "query": "Close the Renovate PRs for the lodash bumps and tell me what to do about the dependency dashboard issue.", "should_trigger": false},
+  {"id": "2.10", "query": "Debug why the nightly report job fails every third night; find the root cause before proposing a fix.", "should_trigger": false}
+]

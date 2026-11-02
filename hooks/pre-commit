@@ -28,6 +28,9 @@ if git diff --cached --name-only | grep -q '^\.claude/settings\.json$'; then
   git add .claude/settings.json
 fi
 
+# Hidden Unicode in the files an agent loads. The default set is defined once, in the script.
+bin/check-hidden-unicode --cached
+
 # Enforce repo-wide: every tracked md must opt in to doctoc (markers) or opt out (SKIP).
 # Catches violations in unrelated files too — fix-first, never silent-default.
 # claude/ and .claude/ are exempt: a ToC is a navigation aid for humans browsing on GitHub,

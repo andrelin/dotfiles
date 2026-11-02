@@ -72,5 +72,8 @@ permanent — inline whatever the reader needs instead (`~/.claude/rules/plan-fi
 
 Delete any sentence that wouldn't change where a reviewer looks or what they'd push back on. If removing it loses nothing, it was padding.
 Then check it still reads for someone who wasn't in the conversation.
+Before finishing a PR or MR title and body (those only), read `~/.claude/skills/unslop/SKILL.md` and apply it as a last pass,
+since `disable-model-invocation` blocks a Skill call.
+Where it conflicts with this skill's structure (headings, bullets, bold lead-ins), this skill wins.
 
 A full worked example, with notes on why each line survived: `~/.claude/docs/mr-description-example.md`.

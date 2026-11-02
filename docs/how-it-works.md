@@ -36,7 +36,7 @@ the one running, and step 6 remembers your last selection.
 - The `/bin` directory contains executable shell scripts (including [dotfiles][dotfiles]) and symlinks to them, and is added to `$PATH`.
 - The `/caches` directory contains cached files used by some scripts or functions.
 - The `/claude` directory holds shared Claude Code config — `CLAUDE.md`, `skills/`, `rules/`, `docs/`, `hooks/`, `shims/` and
-  the statusline script — symlinked into `~/.claude/` by [init/52_macos_claude.sh](../init/52_macos_claude.sh),
+  the statusline script — symlinked into `~/.claude/` by [init/52_claude.sh](../init/52_claude.sh),
   leaving machine-local state (sessions, history) alone. `settings.json` stays machine-local too; the script only
   points its `statusLine` at the linked script and, through `bin/claude-settings-merge`, registers the two hook
   entries for the work-context guard in `hooks/work-context.sh`, and a `PostToolUse` one for `hooks/watch-main-ci.sh`

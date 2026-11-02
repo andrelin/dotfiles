@@ -1,3 +1,22 @@
 [
-  {"id": "1.1", "query": "Build Task 3 from plan-export-retry.md, the dead-letter topic for exports that exhaust their retries, and commit it once its tests pass.", "should_trigger": true}
+  {"id": "1.1", "query": "Build Task 3 from plan-export-retry.md, the dead-letter topic for exports that exhaust their retries, and commit it once its tests pass.", "should_trigger": true},
+  {"id": "1.2", "query": "Run plan-ai-framework.md: do the tasks in order, review each one, and give me a final report when it's done.", "should_trigger": true},
+  {"id": "1.3", "query": "Resume the implementation of plan-export-retry.md; the last session stopped after Task 2 and I don't know what state the tree is in.", "should_trigger": true},
+  {"id": "1.4", "query": "Execute Tasks 4 and 5 of plan-audit-log.md only, using subagents, and stop if anything deviates from the spec.", "should_trigger": true},
+  {"id": "1.5", "query": "Carry out the plan for the Kafka client migration. The plan has been reviewed, so start with the baseline test run.", "should_trigger": true},
+  {"id": "1.6", "query": "Get Task 2 of the plan done, it's just a one-line config change, but I want it checkpointed like the others.", "should_trigger": true},
+  {"id": "1.7", "query": "Take plan-search-rewrite.md and have fresh implementers build each task, then review the lot at the end.", "should_trigger": true},
+  {"id": "1.8", "query": "Pick up the plan where we left off yesterday: continue from the first task that isn't marked done.", "should_trigger": true},
+  {"id": "1.9", "query": "Implement the whole plan on its own branch and leave everything staged, I'll commit after the review.", "should_trigger": true},
+  {"id": "1.10", "query": "Start building from plan-dark-mode.md. Ask me for any permissions you'll need up front so it can run unattended.", "should_trigger": true},
+  {"id": "2.1", "query": "Write plan-export-retry.md for the retry design we just agreed on, with tasks, files and tests for each.", "should_trigger": false},
+  {"id": "2.2", "query": "Update the handover section of the plan so a fresh session knows where to start on Monday.", "should_trigger": false},
+  {"id": "2.3", "query": "Split Task 5 of the plan into two tasks and move the requirements that belong to each.", "should_trigger": false},
+  {"id": "2.4", "query": "Review my plan file for gaps before I give it to an executor.", "should_trigger": false},
+  {"id": "2.5", "query": "Review the branch the plan run produced and fix what the reviewers find.", "should_trigger": false},
+  {"id": "2.6", "query": "File an issue for the retry bug and then tell me how to start planning it.", "should_trigger": false},
+  {"id": "2.7", "query": "Add 'revisit the plan format' to my follow-up tracker.", "should_trigger": false},
+  {"id": "2.8", "query": "Write the pull request description for the finished branch.", "should_trigger": false},
+  {"id": "2.9", "query": "Implement a small CSV export function for me: no plan, just add it to the report module and test it.", "should_trigger": false},
+  {"id": "2.10", "query": "Explain how the plan status table works and what the checkpoint refs are for.", "should_trigger": false}
 ]

@@ -29,22 +29,26 @@ From `bin/sort-claude-settings`.
 
 ## Tip 24.3: Pre-Commit Automation for Claude Code
 
-`hooks/pre-commit` runs both helpers above when a commit could affect Claude Code's settings:
+`hooks/pre-commit` runs both helpers above when a commit could affect Claude Code's settings, and checks more:
 
 - Touching `.gitsecret/paths/mapping.cfg` → runs `sync-claude-deny`, re-staging `.claude/settings.json`.
 - Touching `.claude/settings.json` → runs `sort-claude-settings` and re-stages it.
+- Any invisible Unicode in a staged file an agent loads → blocks the commit; see Tip 24.9.
 - Adding or removing an alias, function or `bin/` script without staging anything under `tips/` → an advisory
   reminder that never blocks.
 
-So no commit carries stale deny rules or shuffled settings arrays. It does more besides — doctoc, markdownlint
-and the size limits on staged markdown, though only for files with no unstaged changes, since re-staging a
-partially staged file would commit hunks you left out — and `init/12_git_hooks.sh` symlinks it into `.git/hooks/`.
+So no commit carries stale deny rules, shuffled settings arrays or hidden characters in agent-loaded files.
+It also runs doctoc, markdownlint and the size limits on staged markdown, though only for files with no unstaged changes, since re-staging a
+partially staged file would commit hunks you left out.
+`init/12_git_hooks.sh` symlinks the hook into `.git/hooks/`.
 
 ## Tip 24.4: Shared config and skills in `~/.claude`
 
-Everything under `claude/` is symlinked into `~/.claude/` by [init/52_macos_claude.sh](../init/52_macos_claude.sh),
+Everything under `claude/` is symlinked into `~/.claude/` by [init/52_claude.sh](../init/52_claude.sh),
 so every machine that runs it gets the same Claude Code context from one place.
-The `_macos_` marker means it is not selected by default on Linux or WSL, where you tick it by hand:
+A Linux or WSL machine whose saved selection predates the rename ticks `52_claude.sh` once;
+one that had ticked the old script by hand is migrated automatically.
+It links:
 
 - `claude/CLAUDE.md` → `~/.claude/CLAUDE.md` — global instructions loaded into every session.
 - `claude/skills/` → `~/.claude/skills/` — reusable skills, one directory per skill with a `SKILL.md`.
@@ -148,3 +152,21 @@ implementer subagents, default sonnet).
 Run it from a terminal: inside a Claude session it refuses.
 
 From `bin/ai`.
+
+## Tip 24.9: `check-hidden-unicode` — invisible characters in agent-loaded files
+
+Flags zero-width and invisible characters, bidirectional controls, variation selectors (bar the emoji selector) and
+Unicode tag characters, which can hide instructions from a reviewer while an agent still reads them.
+Ordinary non-ASCII text and emoji pass; a ZWJ sequence is flagged at its zero-width joiner.
+It prints `<file>:<line>: U+<HEX> <NAME>` per hit and exits 1; with no files it scans everything tracked under
+`claude/` and `.claude/` plus every `CLAUDE.md` and `AGENTS.md`, bar the vendored `claude/skills/unslop/`.
+
+```sh
+bin/check-hidden-unicode                    # the default set
+bin/check-hidden-unicode claude/rules/a.md  # named files
+bin/check-hidden-unicode --cached           # the staged blobs, as pre-commit sees them
+```
+
+`hooks/pre-commit` runs it with `--cached` and CI runs it with no arguments.
+
+From `bin/check-hidden-unicode`.

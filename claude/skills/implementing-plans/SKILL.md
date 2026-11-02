@@ -67,21 +67,16 @@ Use `superpowers:subagent-driven-development` (7.0.0) for its loop: per task a f
 - **Parallel** (`superpowers:dispatching-parallel-agents`, one message) only for tasks with disjoint Files lists,
   no order between them — neither's **Interfaces** names the other task or a path in its Files list — and scoped
   tests (those its **Tests** names) sharing no build directory (`build/`, `node_modules`). Unsure → in order.
-- **By hand:** a task only the user or a fresh session can do — done by hand, a spike the user judges, a test
-  needing a fresh or interactive session or a `!` line — never goes to a subagent, which would simulate it. Stop
-  before its batch, give the commands, and once the user reports back, check what its **Tests** name.
-- **Models:** `model` on every Agent call — implementers and fixers on `$AI_MODEL_IMPLEMENT`, else `sonnet`;
-  task reviewers and plan agents on this session's alias (a full model ID passes its family's).
-  An attempt fails when the implementer reports itself blocked, or the task's review or tests still fail after its
-  fix loop. Twice failed → once more with `model: "opus"` unless already on Opus, then
-  the user. Each new attempt starts from the failed one's tree, told what failed; nothing is reverted.
+- **Before the approvals step, before dispatching any subagent,
+  and before a task only the user can do:** read `~/.claude/docs/implementing-plans-reference.md`
+  — the by-hand rule and the model choice, a failed attempt included.
 
 **Overridden in SDD 7.0.0:** every commit step, whatever `skill-precedence.md` says; its ban on parallel
 implementers (SKILL.md:282), replaced by the rule above; `scripts/task-brief` and § *Setup* (worktree, branch,
 the `sdd-workspace` ledger) — resume from the plan's status table; its "rulings, not stalls" — every stop here
 stops; deferred minors go in the task's section as a `Deferred:` line, listed in the final report;
 § *Model Selection*; its fix-loop escalation — all five rounds run, rounds 4–5 a fresh implementer on the same
-model, the retry above being the only escalation; its breaker, which parks findings and marks the task complete
+model, the reference doc's retry being the only escalation; its breaker, which parks findings and marks the task complete
 — here a failed attempt; § *Final Review* and § *Finish*.
 
 ## Checkpoint in the index, at every level

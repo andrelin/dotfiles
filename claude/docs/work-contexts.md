@@ -24,6 +24,10 @@ A customer repo being private makes the reader smaller, not the care looser.
 ## personal private — full autonomy
 
 Commit, push, rebase, open PRs, merge PRs, full `gh` access.
+At every level, not only this one: the workflow skills never commit on their own.
+`implementing-plans` checkpoints in the index and never commits,
+`reviewing-in-rounds` commits only after the user's yes, and `reviewing-for-feedback` never edits.
+On customer work `reviewing-in-rounds` drafts the commit rather than committing.
 Nothing leaves the user's own account, so the only bar is not committing secrets you'd rather not have in a history at all.
 
 ## personal public — full autonomy, but every commit is published

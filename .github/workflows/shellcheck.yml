@@ -31,6 +31,7 @@ jobs:
           shellcheck --version
           failed=0
           for f in bin/dotfiles bin/eachdir bin/isip bin/check-md-limits \
+                   bin/check-hidden-unicode \
                    bin/sync-claude-deny bin/sort-claude-settings bin/claude-settings-merge \
                    bin/skill-trigger-eval bin/ai \
                    hooks/pre-commit \

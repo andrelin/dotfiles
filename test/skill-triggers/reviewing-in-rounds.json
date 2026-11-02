@@ -1,0 +1,22 @@
+[
+  {"id": "1.1", "query": "Take a look at plan-export-retry.md before I hand it to an executor; I wrote it with another session and want it checked properly.", "should_trigger": true},
+  {"id": "1.2", "query": "The branch ai-framework is done. Review it in rounds against plan-ai-framework.md and fix what the reviewers find.", "should_trigger": true},
+  {"id": "1.3", "query": "Take a look at the code we just built for the dead-letter topic. It's small, but I'd still like it reviewed before I commit.", "should_trigger": true},
+  {"id": "1.4", "query": "The review of my plan stopped halfway yesterday when the session died. Pick it up where it left off.", "should_trigger": true},
+  {"id": "1.5", "query": "Is the review process we use on plans actually catching anything, or is it just ceremony? Look at the logs and tell me.", "should_trigger": true},
+  {"id": "1.6", "query": "Review my own plan for the Kafka client migration with fresh eyes, one reviewer per concern, and verify each finding before fixing it.", "should_trigger": true},
+  {"id": "1.7", "query": "Run the final code review on this branch the workflow built, log the findings in the plan and fix them until it's clean.", "should_trigger": true},
+  {"id": "1.8", "query": "I finished implementing everything in the plan. Before I commit anything, have the work reviewed against it.", "should_trigger": true},
+  {"id": "1.9", "query": "Check my plan file for gaps. I just want a quick sanity pass before the executor starts, nothing heavy.", "should_trigger": true},
+  {"id": "1.10", "query": "The last review round found more problems than the one before. Judge whether this review is converging or going in circles.", "should_trigger": true},
+  {"id": "2.1", "query": "My colleague pushed a new MR for the billing change. Review it and write me feedback I can send to them.", "should_trigger": false},
+  {"id": "2.2", "query": "Re-review the pull request from my colleague now that they have addressed my comments and pushed again.", "should_trigger": false},
+  {"id": "2.3", "query": "Review the customer's feature branch from the local clone and list what I should raise with their team.", "should_trigger": false},
+  {"id": "2.4", "query": "Do a code review of PR 214 on the example-client repo and tell me if it's safe to merge.", "should_trigger": false},
+  {"id": "2.5", "query": "Write the merge request description for the branch I just finished.", "should_trigger": false},
+  {"id": "2.6", "query": "Write plan-export-retry.md from the design we agreed on, with tasks, files and tests.", "should_trigger": false},
+  {"id": "2.7", "query": "Implement Task 3 from the plan and checkpoint it in the index.", "should_trigger": false},
+  {"id": "2.8", "query": "Look at this colleague's plan for the search rewrite and tell me what's weak in it so I can give them feedback.", "should_trigger": false},
+  {"id": "2.9", "query": "Why does the integration test fail on CI but pass locally? Find the cause before suggesting a fix.", "should_trigger": false},
+  {"id": "2.10", "query": "Review the follow-up tracker: merge duplicates and move finished items out of the in-flight half.", "should_trigger": false}
+]

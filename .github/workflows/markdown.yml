@@ -5,6 +5,10 @@ on:
     paths:
       - '**.md'
       - 'bin/check-md-limits'
+      - 'bin/check-hidden-unicode'
+      - 'test/test_check_hidden_unicode.sh'
+      - 'claude/**'
+      - '.claude/**'
       - '.md-baseline'
       - '**/.markdownlint.json'
       - '.markdownlint.json'
@@ -34,6 +38,9 @@ jobs:
       # the author can act on it. A CI step that cannot fail is exactly what this repo bans.
       - name: Line and file length limits
         run: bin/check-md-limits --no-warn
+
+      - name: Hidden Unicode in agent-loaded files
+        run: bin/check-hidden-unicode
 
       # Catches a hand-edited baseline the tool would not have written — a raised
       # number, a stale one, a malformed line — and, separately, a pin deleted

@@ -55,7 +55,8 @@ no inline comments) unless the user says so. Set up with `git fetch origin main 
 ## Language
 
 Everything Claude writes is English: code, comments, commits, docs, plans, every part of a PR or MR — whatever
-language colleagues are using in the thread, and however short the thing is.
+language colleagues are using in the thread, and however short the thing is — except an edit to text already in
+Norwegian on the default branch, which stays Norwegian until the user asks for a translation (a PR's text isn't there yet).
 Norwegian — Nynorsk, even when the user writes Bokmål — in conversation only, and only when the user leads;
 quote a colleague's Bokmål verbatim rather than correcting it. Default to English when in doubt.
 
@@ -73,10 +74,10 @@ quote a colleague's Bokmål verbatim rather than correcting it. Default to Engli
   `writing-issues` if none exists, and you name the work by its issue and PR numbers (#53, PR #112), never a plan's task
   numbers: the issue is what colleagues see.
 - **Dependabot and Renovate PRs:** never close one by hand or target one with `closes #N` — `dependency-bot-prs`.
-  **Skills:** a personal skill shadows a same-named project one, and **where a plugin skill covers the same ground
-  as a personal one, invoke the personal one** — `writing-plans` over `superpowers:writing-plans`,
-  `reviewing-locally` over `superpowers:requesting-code-review`. § *Work contexts* outranks every skill, plugin
-  ones included: read those for technique, never for what is allowed (`~/.claude/docs/skill-precedence.md`).
+  **Skills:** a personal skill shadows a same-named project one, and **where a plugin skill covers the same ground as a personal one,
+  invoke the personal one** — `writing-plans` over `superpowers:writing-plans`, `reviewing-in-rounds` (own work) or `reviewing-for-feedback`
+  (someone else's) over `superpowers:requesting-code-review`. § *Work contexts* outranks every skill, plugin ones included: read those
+  for technique, never for what is allowed (`~/.claude/docs/skill-precedence.md`).
 
 ## Machine-local context
 

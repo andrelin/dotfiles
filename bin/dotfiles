@@ -307,6 +307,33 @@ function copy_do() {
   cp "$2" ~/
 }
 
+# Init scripts that were renamed, as old:new. A saved selection naming the old one would leave the new one unticked,
+# since a cache replaces the defaults. Above the source-mode return so test/test_init_selection.sh can reach both.
+# This part is sourced into every interactive zsh: keep to syntax both shells accept, and print nothing.
+renamed_init_scripts=(52_macos_claude.sh:52_claude.sh)
+
+# Rewrites menu_selects in place: each renamed script gets its new name, in the same position,
+# and a renamed script's new name is never selected twice, whichever of the two forms came first.
+function migrate_init_selection() {
+  local migrated=() sel mapped renamed entry skip
+  for sel in "${menu_selects[@]}"; do
+    mapped=$sel
+    for renamed in "${renamed_init_scripts[@]}"; do
+      [[ "$sel" == "${renamed%%:*}" ]] && mapped=${renamed#*:}
+    done
+    skip=
+    for renamed in "${renamed_init_scripts[@]}"; do
+      if [[ "$mapped" == "${renamed#*:}" ]]; then
+        for entry in "${migrated[@]}"; do
+          [[ "$entry" == "$mapped" ]] && skip=1
+        done
+      fi
+    done
+    [[ -n "$skip" ]] || migrated+=("$mapped")
+  done
+  menu_selects=("${migrated[@]}")
+}
+
 # If this file was being sourced, exit now.
 [[ "$1" == "source" ]] && return
 
@@ -336,6 +363,7 @@ function init_files() {
   if [[ -e "$init_file" ]]; then
     # Read cache file if possible
     IFS=$'\n' read -d '' -r -a menu_selects < "$init_file"
+    migrate_init_selection
   else
     # Otherwise default to all scripts not specifically for other OSes
     # shellcheck disable=SC2207 # get_os outputs single-word OS names; safe to split

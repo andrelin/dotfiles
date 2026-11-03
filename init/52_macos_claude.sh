@@ -34,7 +34,9 @@ done
 # settings.json stays machine-local (plugins, permissions and hooks differ per machine),
 # so only the statusLine entry, the hook entries and the hardening entries are set here.
 settings="$HOME/.claude/settings.json"
-status_line='{"type":"command","command":"bash ~/.claude/statusline-command.sh"}'
+# The status line otherwise re-runs only on session events, so a resized window would keep its old layout.
+# Each refresh runs git status in the session's directory: lengthen the interval if a large repo feels it.
+status_line='{"type":"command","command":"bash ~/.claude/statusline-command.sh","refreshInterval":2}'
 
 if [[ ! "$(type -P jq)" ]]; then
   e_error "jq not found — skipping the Claude Code status line."

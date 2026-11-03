@@ -690,10 +690,11 @@ assert "$rc" 1 "hook: staged U+200B -> blocked"
 assert "$(grep -c 'claude/a.sh:1: U+200B' "$workdir/h.out")" 1 "hook: names the file and code point"
 printf 'clean\n' > "$hookrepo/claude/a.sh"
 git -C "$hookrepo" add claude/a.sh
-printf '<!-- DOCTOC SKIP -->\n\n# Title\n\nx%s\n' "$(u 200B)" > "$hookrepo/docs/d.md"
-git -C "$hookrepo" add docs/d.md
+# Not markdown, so the hook's markdown tools don't run: on WSL a Windows npm shim on the PATH can exit 127.
+printf 'x%s\n' "$(u 200B)" > "$hookrepo/docs/d.txt"
+git -C "$hookrepo" add docs/d.txt
 hook
-assert "$rc" 0 "hook: U+200B only in docs/d.md, outside the default set -> pass"
+assert "$rc" 0 "hook: U+200B only in docs/d.txt, outside the default set -> pass"
 (cd "$hookrepo" && PATH="$workdir/badgit:$PATH" "$BASH" hooks/pre-commit) >"$workdir/h.out" 2>&1 && rc=0 || rc=$?
 assert "$([[ $rc -ne 0 ]] && echo blocked)|$(grep -c 'the scan failed' "$workdir/h.out")" "blocked|1" \
   "hook: a scan that can't run blocks the commit too"

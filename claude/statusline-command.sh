@@ -5,7 +5,9 @@ input=$(cat)
 model=$(echo "$input" | jq -r '.model.display_name // "Unknown model"')
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // empty')
 # The /rename or --name name if set, else the AI-generated session title; absent before either exists.
-topic=$(echo "$input" | jq -r '.session_name // empty')
+# jq cuts it, counting characters in any locale, and drops control characters that would reach the terminal raw.
+topic=$(echo "$input" | jq -r '.session_name | strings | explode | map(select(. >= 32 and . != 127)) | implode
+  | if length > 50 then .[0:49] + "…" else . end')
 ctx_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 session_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 five_hour_resets_at=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
@@ -33,7 +35,8 @@ make_bar() {
   printf "%s" "$bar"
 }
 
-# Columns a string takes on screen: colour codes take none, and only a UTF-8 character's lead byte counts.
+# Columns a string takes on screen: colour codes take none, and only a UTF-8 character's lead byte counts,
+# so a wide character (CJK, emoji) is undercounted as one column.
 visible_width() {
   printf '%s' "$1" | sed $'s/\033\\[[0-9;]*m//g' | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' '
 }
@@ -83,18 +86,15 @@ fi
 info_segment="${CYAN}(${model})${RESET}"
 [ -n "$git_segment" ] && info_segment="${git_segment} ${info_segment}"
 
-# The topic, in bold, tells several open sessions apart at a glance; long titles are cut at 50 characters.
+# The topic, in bold, tells several open sessions apart at a glance.
 topic_segment=""
-if [ -n "$topic" ]; then
-  [ "${#topic}" -gt 50 ] && topic="${topic:0:49}…"
-  topic_segment="${BOLD}${topic}${BOLD_OFF}"
-fi
+[ -n "$topic" ] && topic_segment="${BOLD}${topic}${BOLD_OFF}"
 
 # Claude Code pads the status line and cuts a row with … a few columns short of COLUMNS;
 # measured in iTerm2, 4 columns is enough that a section drops before it is cut.
 columns="${COLUMNS:-0}"
 if [ "$columns" -gt 4 ] 2>/dev/null; then
-  columns=$(( columns - 4 ))
+  columns=$(( 10#$columns - 4 ))
 else
   columns=0
 fi

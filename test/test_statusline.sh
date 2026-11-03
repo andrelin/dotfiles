@@ -3,8 +3,14 @@ source "$DOTFILES/test/helper.sh"
 
 e_header "$(basename "$0" .sh)"
 
+# The cases build their input with jq, and the status line reads it with jq.
+if [[ ! "$(type -P jq)" ]]; then
+  echo "ERROR: jq is required to build the status line input" >&2
+  exit 1
+fi
+
 statusline="$DOTFILES/claude/statusline-command.sh"
-# Outside any git repo, so row 1 carries no branch segment.
+# Not a git repo until the last case, so the info section is the model alone.
 cwd=$(mktemp -d)
 trap 'rm -rf "$cwd"' EXIT
 
@@ -29,7 +35,7 @@ function line_count() {
 }
 
 row1="$cwd (Opus)"
-# Claude Code cuts the status line this many columns short of COLUMNS.
+# Claude Code cuts the status line this many columns short of COLUMNS, the 4 the script subtracts.
 padding=4
 one_line="$row1 · Fix the ÆØÅ bug"
 
@@ -56,6 +62,11 @@ out=$(render unset "Fix the ÆØÅ bug")
 assert "$out" "$one_line" "everything stays on one row without COLUMNS"
 out=$(render 0 "Fix the ÆØÅ bug")
 assert "$out" "$one_line" "everything stays on one row when COLUMNS is 0"
+out=$(render abc "Fix the ÆØÅ bug")
+assert "$out" "$one_line" "everything stays on one row when COLUMNS is not a number"
+# A leading zero must not read as octal, where 010 would be 8.
+out=$(render "0$(( ${#row1} + padding ))" "Fix the ÆØÅ bug")
+assert "$out" "$row1"$'\n'"Fix the ÆØÅ bug" "a zero-padded COLUMNS counts in decimal"
 
 out=$(render 500 "")
 assert "$out" "$row1" "no topic leaves path and info alone"
@@ -66,6 +77,10 @@ assert "$(sed -n 4p <<< "$out" | cut -c1-3)" "ctx" "bars stay on the last row"
 
 out=$(render 500 "$(printf 'x%.0s' {1..60})")
 assert "$out" "$row1 · $(printf 'x%.0s' {1..49})…" "long topics are cut at 50 characters"
+out=$(LC_ALL=C render 500 "$(printf 'Æ%.0s' {1..60})")
+assert "$out" "$row1 · $(printf 'Æ%.0s' {1..49})…" "long topics are cut at 50 characters, not bytes, in the C locale"
+out=$(render 500 "Fix"$'\e'"[2J"$'\n'"bug")
+assert "$out" "$row1 · Fix[2Jbug" "control characters are dropped from the topic"
 
 # The branch belongs to the info section, so it drops together with the model.
 git -C "$cwd" -c init.defaultBranch=main init -q

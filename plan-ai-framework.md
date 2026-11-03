@@ -105,32 +105,35 @@ The 2026-11-02 run overrides plan order: 4 and 12 in parallel, then 11, then 7 l
 the run drives and its by-hand steps stop it.
 12 is independent and small: any time after 0. M is by hand, any time after 3. 13 comes after every other task, M included.
 
-## Handover — where the session of 2026-10-30 stopped
+## Handover — where the session of 2026-11-03 stopped
 
-End of 2026-10-30, wrapped up for the week. The day reworked the workflow itself — agile plan reviews, plans
-iterated between tasks, mandatory task and final code reviews, approvals asked in bulk (§ *The staged workflow*) — and
-ran every test step of the old handover: trigger evals, Task 10's quick checks and end-to-end run (✅), Task 9's
-iteration and toy variants, Task 5's runnable-now lists, Task 5b's *By number*, and Task 8's live tests on fixtures
-and a real issue (`andrelin/planechaser#73`). Each failure was fixed in the skills; the results sit in each task.
-Everything is committed and pushed. The bulk approvals in § *Approvals* cover all of the steps below.
+End of 2026-11-03. The 2026-11-02 run built Tasks 4, 12, 11 and 7, and its final code review reached `Done (code):` at
+round 12 (§ *Review log (code)*). All of it is on `main` (0fa56e6, cfc47b6, b400600, 6c002d8) and pushed, and the
+`ai-framework` branch is deleted locally and on GitHub, by the user's choice: land the finished tasks with the plan
+file, then start the rest from a new branch.
+CI on `main` is green except Tests' macOS job on b400600, cancelled twice for want of a GitHub macOS arm64 runner
+("The job was not acquired by Runner of type hosted even after multiple attempts") with no step run; it passed on
+cfc47b6, and b400600 changes one test assertion. Rerun it (`gh run rerun 41662613476 --failed`), or let the next push
+cover it.
 
-**Start next session here, in this order** — the 2026-11-02 run builds only Tasks 4, 12, 11 and 7 (§ *Approvals*),
-leaving steps 1–3 for after it:
+**Start next session here,** with `ai implement plan-ai-framework.md`, which cuts its own branch from `main`; then:
 
-1. **Rerun what the day left unfinished,** headless as in the paragraph below, no spending cap — each fix since has
+1. **Rerun what 2026-10-30 left unfinished,** headless as in the paragraph below, no spending cap — each fix since has
    not been rerun: Task 5's code-review re-evaluation cases (seeded 14, 19 and 15 rows; the four that died on the
    usage limit), closed names' and no plan's runs to `Done`, *Completion*, *Tests after fixes*, the remaining
    *Whose work* cases; Task 9's two *Deviation* forms, *Failing task* on opus (both runs so far let the implementer
    escape the planted failure), and the six inconclusive guard cases with the bad instruction where only the
    implementer reads it; `/writing-plans` stopping on a failed exclude write; Task 8's failed fixture cases and
-   *Search match* against #73. The stopped rerun's notes are in that session's scratchpad, likely gone.
+   *Search match* against #73. These close Tasks 5, 8 and 9's 🚧 PARTIAL rows.
 2. **Task 8's customer cases** with a throwaway `HOME` holding a `~/.claude-customers` that lists `example--client`;
    the `/compact` steps need an interactive session.
-3. **Close `andrelin/planechaser#73`**, then remove the three merged agent worktrees under `.claude/worktrees/`
-   (`git worktree list`), checking first that they hold nothing unmerged.
-4. **Then 4 → 7 → 11**, with 12, M and Task 3b's real-settings merge any time, and 13 last, each a small change
-   through the workflow it builds — the plan iterated between them, both code reviews run. Task 7 needs the user to
-   run `/doctor prompt-audit`.
+3. **Close `andrelin/planechaser#73`** (still open), then remove the three agent worktrees under `.claude/worktrees/`
+   (all at 0a05c31, `git worktree list`), checking first that they hold nothing unmerged.
+4. **By hand, the user:** Task 3b's real-settings merge, Task 11's manual Linux and WSL checks, and Task M.
+5. **Decide Task 7's open conflict:** `claude/CLAUDE.md` § *Code review* says a `/code-review` run "loads its own
+   skill and not this file", while `reviewing-locally` relies on `CLAUDE.md` loading there (Task 7, *Audit*).
+6. **Task 13 last:** fold the plan into durable docs, file one issue for the open items (the `Deferred:` lines, the
+   audit's recorded Mediums and Lows, R12-4) on the user's yes, and delete the plan and both findings files.
 
 Also run `filing-learnings` for the 2026-10-23 detours still unfiled: a verifier's `mktemp -d` experiment blocked by
 the guard as customer level; `review-log.md`'s literal format has no blank line after headings where markdownlint

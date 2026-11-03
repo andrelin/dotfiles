@@ -4,6 +4,8 @@ input=$(cat)
 
 model=$(echo "$input" | jq -r '.model.display_name // "Unknown model"')
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // empty')
+# The /rename or --name name if set, else the AI-generated session title; absent before either exists.
+topic=$(echo "$input" | jq -r '.session_name // empty')
 ctx_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 session_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 five_hour_resets_at=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
@@ -29,6 +31,11 @@ make_bar() {
   [ "$filled" -gt 0 ] && bar=$(printf '%0.s█' $(seq 1 "$filled"))
   [ "$empty"  -gt 0 ] && bar="${bar}$(printf '%0.s░' $(seq 1 "$empty"))"
   printf "%s" "$bar"
+}
+
+# Columns a string takes on screen: colour codes take none, and only a UTF-8 character's lead byte counts.
+visible_width() {
+  printf '%s' "$1" | sed $'s/\033\\[[0-9;]*m//g' | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' '
 }
 
 # Wrap a segment in colour based on its percentage.
@@ -64,17 +71,58 @@ if [ -n "$cwd" ]; then
     if [ -n "$(git -C "$cwd" status --porcelain --ignore-submodules=dirty 2>/dev/null | head -n 1)" ]; then
       dirty=" ${RED}*${GREEN}"
     fi
-    git_segment=" ${GREEN}[${branch}${dirty}]${RESET}"
+    git_segment="${GREEN}[${branch}${dirty}]${RESET}"
   fi
 fi
 
-# Row 1: path, branch, model
-# Row 2: progress bars
+# The rows above the bars hold three sections, in order: the path, the info (branch and model), and the topic.
+# They share a row while it fits the terminal, and the next one starts a new row when it wouldn't:
+# Claude Code sets COLUMNS for this script, and without a usable width everything stays on one row.
 # The model wears the theme's cyan-parenthesis idiom, the one its kube and
 # virtualenv segments use for "what this shell is currently pointed at".
-model_segment="${CYAN}(${model})${RESET}"
-row1="${model_segment}"
-[ -n "$prompt_dir" ] && row1="${BLUE}${prompt_dir}${RESET}${git_segment} ${model_segment}"
+info_segment="${CYAN}(${model})${RESET}"
+[ -n "$git_segment" ] && info_segment="${git_segment} ${info_segment}"
+
+# The topic, in bold, tells several open sessions apart at a glance; long titles are cut at 50 characters.
+topic_segment=""
+if [ -n "$topic" ]; then
+  [ "${#topic}" -gt 50 ] && topic="${topic:0:49}…"
+  topic_segment="${BOLD}${topic}${BOLD_OFF}"
+fi
+
+# Claude Code pads the status line and cuts a row with … a few columns short of COLUMNS;
+# measured in iTerm2, 4 columns is enough that a section drops before it is cut.
+columns="${COLUMNS:-0}"
+if [ "$columns" -gt 4 ] 2>/dev/null; then
+  columns=$(( columns - 4 ))
+else
+  columns=0
+fi
+info_rows=""
+row=""
+row_width=0
+
+# Appends a section to the current row after the separator, or starts a new row with it when it wouldn't fit.
+place() {
+  local separator="$1" segment="$2" width
+  width=$(visible_width "$segment")
+  if [ -z "$row" ]; then
+    row="$segment"
+    row_width=$width
+  elif [ "$columns" -gt 0 ] && [ $(( row_width + $(visible_width "$separator") + width )) -gt "$columns" ]; then
+    info_rows="${info_rows}${row}"$'\n'
+    row="$segment"
+    row_width=$width
+  else
+    row="${row}${separator}${segment}"
+    row_width=$(( row_width + $(visible_width "$separator") + width ))
+  fi
+}
+
+[ -n "$prompt_dir" ] && place " " "${BLUE}${prompt_dir}${RESET}"
+place " " "$info_segment"
+[ -n "$topic_segment" ] && place " · " "$topic_segment"
+info_rows="${info_rows}${row}"
 row2=""
 
 # Context window bar
@@ -110,7 +158,7 @@ if [ -n "$week_pct" ]; then
 fi
 
 if [ -n "$row2" ]; then
-  printf "%s\n%s" "$row1" "$row2"
+  printf "%s\n%s" "$info_rows" "$row2"
 else
-  printf "%s" "$row1"
+  printf "%s" "$info_rows"
 fi

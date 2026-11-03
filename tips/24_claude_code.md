@@ -52,10 +52,11 @@ The `_macos_` marker means it is not selected by default on Linux or WSL, where 
   `paths:` glob is read, rather than on every session like `CLAUDE.md`.
 - `claude/docs/` → `~/.claude/docs/` — reference material a skill, rule or `CLAUDE.md` line points at,
   loaded only when something sends you there.
-- `claude/statusline-command.sh` → `~/.claude/statusline-command.sh` — the status line: working directory, git
-  branch and model on row 1, styled like the zsh prompt
-  ([link/.omz-custom/andrelin.zsh-theme](../link/.omz-custom/andrelin.zsh-theme)); context and rate-limit bars
-  on row 2.
+- `claude/statusline-command.sh` → `~/.claude/statusline-command.sh` — the status line: working directory, then git
+  branch and model, styled like the zsh prompt
+  ([link/.omz-custom/andrelin.zsh-theme](../link/.omz-custom/andrelin.zsh-theme)), then the session's topic in bold
+  (its `/rename` name, else the AI-generated title); each of the three drops to a new row when it doesn't fit,
+  and the context and rate-limit bars come last. It refreshes every 2 seconds, so a resized window re-lays it out.
 - `claude/hooks/` → `~/.claude/hooks/` — hook scripts; `work-context.sh` blocks Claude's commits, pushes and platform
   writes on customer work, which is only what `~/.claude-customers` lists — write it on each machine with customer work,
   one `host/owner`, directory or customer name per line (syntax: `claude/docs/customers-file.md`) — and names the context at session start (Tip 24.6).

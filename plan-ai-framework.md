@@ -83,22 +83,20 @@ Asked and answered 2026-11-02, for the `implementing-plans` run over Tasks 4, 12
 | 2b · Command shims for aliases, functions and scripts (spike first) | ✅ DONE | on `PATH` through `CLAUDE_ENV_FILE`, not `source/`; see Task 2b |
 | 3 · User-level settings hardening | ✅ DONE | merged into the real settings 2026-10-16; marker check 2026-10-19 |
 | 3b · Keep revealed git-secret files out of Claude's reach | ✅ DONE | real-settings merge pending, with the main session; deviations in Task 3b |
-| 4 · Rewrite the superpowers precedence doc | ✅ DONE | checkpoint `refs/checkpoints/ai-framework/4`; two `Deferred:` lines |
+| 4 · Rewrite the superpowers precedence doc | ✅ DONE | on `main` (0fa56e6, review fixes cfc47b6); both `Deferred:` lines settled in review |
 | 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion | 🚧 PARTIAL | written and scenario-tested 2026-10-19; real runs passed in Task 10's end-to-end run 2026-10-30; runnable-now list pending |
 | 5b · `reviewing-for-feedback` skill | ✅ DONE | first review, re-review and hand-over tested 2026-10-23; the PR-number case written 2026-10-23, its *By number* test passed 2026-10-30 |
 | 6 · `filing-learnings` skill | ✅ DONE | written, scenario- and trigger-tested 2026-10-19 |
 | 6b · `tuning-skill-descriptions` skill and trigger evals | ✅ DONE | scored 2026-10-23: 20/20 and 20/21, both descriptions kept; `writing-plans`' `1.11` a known miss until Task 9 |
-| 7 · Instruction-set audit | ✅ DONE | checkpoint `refs/checkpoints/ai-framework/7`; scores in Task 7, no description changed; `unslop` pointer added |
+| 7 · Instruction-set audit | ✅ DONE | on `main` (0fa56e6); scores and the audit re-run in Task 7, no description changed; `unslop` pointer added |
 | 8 · `writing-issues` skill | 🚧 PARTIAL | live tests run 2026-10-30 on fixtures and a real issue, gaps fixed; the customer cases need `~/.claude-customers` or a fake `HOME` |
 | 9 · `implementing-plans` skill | 🚧 PARTIAL | trigger evals, iteration tests and the plain toy run (end to end) passed 2026-10-30; the toy variants pending |
 | 10 · `bin/ai` stage launcher | ✅ DONE | `type -a ai`, the spike and the end-to-end run passed 2026-10-30; results in Task 10 |
-| 11 · Claude config on Linux and WSL | ✅ DONE | checkpoint `refs/checkpoints/ai-framework/11`; CI on `main` and the manual checks pending |
-| 12 · Hidden-Unicode check on agent-loaded files | ✅ DONE | checkpoint `refs/checkpoints/ai-framework/12`; bash 3.2 deviation, two `Deferred:` lines |
+| 11 · Claude config on Linux and WSL | ✅ DONE | on `main` (0fa56e6, cfc47b6, b400600); Docker legs re-run in review; the manual checks pending |
+| 12 · Hidden-Unicode check on agent-loaded files | ✅ DONE | on `main` (0fa56e6, review fixes cfc47b6, b400600); the bar and deviations in Task 12 |
 | M · Machine-local cleanup (untracked, by hand) | ⏳ PENDING | |
 | 13 · Fold the plan into durable docs and delete it | ⏳ PENDING | |
-| Final code review | ⏳ IN PROGRESS | round 1 of this run's review (Tasks 4, 12, 11, 7) verified, its fixes not yet applied; resume with `ai review code plan-ai-framework.md` |
-
-Base: 0ad40a97af50f095963f430d12e61ebd084c47c1
+| Final code review | ✅ DONE | `Done (code):` round 12 (Tasks 4, 12, 11, 7), unfixed only R12-4's nits |
 
 Order: 1 → 2 → 2b → 3 → 3b, then 6 → 6b, then 5 → 5b → 8 → 9 → 10 (each builds on the one before;
 Task 9 starts with Task 5's pending edits and runnable-now tests; the rest wait for the end of 10, which flips its row),
@@ -1474,11 +1472,27 @@ the table is about *adapting* a skill rather than failing.
   `awk '/^## Overlaps that both fire/{f=1;next} /^## /{f=0} f && /^- /' claude/docs/skill-precedence.md | wc -l` prints 4.
 
 **Built 2026-11-02:** `skill-precedence.md` 74 lines, the check grep printing 14 names on 7.0.0 (the 9 table skills
-and the 5 expected mentions); the `CLAUDE.md` line names both `reviewing-in-rounds` and `reviewing-for-feedback`, the
+and the 5 expected mentions, recorded 2026-11-03 per code review R6: `requesting-code-review/SKILL.md:39` "Starting
+commit", `systematic-debugging/SKILL.md:66` "recent commits", `test-driven-development/SKILL.md:234` prose about
+catching bugs "before commit", `using-superpowers/references/codex-tools.md:101` Codex-only instructions, and
+`verification-before-completion/SKILL.md:54` "About to commit/push/PR without verification" — each a mention, no write);
+the `CLAUDE.md` line names both `reviewing-in-rounds` and `reviewing-for-feedback`, the
 count unchanged, so its literal "`reviewing-in-rounds` over" check gives way to that settled wording.
 
-Deferred: the `finishing-a-development-branch` row doesn't bar its cleanup step's commit option on customer work.
-Deferred: "on company work the rows don't apply" reads as freeing `superpowers:writing-plans`' commit steps; the general
+Deviation (2026-11-03, code review R1-12): the `finishing-a-development-branch` row allows a clean, zero-conflict local
+merge and `git pull`, where the spec said to stop before the merge into the base; it follows the global § *Work contexts*,
+which allows exactly that on customer work.
+Deviation (2026-11-03, code review R1-13; moved by R7-10 to § *An approval covers one action*):
+`claude/docs/work-contexts.md` words the spec's line differently —
+a prefix, three lines and a fourth sentence on customer work — so its `grep -F` check is replaced by a read of those lines.
+Deviation (2026-11-03, code review R1-14): `claude/skills/reviewing-in-rounds/SKILL.md` § *The inputs* gains the line
+that it takes only `reviewing-locally`'s fetch, never its rebase, as `reviewing-for-feedback` already says for its own.
+Deviation (2026-11-03, code review R4-16, R5): `claude/skills/reviewing-locally/SKILL.md` step 3 says the same from its
+side — never when those two run the review, which take only step 1, the fetch.
+Deferred (settled 2026-11-03, code review R4: the row says to draft it): the `finishing-a-development-branch` row doesn't
+bar its cleanup step's commit option on customer work.
+Deferred (settled 2026-11-03, code review R3: the row and the company sentence now say every level):
+"on company work the rows don't apply" reads as freeing `superpowers:writing-plans`' commit steps; the general
 "invoke the personal one" rule covers it, but the `writing-plans` row should say every level.
 
 ## Task 5 · `reviewing-in-rounds` skill, review lenses, plan intake and completion
@@ -2215,6 +2229,17 @@ run "loads its own skill and not this file", while `reviewing-locally` relies on
 the model-alias lists omit `fable`; `filing-learnings` bars memory where the global file allows one pointer memory.
 Plugin skills (report only): caps emphasis and "you MUST" descriptions in superpowers' `using-superpowers`,
 `brainstorming` and `writing-skills`. No machine-local finding.
+
+Deviation (2026-11-03, code review R11): the bounded-fixes check on `claude/skills/unslop/` now prints
+`VENDORED.md`, whose added line the user approved after round 5 (Task 12's bar paragraph); `SKILL.md` is untouched.
+
+**Audit re-run, 2026-11-03** (the code review's R5, as one read-only agent following the same guide): no finding left
+that this task chose to fix; the four Mediums, the conflict and the Low flags stand as recorded. New: a stale fact in
+`claude/docs/markdown-limits.md` (`claude/CLAUDE.md` "is pinned", while `.md-baseline` pins nothing), removed;
+`reviewing-locally`'s step-3 line contradicting the overlap rule, fixed in the review; Lows recorded, not made —
+migration phrasing in `claude/docs/claude-local-md.md:21-23`, incident wording in `skill-precedence.md:21` and
+`writing-mr-descriptions`' cut-pass heading, "no customer uses Forgejo yet", the best-practices docs naming Opus 5, and
+`.claude/docs/tips-file-sizing.md:12-13` giving 80/150 where the checker uses 100/200.
 
 **Scores, 2026-11-02,** passed of total, three runs each at the default model, the user having reviewed the sets;
 every eval exited 0, so none was re-run, and `claude/skills` matched its snapshot after each:
@@ -3086,10 +3111,22 @@ numbers here have shifted; find each anchor by its quoted text.
 24.04 and RHEL 9 reached "All done!" with `52_claude.sh` sourced and no error-scan hit from it, the other hits from the
 container's fresh `git init` and arm64 Homebrew; `test_claude_shims.sh` failed only on that empty index and passes
 after `git add -A`. CI on `main` and the manual checks remain.
+Check first, 2026-11-03: both greps find nothing in `init/52_claude.sh` or `bin/claude-settings-merge`; no message in
+either holds `error` or `fatal`, the no-`jq` line ("jq not found — skipping the Claude Code status line.") included;
+the Ubuntu and RHEL legs are the Docker run above.
+Docker re-run, 2026-11-03 (code review R6), from the working tree's tracked and untracked-unignored files, revealed
+secrets left out, in `redhat/ubi9` and `ubuntu:24.04` on arm64: both reached "All done!", `52_claude.sh` pre-ticked and
+sourced with every step green, no error-scan hit from it (the others are Homebrew's `libgpg-error` lines and a zsh
+plugin's "highlighters directory not found" notice), and the suite passing on both. A first try packed macOS `._*`
+files, which the hidden-Unicode test rightly flagged; repacked with `COPYFILE_DISABLE=1`.
+Re-run again after code-review round 9: both legs pass, the RHEL one, as root, through the new `runuser` case.
+Deviation (2026-11-03, code review R1-15, R2, what): `migrate_init_selection` follows a chain of renames, tested;
+`init/README.md` says to add `old:new` when renaming; the test runs `init_files` itself, lifted out of `bin/dotfiles`
+with the menu stubbed, and a `zsh -f` case. Tip 24.4 now says to tick the script by hand once on a Linux or WSL machine.
 Deviation (2026-11-02): the user's own edit to `claude/CLAUDE.md` § *Language* (Norwegian text on the default branch
 stays Norwegian) was staged with this batch, on the user's word, though that file is Task 4's.
 
-Deferred: the comment above the last assertion in `test/test_init_selection.sh` stops mid-sentence.
+Deferred (settled 2026-11-03): the comment above the last assertion in `test/test_init_selection.sh` stops mid-sentence.
 
 ## Task 12 · Hidden-Unicode check on agent-loaded files
 
@@ -3101,6 +3138,8 @@ This repo's agent-loaded files are public and copied by others, so a check costs
 - Created: `bin/check-hidden-unicode` (executable, bash 5), `test/test_check_hidden_unicode.sh`
 - Deviation (2026-11-02, how): the script is bash-3.2-safe instead, since `hooks/pre-commit` runs it through
   `env bash`, so `.claude/rules/scripts.md` joins this Files list to name it among the 3.2 exceptions.
+  Reverted 2026-11-03 (code review R2): it re-execs under Homebrew's bash like `bin/check-md-limits`, and the
+  `scripts.md` exception is gone; the `/bin/bash` test checks the re-exec.
 - Modified: `.github/workflows/markdown.yml` (a step after *Line and file length limits*, running
   `bin/check-hidden-unicode`, and `claude/**`, `.claude/**`, `bin/check-hidden-unicode` and
   `test/test_check_hidden_unicode.sh` added to its `paths:`, so a non-markdown file in the default set triggers it);
@@ -3109,6 +3148,9 @@ This repo's agent-loaded files are public and copied by others, so a check costs
   `bin/check-hidden-unicode [file…]`, and that pre-commit and CI run it); `tips.md`'s 24 entry (add `check-hidden-unicode` to its list);
   `README.md` § *Scripts* (a line for `check-hidden-unicode`).
   Not in parallel with Task 10 (§ *File map*).
+- Deviation (2026-11-03, code review R5, R9): created `.github/workflows/hidden-unicode.yml` instead of the
+  `markdown.yml` step, which is back as it was; `.md-baseline`, `bin/check-md-limits`' baseline header,
+  `.claude/docs/tips-file-sizing.md` and `claude/skills/unslop/VENDORED.md` join this list (R7, R9, the user's R5 yes).
 
 **Interfaces:** `check-hidden-unicode [--cached] [file…]` — with no file arguments, the default set: every tracked
 file under `claude/` and `.claude/` plus every tracked `CLAUDE.md` and `AGENTS.md`, from `git ls-files` at the
@@ -3155,9 +3197,60 @@ script, and fails the commit on exit 1.
 **Built 2026-11-02:** 91 assertions, passing under Homebrew bash and `/bin/bash` 3.2; `--cached` batched through one
 `git cat-file --batch` and one perl, 0.04 s on this repo; Tip 24.9.
 
-Deferred: in the default set, a tracked symlink to a directory, a file deleted but not staged, or (with `--cached`) a
+Deviation (2026-11-03, code review R1-2, what): the default set no longer excludes `claude/skills/unslop/`, since
+`writing-mr-descriptions` now has every PR and MR read it; the scan only reads, so vendored files stay unedited.
+Deviation (2026-11-03, code review R1-3, R1-4, R1-6, R1-19, R2, what): U+061C, U+206A–U+206F, U+180B–U+180D, U+180F,
+U+034F, U+115F–U+1160, U+17B4–U+17B5, U+3164, U+FFA0 and U+FFF9–U+FFFB are flagged too (U+206A moved from the passing
+neighbours to the flagged ends). `--cached` follows a staged symlink to the staged blob it points at, chains included,
+and reports a hit under that file's path. The default set skips every entry that isn't a regular file, in both modes,
+which settles the first `Deferred:` line below, and files with the `binary` attribute; any other NUL byte there is
+reported, a stray one or UTF-16, so it can't hide a file. A relative path outside the repository gets "no such file".
+`markdown.yml` runs the step under `if: ${{ !cancelled() }}` and no longer triggers on the test file.
+Round 3 (2026-11-03): the `binary` attribute skips a file only when it does hold a NUL, and a NUL is reported in named
+files too; `--cached` specs are `:0:<path>`, so `1:x/CLAUDE.md` isn't read as a merge stage, and a name with a newline is
+read by its object id instead of aborting the run; `CLAUDE.md` and `AGENTS.md` match in any case; a missing bash 4 exits
+2, not 1; `.claude/rules/vendored.md` (new, loading under `claude/skills/unslop/`) says the scan covers vendored skills.
+Round 4 (2026-11-03): the `binary` attribute only silences the NUL report, the regex still runs; a symlink to a directory
+has the files under it scanned, and with `--cached` a target outside the index is read from disk; U+2800,
+U+13430–U+1343F and U+1D173–U+1D17A are flagged; `markdown.yml` triggers on `.gitattributes` and runs each check after
+a failed one (the test-file trigger stays dropped, per R2-14); the bash 4 guard says why it stays.
+Round 5 (2026-11-03): no attribute exempts a file, so every NUL in the default set is reported; a staged symlink to an
+untracked file is read from disk; a failed git or perl exits 2, and a hit adds a stderr line saying what to do. The CI
+step moved to `.github/workflows/hidden-unicode.yml` (new), on every push, since a link can reach any file;
+`markdown.yml` is back as it was.
+Round 6 (2026-11-03): the linked-directory walk drops `File::Find`, which RHEL's perl-interpreter lacks, follows nested
+links and visits each directory once; with `--cached`, a link to an untracked directory or a gitlink is read from disk,
+chains are followed 40 links and past that reported as exit 2, and a name ending in a CR is read by object id; the
+workflow also runs on pull requests.
+Round 7 (2026-11-03): `--cached` reads the whole index once, resolving staged directory links along a target's path,
+so the staged blob is read through them; every git call fails the run with exit 2, the default set's `ls-files` included;
+an unreadable file is reported as exit 2, in the default set too; a linked checkout's `.git` is skipped; a pull request
+is scanned by the base branch's copy of the script. `claude/docs/work-contexts.md`'s every-level line moved from
+§ *personal private* to § *An approval covers one action*. `.md-baseline` pins `implementing-plans` at 120, Task 7's
+recorded choice, and `tips/24_claude_code.md` at 125, Tips 24.9 and 24.3's growth, rather than leave their advisories standing.
+Round 8 (2026-11-03): `--cached` resolves a link's target one component at a time against the index, as the kernel does
+on disk, so `..` after a directory link applies where the link led, with 40 links per path, not per run; past 40 it is
+treated like a dangling link. A submodule in the default set is scanned from disk in both modes. On a pull request whose
+base has no copy of the script, the workflow falls back to the pull request's own.
+Round 9 (2026-11-03): the resolver keeps absolute paths, so a link to the toplevel, an absolute target into the
+repository and one climbing out and back all reach the index; each link is resolved once.
+Round 10 (2026-11-03): a path component the index doesn't hold is resolved with `readlink` on disk, so an untracked link
+or a symlinked prefix above the toplevel resolves as the kernel would; the hint prints on any hit, exit 2 included.
+Round 11 (2026-11-03): a Git LFS pointer in the default set is a hit; CI checks out submodules; perl runs with `-C0`,
+so `PERL_UNICODE` can't change how paths compare; output is unbuffered so the hint follows the hits; a directory the
+index holds files under is never resolved through an unstaged link on disk; a named staged link to nothing is
+"no such file".
+Round 12 (2026-11-03): the default set takes `.claude/` at any depth; `tips-file-sizing.md` gives the checker's 100/200.
+**The bar, set by the user after code-review round 5 (2026-11-03).** It must catch the flagged characters in UTF-8
+text in the default set, in the working tree and the index, and through symlinks whose target is inside the repository.
+Accepted gaps, dropped by the code review as out of scope: encodings other than UTF-8, beyond reporting a NUL; links
+leaving the repository; named paths whose case differs from the index; characters outside the flagged ranges.
+`claude/skills/unslop/VENDORED.md` gains the line that the scan applies there (the user's yes, an exception to the ban
+on editing that directory, `SKILL.md` untouched), and `.claude/rules/vendored.md` is dropped as redundant.
+Deferred (settled 2026-11-03, R1-6): in the default set, a tracked symlink to a directory, a file deleted but not staged, or (with `--cached`) a
 gitlink under `claude/` reports "no such file" and exits 2; only named files should get that error.
 Deferred: no test runs `--cached` from a subdirectory, so the `:./` prefix is untested; Tip 24.3's rewrap is uneven.
+(The first half settled 2026-11-03: paths are resolved to the toplevel, and a subdirectory test covers it.)
 
 ## Task M · Machine-local cleanup (untracked, by hand)
 
@@ -3192,7 +3285,8 @@ The user runs every step; Claude may draft the edits, and step 2's `bin/dotfiles
 After every other task, M included, in one commit, per `writing-plans` § *Plans are temporary*.
 
 **Files:** created `claude/docs/staged-workflow.md` (≤ 100 lines); modified `claude/docs/work-contexts.md`; deleted
-`plan-ai-framework.md` (its findings file was deleted on 2026-11-02).
+`plan-ai-framework.md`, `plan-ai-framework-review-findings-plan.md` and `plan-ai-framework-review-findings-code.md`
+(deviation, 2026-11-03, code review R9: both findings files are tracked, the plan one restored in 5984547).
 
 **Change:** `staged-workflow.md` holds the durable decisions of § *Findings and decisions* and § *The staged workflow*:
 the four stages with their skills, models and hand-over artifacts, why a fresh session per stage, the index
@@ -3200,6 +3294,10 @@ checkpoint instead of commits, the review loop's brake, and what was declined fr
 frameworks, each in a line.
 `work-contexts.md` gains whatever of § *Should customer, company and personal be split further?* it doesn't already state.
 No durable file links to the plan.
+
+Deviation (2026-11-03, code review R3): before the delete, every item still open in this plan — the `Deferred:` lines,
+Task 7's conflict sent to the user, Task 11's CI-on-`main` and manual checks — goes into a GitHub issue, filed with
+`writing-issues` on the user's yes, so deleting the plan loses none of them.
 
 **Tests:** `bin/check-md-limits` on both docs; `git ls-files 'plan-ai-framework*'` prints nothing after the commit;
 `git grep -n plan-ai-framework -- ':!plan-*' ':!test/skill-triggers/'` finds nothing (other plans may cross-reference it,
@@ -3291,9 +3389,31 @@ Done (plan): round 4; unfixed: R4-1, R4-2, R4-3, R4-4
 
 | Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
 | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 7 | 0 | 2 | 14 | 2 | 16 |
+| 2 | 7 | 0 | 2 | 13 | 1 | 15 |
+| 3 | 7 | 0 | 2 | 11 | 1 | 13 |
+| 4 | 7 | 0 | 3 | 14 | 1 | 17 |
+| 5 | 7 | 0 | 2 | 11 | 1 | 12 |
+| 6 | 7 | 0 | 3 | 9 | 1 | 12 |
+| 7 | 7 | 0 | 3 | 7 | 1 | 10 |
+| 8 | 7 | 1 | 2 | 5 | 1 | 8 |
+| 9 | 7 | 1 | 2 | 6 | 1 | 9 |
+| 10 | 7 | 0 | 1 | 6 | 1 | 7 |
+| 11 | 7 | 0 | 2 | 11 | 1 | 13 |
+| 12 | 7 | 0 | 0 | 3 | 1 | 3 |
 
 Note after round 1: stopped on 2026-11-02 at the user's request, after round 1's reviewers and verifiers, before any
 fix; round 1 is in the findings file with no row here, so a resumed session applies its findings and then writes the
 row. Tasks 4, 12, 11 and 7 are committed on `ai-framework` and pushed, with `main` untouched: the fixes go in a commit
 of their own, and `main` is fast-forwarded only after `Done (code):`, per § *Approvals*. The checkpoint refs were
 deleted once that commit existed; the review's diff is still against `Base:`.
+User decision after round 5: `claude/skills/unslop/VENDORED.md` may gain the line that the hidden-Unicode scan applies
+there (`SKILL.md` stays byte-for-byte); the scanner's bar is set in Task 12, and findings in its accepted gaps are out of
+scope from round 6 on.
+Note after round 11: the user asked for a rebase onto `main`'s #92 (the status line's topic); round 12 was stopped
+unfinished, the branch rebased cleanly onto 3fcebf0 with the review work stashed and restored, `Base:` moved there so
+the diff leaves #92 out, and #92's `refreshInterval` line came over to `init/52_claude.sh` by rename detection.
+Note after the review: the work landed on `main` with this plan (the user, 2026-11-03), and the `ai-framework` branch
+was deleted; `Base:` came out with it, so the next `implementing-plans` run over the remaining tasks starts fresh on a
+new branch.
+Done (code): round 12; unfixed: R12-4

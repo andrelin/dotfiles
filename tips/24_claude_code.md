@@ -33,7 +33,8 @@ From `bin/sort-claude-settings`.
 
 - Touching `.gitsecret/paths/mapping.cfg` → runs `sync-claude-deny`, re-staging `.claude/settings.json`.
 - Touching `.claude/settings.json` → runs `sort-claude-settings` and re-stages it.
-- Any invisible Unicode in a staged file an agent loads → blocks the commit; see Tip 24.9.
+- Any invisible Unicode or NUL byte in the staged copy of a file in Tip 24.9's default set, not only the ones being
+  committed → blocks the commit.
 - Adding or removing an alias, function or `bin/` script without staging anything under `tips/` → an advisory
   reminder that never blocks.
 
@@ -46,8 +47,8 @@ partially staged file would commit hunks you left out.
 
 Everything under `claude/` is symlinked into `~/.claude/` by [init/52_claude.sh](../init/52_claude.sh),
 so every machine that runs it gets the same Claude Code context from one place.
-A Linux or WSL machine whose saved selection predates the rename ticks `52_claude.sh` once;
-one that had ticked the old script by hand is migrated automatically.
+It runs by default everywhere; on Linux, WSL or RHEL, tick it by hand once if an older saved selection leaves it unticked,
+as the old script was deselected there by default (one that had ticked it is migrated).
 It links:
 
 - `claude/CLAUDE.md` → `~/.claude/CLAUDE.md` — global instructions loaded into every session.
@@ -159,7 +160,11 @@ Flags zero-width and invisible characters, bidirectional controls, variation sel
 Unicode tag characters, which can hide instructions from a reviewer while an agent still reads them.
 Ordinary non-ASCII text and emoji pass; a ZWJ sequence is flagged at its zero-width joiner.
 It prints `<file>:<line>: U+<HEX> <NAME>` per hit and exits 1; with no files it scans everything tracked under
-`claude/` and `.claude/` plus every `CLAUDE.md` and `AGENTS.md`, bar the vendored `claude/skills/unslop/`.
+`claude/` and any `.claude/` plus every `CLAUDE.md` and `AGENTS.md`, vendored skills included.
+A NUL byte, which marks a file that isn't UTF-8 text, and a Git LFS pointer, whose text it can't see, are reported too.
+A symlink is followed: staged, to the staged file it points at, reported under that file's path; on disk, under the link's.
+A hit in a vendored skill blocks its re-sync like any other; its `VENDORED.md` says what to do.
+Exit 2 trumps 1: a named file is missing, a file can't be read, the arguments are wrong, bash 4 is missing or git or perl failed.
 
 ```sh
 bin/check-hidden-unicode                    # the default set
@@ -167,6 +172,7 @@ bin/check-hidden-unicode claude/rules/a.md  # named files
 bin/check-hidden-unicode --cached           # the staged blobs, as pre-commit sees them
 ```
 
-`hooks/pre-commit` runs it with `--cached` and CI runs it with no arguments.
+`hooks/pre-commit` runs it with `--cached`, and CI runs it with no arguments on every push and pull request,
+a pull request's tree scanned by the base branch's copy of the script where the base has one.
 
 From `bin/check-hidden-unicode`.

@@ -26,5 +26,9 @@ The presence of this file tells `bin/check-md-limits` to skip every markdown fil
 `.markdownlint.json` beside it disables every lint rule, so neither the pre-commit hook nor CI can rewrite
 upstream's text. Reformatting `SKILL.md` to match `~/.claude/rules/markdown-limits.md` would be the bug.
 
+One check does apply: `bin/check-hidden-unicode` scans this directory in pre-commit and CI, since every PR and MR
+description passes through this skill. A hit in a re-sync blocks it; hold the re-sync and raise it upstream rather
+than editing the copy.
+
 Upstream's rule numbers are stable ids that its own text cites, and its gaps — 1, 2, 4, 6 and 21 — are
 upstream's, not something removed here.

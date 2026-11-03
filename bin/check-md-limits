@@ -533,7 +533,7 @@ done
 
 if (( update_baseline )); then
   {
-    echo "# Files that were already long when the markdown size limits landed."
+    echo "# Files pinned at a length decided on rather than shortened (~/.claude/rules/markdown-limits.md)."
     echo "# Each may not grow past the size recorded here; the hard cap still applies."
     echo "# Regenerate with: bin/check-md-limits --update-baseline"
     (( ${#new_pins[@]} > 0 )) && printf '%s\n' "${new_pins[@]}" | LC_ALL=C sort -k2

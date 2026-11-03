@@ -5,27 +5,45 @@
 # Hidden characters in a rules file have steered agents into writing malicious code
 # (claude/docs/best-practices/safety.md), and these files are public and copied by others.
 #
-# Kept to bash 3.2 syntax, no re-exec: hooks/pre-commit runs this as its own process, where
-# #!/usr/bin/env bash is Apple's bash unless Homebrew is on the PATH.
-#
 # Usage: check-hidden-unicode [--cached] [--] [file ...]
-#   No files    every tracked file under claude/ and .claude/, plus every tracked CLAUDE.md and
-#               AGENTS.md, except the vendored claude/skills/unslop/.
-#   --cached    read each file's staged blob instead of the working tree.
-# One perl and, with --cached, one git cat-file serve every file, since a commit would otherwise spawn two
-# processes per file.
+#   No files    every tracked file under claude/ and under any .claude/, plus every tracked CLAUDE.md and
+#               AGENTS.md in any case, vendored skills included. Entries that aren't a regular file
+#               (a dangling symlink, a deleted file, a gitlink) are skipped; a symlink to a directory
+#               has the files under it scanned.
+#   --cached    read each file's staged blob instead of the working tree; a staged symlink also has
+#               the staged blob it resolves to scanned, reported under the target's path, since that
+#               is what an agent reads (a target outside the index: the file it points at on disk).
+# A NUL byte is reported as a hit: it means the file can't be read as UTF-8 text (a stray NUL, or UTF-16),
+# and no binary file belongs where an agent loads text, so no attribute exempts one.
+# One perl and, with --cached, one git cat-file serve every file listed, since a commit would otherwise spawn two
+# processes per file; only a staged symlink costs more, one git call for each link it passes and its target.
 # Output: <file>:<line>: U+<HEX> <NAME>, one line per hit. Exit 1 on any hit, 2 if a named file
-# is missing (the others are still checked), else 0 and silent.
+# is missing or unreadable (the others are still checked, any hit still printed) or the script can't run, else 0 and
+# silent. Any hit adds a stderr line saying what to do.
 #
-# Flagged: zero-width and invisible characters (U+200B-200D, U+2060-2064, U+FEFF past byte 0,
-# U+180E, U+00AD), bidirectional controls (U+202A-202E, U+2066-2069, U+200E, U+200F), variation
-# selectors (U+FE00-FE0E, U+E0100-E01EF; the emoji selector U+FE0F passes) and tag characters
-# (U+E0000-E007F). Matching is on UTF-8 byte sequences, so malformed UTF-8 or binary content
-# elsewhere in a file cannot stop the scan.
+# Flagged: zero-width and invisible characters (U+200B-200D, U+2060-2064, U+206A-206F, U+FEFF past
+# byte 0, U+180E, U+00AD, U+034F, U+17B4-17B5, the Hangul fillers U+115F-1160, U+3164 and U+FFA0,
+# the braille blank U+2800, the annotation controls U+FFF9-FFFB and the format controls U+13430-1343F
+# and U+1D173-1D17A), bidirectional controls (U+202A-202E, U+2066-2069, U+200E,
+# U+200F, U+061C), variation selectors (U+FE00-FE0E, U+180B-180D, U+180F, U+E0100-E01EF; the emoji
+# selector U+FE0F passes) and tag characters (U+E0000-E007F). Matching is on UTF-8 byte sequences,
+# so malformed UTF-8 elsewhere in a file cannot stop the scan.
+
+# The shell part needs nothing past 3.2 today; the guard keeps a later bash 4 construct from breaking the
+# pre-commit hook on a Mac, where env bash is Apple's 3.2 unless Homebrew's is on the PATH.
+if ((BASH_VERSINFO[0] < 4)); then
+  for candidate in /opt/homebrew/bin/bash /usr/local/bin/bash; do
+    [[ -x "$candidate" ]] && exec "$candidate" "$0" "$@"
+  done
+  echo "check-hidden-unicode: needs bash 4+; current: $BASH_VERSION" >&2
+  echo "Install brew bash: brew install bash" >&2
+  exit 2
+fi
 
 set -euo pipefail
 
 cached=0
+default=0
 files=()
 while (($# > 0)); do
   case "$1" in
@@ -43,28 +61,67 @@ if ((${#files[@]} == 0)); then
     exit 2
   fi
   cd "$top"
+  default=1
+  # Through a file, not a process substitution, so a failing git ls-files fails the run instead of emptying the set.
+  list="$(mktemp)"
+  trap 'rm -f "$list"' EXIT
+  if ! git ls-files -z -- claude ':(glob)**/.claude/**' ':(glob,icase)**/CLAUDE.md' ':(glob,icase)**/AGENTS.md' > "$list"; then
+    echo "check-hidden-unicode: the scan failed (git ls-files)" >&2
+    exit 2
+  fi
   while IFS= read -r -d '' f; do
     files+=("$f")
-  done < <(git ls-files -z -- claude .claude ':(glob)**/CLAUDE.md' ':(glob)**/AGENTS.md' \
-    ':(exclude)claude/skills/unslop/')
+  done < "$list"
   # Nothing tracked in the default set is a clean pass.
   ((${#files[@]} > 0)) || exit 0
 fi
 
-# perl alone. $ARGV[0] is the mode, w (open each file) or b (read `git cat-file --batch` output on
-# stdin); the rest are the labels, in order, which are also the paths in mode w.
+# $ARGV[0] is the mode, w (open each file) or b (read `git cat-file --batch` output on stdin);
+# $ARGV[1] is 1 for the default set, which skips what isn't a regular file instead of reporting it;
+# the rest are the labels, in order, which are also the paths.
+# In mode b the labels are followed by each one's path from the toplevel, empty when outside it.
 read -r -d '' scanner <<'PERL' || true
 use strict; use warnings; use charnames ();
+# A die's own status could be 1, a hit; any failure to scan is 3, which the shell reports as "can't run".
+$SIG{__DIE__} = sub { print STDERR "check-hidden-unicode: $_[0]"; exit 3; };
 my $mode = shift;
+my $default = shift;
+my @labels = @ARGV;
+my @rels = $mode eq 'b' ? splice(@labels, @labels / 2) : ();
 my $re = qr/
-    \xE2\x80[\x8B-\x8F\xAA-\xAE]    | \xE2\x81[\xA0-\xA4\xA6-\xA9]
-  | \xC2\xAD | \xE1\xA0\x8E | \xEF\xBB\xBF | \xEF\xB8[\x80-\x8E]
+    \xE2\x80[\x8B-\x8F\xAA-\xAE]    | \xE2\x81[\xA0-\xA4\xA6-\xAF]
+  | \xC2\xAD | \xCD\x8F | \xD8\x9C | \xE1\x85[\x9F\xA0] | \xE1\x9E[\xB4\xB5] | \xE1\xA0[\x8B-\x8F]
+  | \xE3\x85\xA4 | \xEF\xBE\xA0 | \xEF\xBF[\xB9-\xBB] | \xEF\xBB\xBF | \xEF\xB8[\x80-\x8E]
+  | \xE2\xA0\x80 | \xF0\x93\x90[\xB0-\xBF] | \xF0\x9D\x85[\xB3-\xBA]
   | \xF3\xA0[\x80\x81][\x80-\xBF]   | \xF3\xA0[\x84-\x86][\x80-\xBF] | \xF3\xA0\x87[\x80-\xAF]
 /x;
 my $status = 0;
-sub missing { print STDERR "$_[0]: no such file\n"; $status = 2; }
+my $hits = 0;
+# Unbuffered, so the stderr hint after the hits doesn't overtake them in a captured log.
+$| = 1;
+sub hit { $hits++; $status = 1 if $status == 0; }
+sub missing { return if $default; print STDERR "$_[0]: no such file\n"; $status = 2; }
+sub slurp {
+  my $fh;
+  open($fh, '<:raw', $_[0]) or return undef;
+  local $/;
+  my $content = <$fh>;
+  return defined $content ? $content : '';
+}
 sub scan {
   my ($label, $content) = @_;
+  # Git LFS keeps the text elsewhere and only a pointer here, which neither the index nor CI's checkout can scan.
+  if ($content =~ m{\Aversion https://git-lfs\.github\.com/spec/v1\n}) {
+    print "$label:1: a Git LFS pointer, so its text can't be scanned: keep agent-loaded files out of LFS\n";
+    hit();
+    return;
+  }
+  my $nul = index($content, "\0");
+  if ($nul >= 0) {
+    my $line = 1 + (substr($content, 0, $nul) =~ tr/\n//);
+    print "$label:$line: NUL byte, so not UTF-8 text\n";
+    hit();
+  }
   my $n = 0;
   for my $line (split /\n/, $content, -1) {
     $n++;
@@ -79,32 +136,191 @@ sub scan {
       my $name = charnames::viacode($cp);
       $name = '(no name)' unless defined $name && length $name;
       printf "%s:%d: U+%04X %s\n", $label, $n, $cp, $name;
-      $status = 1 if $status == 0;
+      hit();
     }
   }
 }
+# The whole index, read once, as toplevel path => [mode, object id].
+my %index;
+# Every directory the index holds files under, so one replaced on disk by an unstaged link still reads as staged.
+my %tracked_dir;
+sub load_index {
+  open(my $ls, '-|', 'git', 'ls-files', '-s', '-z', '--full-name', '--', ':(top)') or die "git ls-files: $!\n";
+  local $/ = "\0";
+  while (my $entry = <$ls>) {
+    chomp $entry;
+    next unless $entry =~ /^(\d+) ([0-9a-f]+) \d\t(.*)\z/s;
+    $index{$3} = [$1, $2];
+    my @parts = split m{/}, $3;
+    pop @parts;
+    $tracked_dir{join('/', @parts[0 .. $_])} = 1 for 0 .. $#parts;
+  }
+  close $ls or die "git ls-files failed\n";
+}
+sub blob {
+  open(my $cat, '-|', 'git', 'cat-file', 'blob', $_[0]) or die "git cat-file: $!\n";
+  binmode $cat;
+  local $/;
+  my $content = <$cat>;
+  close $cat or die "git cat-file blob $_[0] failed\n";
+  return defined $content ? $content : '';
+}
+# A toplevel path resolved against the index as the kernel would on disk: one component at a time, each staged
+# symlink replaced by its target where it is met, so a later ".." applies to where the link led, 40 links at most.
+# Paths are kept absolute, so a target written as an absolute path into the repository, or one that climbs out and
+# back in, still resolves.
+# Returns the toplevel path ("" for the toplevel itself), or undef with "loop" past 40 links, or plain undef when it
+# ends outside the repository.
+my $top = $ENV{CHECK_HIDDEN_UNICODE_TOP};
+my %followed;
+sub follow {
+  my ($start) = @_;
+  return @{ $followed{$start} } if $followed{$start};
+  my @top = grep { length } split m{/}, $top;
+  my @todo = split m{/}, $start;
+  my @cur = @top;
+  my $links = 0;
+  my @result;
+  while (@todo) {
+    my $part = shift @todo;
+    next if $part eq '' || $part eq '.';
+    if ($part eq '..') { pop @cur; next; }
+    push @cur, $part;
+    my $inside = @cur > @top && join('/', @cur[0 .. $#top]) eq join('/', @top);
+    my $entry = $inside ? $index{join('/', @cur[@top .. $#cur])} : undef;
+    # What the index holds wins; anything else is resolved on disk, an untracked link or a symlinked prefix above
+    # the toplevel (/var for /private/var) included.
+    my $target;
+    if ($entry) {
+      next unless $entry->[0] eq '120000';
+      $target = blob($entry->[1]);
+    } else {
+      next if $inside && $tracked_dir{join('/', @cur[@top .. $#cur])};
+      $target = readlink('/' . join('/', @cur));
+      next unless defined $target;
+    }
+    if (++$links > 40) { @result = (undef, 'loop'); last; }
+    pop @cur;
+    @cur = () if $target =~ m{^/};
+    unshift @todo, split(m{/}, $target);
+  }
+  unless (@result) {
+    my $inside = @cur >= @top && join('/', @cur[0 .. $#top]) eq join('/', @top);
+    @result = $inside ? (join('/', @cur[@top .. $#cur])) : (undef);
+  }
+  $followed{$start} = [@result];
+  return @result;
+}
+sub unreadable { print STDERR "$_[0]: cannot read\n"; $status = 2; }
+# Every regular file under a linked directory, as an agent reading through the link sees it: nested links
+# followed, each directory once, a checkout's .git left out. No File::Find, which RHEL's perl-interpreter lacks.
+my %walked;
+sub scan_tree {
+  my ($dir, $label) = @_;
+  $label = $dir unless defined $label;
+  my ($dev, $ino) = stat $dir;
+  return if !defined $ino || $walked{"$dev:$ino"}++;
+  opendir(my $dh, $dir) or return unreadable($label);
+  my @names = sort grep { $_ ne '.' && $_ ne '..' && $_ ne '.git' } readdir $dh;
+  closedir $dh;
+  for my $name (@names) {
+    if (-d "$dir/$name") {
+      scan_tree("$dir/$name", "$label/$name");
+    } elsif (-f "$dir/$name") {
+      my $content = slurp("$dir/$name");
+      defined $content ? scan("$label/$name", $content) : unreadable("$label/$name");
+    }
+  }
+}
+# A toplevel path the index can't give: the file, or every file under the directory, on disk.
+sub scan_disk {
+  my ($path) = @_;
+  my $disk = length $path ? "$top/$path" : $top;
+  if (-d $disk) {
+    scan_tree($disk, length $path ? $path : ".");
+  } elsif (-f $disk) {
+    my $content = slurp($disk);
+    defined $content ? scan($path, $content) : unreadable($path);
+  }
+}
 binmode STDIN;
-for my $label (@ARGV) {
+my %scanned;
+my @links;
+load_index() if $mode eq 'b';
+for my $i (0 .. $#labels) {
+  my $label = $labels[$i];
   my $content;
   if ($mode eq 'w') {
-    my $fh;
-    unless (-f $label && open($fh, '<:raw', $label)) { missing($label); next; }
-    local $/;
-    $content = <$fh>;
-    $content = '' unless defined $content;
+    # A linked directory, or a gitlink, which checks out as a plain directory.
+    if ($default && -d $label) { scan_tree($label); next; }
+    unless (-f $label) { missing($label); next; }
+    $content = slurp($label);
+    unless (defined $content) { unreadable($label); next; }
   } else {
     my $header = <STDIN>;
     die "git cat-file ended early\n" unless defined $header;
+    my $rel = $rels[$i];
+    my $entry = length $rel ? $index{$rel} : undef;
     # "<spec> missing" for a path not in the index (a directory included); a non-blob body is skipped.
-    unless ($header =~ /^[0-9a-f]{40,64} (\w+) (\d+)\n\z/) { missing($label); next; }
-    my ($type, $size) = ($1, $2);
-    if ($type ne 'blob') { read(STDIN, my $skip, $size + 1); missing($label); next; }
-    my $got = read(STDIN, $content, $size);
-    die "git cat-file ended early\n" unless defined $got && $got == $size;
-    read(STDIN, my $nl, 1);
+    # A name with a newline, or ending in a CR that cat-file strips, can't be a spec: read by its object id.
+    my $type = '';
+    if ($header =~ /^[0-9a-f]{40,64} (\w+) (\d+)\n\z/) {
+      ($type, my $size) = ($1, $2);
+      my $got = read(STDIN, $content, $size);
+      die "git cat-file ended early\n" unless defined $got && $got == $size;
+      read(STDIN, my $nl, 1);
+    }
+    if ($default && $entry && $entry->[0] eq '160000') {
+      # A gitlink: the index holds a commit, not the files an agent reads in the submodule.
+      scan_disk($rel);
+      next;
+    }
+    if ($type eq 'blob') {
+    } elsif ($rel =~ /[\r\n]/ && $entry && $entry->[0] =~ /^1[02]/) {
+      $content = blob($entry->[1]);
+    } else {
+      missing($label);
+      next;
+    }
+    $scanned{$rel} = 1;
+    # A staged symlink's blob holds its target's path; what an agent reads is what the link leads to.
+    if ($entry && $entry->[0] eq '120000') {
+      my ($path, $why) = follow($rel);
+      if (!$default && defined $path && !$index{$path} && !$tracked_dir{$path} && $path ne '' && !-e "$top/$path") {
+        missing($label);
+      } elsif (defined $path || $why) {
+        push @links, $rel;
+      } elsif (-f $label) {
+        my $disk = slurp($label);
+        defined $disk ? scan($label, $disk) : unreadable($label);
+      }
+    }
   }
   scan($label, $content);
 }
+# Where each staged symlink leads, resolved against the index and reported under that path: a staged file is read
+# from the index, a directory has what the index holds under it followed in turn, and what the index doesn't hold
+# (an untracked file or directory, a submodule's files) is read from disk.
+while (defined(my $link = shift @links)) {
+  my ($path, $why) = follow($link);
+  if (!defined $path) {
+    # Past 40 links the kernel gives up too, so an agent can't read it either: like a dangling link, reported only when named.
+    if ($why && !$default) { print STDERR "$link: no such file (more than 40 symlinks to follow)\n"; $status = 2; }
+    next;
+  }
+  next if $scanned{$path}++;
+  my $entry = $index{$path};
+  if (!$entry) {
+    my @under = sort grep { $path eq '' || index($_, "$path/") == 0 } keys %index;
+    @under ? push(@links, @under) : scan_disk($path);
+  } elsif ($entry->[0] =~ /^100/) {
+    scan($path, blob($entry->[1]));
+  } elsif ($entry->[0] eq '160000') {
+    scan_disk($path);
+  }
+}
+print STDERR "check-hidden-unicode: delete each character named above; a NUL means the file isn't UTF-8 text (Tip 24.9)\n"
+  if $hits;
 exit $status;
 PERL
 
@@ -114,23 +330,39 @@ if ((cached)); then
     exit 2
   fi
   specs=()
+  rels=()
   for f in "${files[@]}"; do
-    if [[ "$f" == *$'\n'* ]]; then
-      echo "check-hidden-unicode: cannot read a staged file whose name has a newline: $f" >&2
-      exit 2
-    fi
-    if [[ "$f" == /* ]]; then
-      # Resolve the directory physically, so /var/... matches git's /private/var/... on macOS.
-      d="$(cd "$(dirname "$f")" 2>/dev/null && pwd -P)" || d=""
-      abs="$d/$(basename "$f")"
-      case "$abs" in
-        "$top"/*) specs+=(":${abs#"$top"/}") ;;
-        *) specs+=(":/nonexistent-outside-the-repo") ;;
-      esac
+    if ((default)); then
+      # Already toplevel paths; resolving each would cost two processes per file.
+      rel="$f"
     else
-      specs+=(":./$f")
+      [[ "$f" == /* ]] && p="$f" || p="$PWD/$f"
+      # Resolve the directory physically, so /var/... matches git's /private/var/... on macOS.
+      d="$(cd "$(dirname "$p")" 2>/dev/null && pwd -P)" || d=""
+      abs="$d/$(basename "$p")"
+      case "$abs" in
+        "$top"/*) rel="${abs#"$top"/}" ;;
+        *) rel="" ;;
+      esac
     fi
+    # :0: so a name like 1:x.md isn't read as a merge stage; .git/ is never in the index.
+    if [[ -z "$rel" || "$rel" == *[$'\n\r']* ]]; then
+      specs+=(":0:.git/not-a-spec")
+    else
+      specs+=(":0:$rel")
+    fi
+    rels+=("$rel")
   done
-  printf '%s\n' "${specs[@]}" | git cat-file --batch | perl -e "$scanner" -- b "${files[@]}" && exit 0 || exit $?
+  rc=0
+  printf '%s\n' "${specs[@]}" | git cat-file --batch |
+    CHECK_HIDDEN_UNICODE_TOP="$top" perl -C0 -e "$scanner" -- b "$default" "${files[@]}" "${rels[@]}" || rc=$?
+else
+  rc=0
+  perl -C0 -e "$scanner" -- w "$default" "${files[@]}" || rc=$?
 fi
-perl -e "$scanner" -- w "${files[@]}" && exit 0 || exit $?
+# 1 is a hit; a perl die or a git failure is any other code, which is "can't run".
+if ((rc > 2)); then
+  echo "check-hidden-unicode: the scan failed (exit $rc)" >&2
+  rc=2
+fi
+exit "$rc"

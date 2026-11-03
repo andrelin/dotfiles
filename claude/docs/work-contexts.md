@@ -24,10 +24,6 @@ A customer repo being private makes the reader smaller, not the care looser.
 ## personal private — full autonomy
 
 Commit, push, rebase, open PRs, merge PRs, full `gh` access.
-At every level, not only this one: the workflow skills never commit on their own.
-`implementing-plans` checkpoints in the index and never commits,
-`reviewing-in-rounds` commits only after the user's yes, and `reviewing-for-feedback` never edits.
-On customer work `reviewing-in-rounds` drafts the commit rather than committing.
 Nothing leaves the user's own account, so the only bar is not committing secrets you'd rather not have in a history at all.
 
 ## personal public — full autonomy, but every commit is published
@@ -85,6 +81,11 @@ When the user waives a rule — "skip the PR this time", "push it" — that appl
 Approving the *content* of the next change ("yes, remove that line") is not approval to deliver it the same way.
 Ask again, every time, however recently they said yes and however similar the next one looks.
 This binds hardest where a repo's own `CLAUDE.md` sets the rule being waived — that file governs, and a one-off exception does not amend it.
+
+At every level, the workflow skills never commit on their own.
+`implementing-plans` checkpoints in the index and never commits,
+`reviewing-in-rounds` commits only after the user's yes, and `reviewing-for-feedback` never edits.
+On customer work `reviewing-in-rounds` drafts the commit rather than committing.
 
 ## Enforcement — what the guard blocks, and what it can't see
 

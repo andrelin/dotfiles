@@ -32,6 +32,7 @@ and check what it is allowed to post before using it on an engagement where the 
    rather than everything that has landed on main since it forked.
 3. **If the branch is behind, rebase it onto `origin/main` before reviewing** — only when it replays with zero
    conflicts. On any conflict, `git rebase --abort` and ask the user to rebase before the review continues.
+   Never when `reviewing-in-rounds` or `reviewing-for-feedback` runs the review: they take only step 1, the fetch.
 
 **Why:** a diff against a stale merge-base shows changes that landed on the default branch as if the author made
 them, which wastes review effort on code nobody in the MR wrote — and it hides conflicts the author still has to

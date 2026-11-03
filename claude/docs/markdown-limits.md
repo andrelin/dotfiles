@@ -78,8 +78,6 @@ still applies on top.
 **Pin anything you have decided not to shorten.** A warning nobody intends to act on trains everyone to skim past
 the warnings that matter, so the choice is fix it or pin it — never leave it standing.
 Pinning is a decision on the record, and it stays honest because the file cannot grow behind it.
-`claude/CLAUDE.md` is pinned for exactly this reason: what pushes it over its aim is the permission block, which
-has nowhere else to live.
 
 ## Splitting
 

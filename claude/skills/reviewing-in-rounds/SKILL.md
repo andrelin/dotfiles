@@ -41,6 +41,7 @@ file, resuming, closing): their formats are literal.
   untracked) against the base — the plan's `Base:` line, else the merge-base with a freshly fetched default branch,
   else ask. Always with `':(top,glob,exclude)plan-*' ':(top,glob,exclude)**/00-follow-ups-*'`; untracked files listed with
   `git ls-files --others --exclude-standard` under the same pathspecs.
+  Where `reviewing-locally` fires too, take only its fetch, never its rebase, which a tree with uncommitted work can't take.
 
 ## A round
 

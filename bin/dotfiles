@@ -312,14 +312,16 @@ function copy_do() {
 # This part is sourced into every interactive zsh: keep to syntax both shells accept, and print nothing.
 renamed_init_scripts=(52_macos_claude.sh:52_claude.sh)
 
-# Rewrites menu_selects in place: each renamed script gets its new name, in the same position,
-# and a renamed script's new name is never selected twice, whichever of the two forms came first.
+# Rewrites menu_selects in place: each renamed script gets its latest name, a chain of renames followed, in the
+# same position, and a renamed script's new name is never selected twice, whichever of the two forms came first.
 function migrate_init_selection() {
   local migrated=() sel mapped renamed entry skip
   for sel in "${menu_selects[@]}"; do
     mapped=$sel
-    for renamed in "${renamed_init_scripts[@]}"; do
-      [[ "$sel" == "${renamed%%:*}" ]] && mapped=${renamed#*:}
+    for _ in "${renamed_init_scripts[@]}"; do
+      for renamed in "${renamed_init_scripts[@]}"; do
+        [[ "$mapped" == "${renamed%%:*}" ]] && mapped=${renamed#*:} && break
+      done
     done
     skip=
     for renamed in "${renamed_init_scripts[@]}"; do

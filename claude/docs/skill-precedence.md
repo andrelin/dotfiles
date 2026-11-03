@@ -32,10 +32,10 @@ It has 15 skills: the 9 in the table below need adapting at customer level, and 
 | Skill | On customer work |
 | --- | --- |
 | `brainstorming` | Add `/plan-*.md` to the exclude file first, then write the spec as `plan-<slug>-spec.md`, not the plugin's path; don't commit it. |
-| `writing-plans` | Use the personal `writing-plans`; never follow the plugin's commit steps. |
+| `writing-plans` | Use the personal `writing-plans`, at every level; never follow the plugin's commit steps. |
 | `executing-plans`, `subagent-driven-development` | Use the personal `implementing-plans`; see below the table. |
 | `using-git-worktrees` | Worktrees and branches are fine. Ignore `.worktrees` via `$(git rev-parse --git-path info/exclude)`, never `.gitignore`. |
-| `finishing-a-development-branch` | A clean local merge into base, its `git pull` included, is fine; on any conflict `--abort` and hand back; stop before push or PR. |
+| `finishing-a-development-branch` | A clean local merge into base, its `git pull` included, is fine; on any conflict `--abort` and hand back; stop before push or PR; draft its cleanup step's commit for the user. |
 | `writing-skills` | Its "commit and push to your fork" step is personal-only; draft a PR to the upstream repo for the user at any level. |
 | `receiving-code-review` | Draft the *GitHub Thread Replies* (`gh api …/replies`) for the user and post nothing, per the global § *Code review*. |
 | `diagnosing-superpowers` | Never file an upstream issue from a company or customer session, scrubbed or not; from a personal one, draft it. |
@@ -44,7 +44,7 @@ It has 15 skills: the 9 in the table below need adapting at customer level, and 
 `executing-plans` and `subagent-driven-development` are replaced by the personal `implementing-plans` *at every level*:
 it keeps their loop and checkpoints in the index instead of committing, and the commit waits for the user.
 On company work the rows don't apply, since company keeps personal-level rights, bar drafting an upstream PR or issue
-(`writing-skills`, `diagnosing-superpowers`), which holds at every level.
+(`writing-skills`, `diagnosing-superpowers`) and the personal `writing-plans`, which hold at every level.
 `finishing-a-development-branch` there pushes and opens the PR but merges into `main` only after `/code-review` at least and green CI
 — never a push straight to `main`.
 

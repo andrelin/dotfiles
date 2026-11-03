@@ -1,3 +1,5 @@
-# Files that were already long when the markdown size limits landed.
+# Files pinned at a length decided on rather than shortened (~/.claude/rules/markdown-limits.md).
 # Each may not grow past the size recorded here; the hard cap still applies.
 # Regenerate with: bin/check-md-limits --update-baseline
+120	claude/skills/implementing-plans/SKILL.md
+125	tips/24_claude_code.md

@@ -10,20 +10,20 @@ prints these files into a terminal.
 of tiny ones.
 
 **Size by length, not by tool count.** A shared file should stay under about 50 lines — an aim, not a length to
-grow into. `bin/check-md-limits` warns at 80 and fails at 150 like any other human-facing page, so between 50 and
-80 nothing will tell you; that is the range to watch by eye.
+grow into. `bin/check-md-limits` warns at 100 and fails at 200 like any other human-facing page, so between 50 and
+100 nothing will tell you; that is the range to watch by eye.
 Past 50, check whether the file should split: the question is whether the tools still read as one grouping, not
 how many there are.
 
 **A single-tool file may run past the soft cap: its length follows the tool.**
 `tips/30_zsh.md` is correct as it stands — breaking one tool across files costs more than the length does.
 
-**Four tips files are pinned in `.md-baseline`** at the length they had when the limits landed:
-`10_terminal`, `30_zsh`, `50_intellij_config` and `51_intellij_usage`.
+**A tips file past its aim can be pinned in `.md-baseline`**, a decision on the record not to split it:
+`24_claude_code` is pinned at 125, since its Claude Code tips still read as one grouping.
 A pinned file may not grow at all — adding a line fails the check until you shorten it or re-pin it lower.
-That is a tighter bar than the 150-line cap below, and the one you meet first.
+That is a tighter bar than the 200-line cap below, and the one you meet first.
 
-**Hard cap: 150 lines, no exemption.** Past that a file stops being skimmable and `tips` prints a wall.
+**Hard cap: 200 lines, no exemption.** Past that a file stops being skimmable and `tips` prints a wall.
 
 ## Splitting
 

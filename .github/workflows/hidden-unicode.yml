@@ -1,0 +1,41 @@
+name: Hidden Unicode
+
+# Every push and pull request: a tracked symlink under claude/ can point at any file in the repo, so no path filter
+# would cover what the scan reads, and the job takes seconds. Pull requests too, since a fork's branch is never pushed
+# here and an outside contribution is what this check is for.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  hidden-unicode:
+    name: Hidden Unicode in agent-loaded files
+    runs-on: ubuntu-latest
+    steps:
+      # Submodules too: one in the default set is scanned from disk, and an empty directory would pass.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      # A pull request is scanned by the base branch's copy of the script where the base has one, so an edit to the
+      # script alone can't weaken the check that judges it; an edit to this file still runs as edited, and shows in
+      # the diff. A base from before the script falls back to the pull request's own copy.
+      - name: check-hidden-unicode
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          scanner=bin/check-hidden-unicode
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            git fetch --no-tags --depth=1 origin "$BASE_REF"
+            if git cat-file -e FETCH_HEAD:bin/check-hidden-unicode 2>/dev/null; then
+              git show FETCH_HEAD:bin/check-hidden-unicode > "$RUNNER_TEMP/check-hidden-unicode"
+              scanner="$RUNNER_TEMP/check-hidden-unicode"
+            else
+              echo "::notice::$BASE_REF has no bin/check-hidden-unicode yet; scanning with this pull request's copy."
+            fi
+          fi
+          bash "$scanner"

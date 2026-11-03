@@ -17,3 +17,6 @@ Filename conventions:
 
 - `_macos_`, `_linux_`, `_wsl_`, `_ubuntu_`, `_rhel_` — auto-deselected on other platforms
 - `_personal_` — default unchecked (must be explicitly selected)
+
+Renaming a script: add `old:new` to `renamed_init_scripts` in `bin/dotfiles`, so a saved selection naming the old
+file ticks the new one rather than dropping it.

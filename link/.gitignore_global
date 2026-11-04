@@ -45,7 +45,6 @@ __pycache__/
 .idea/
 *.sublime-workspace
 .vscode/
-.obsidian/
 .swp
 .swo
 .*.swp

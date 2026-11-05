@@ -33,7 +33,7 @@ Both numbers tighten with how easily the file loads.
 
 | File | Aim under | Never past | Why that one |
 | --- | --- | --- | --- |
-| A rule, or a project `CLAUDE.md` | 30 | 50 | a rule loads on a bare path match, a `CLAUDE.md` on nothing at all |
+| A rule, or a project `CLAUDE.md` | 30 | 50 | a rule loads on a bare path match or, with no `paths:`, every session; a `CLAUDE.md` on nothing at all |
 | The global `~/.claude/CLAUDE.md` | 60 | 75 | same, plus permission rules that cannot live anywhere else |
 | A skill | 100 | 150 | loads only when its task matches, and carries a procedure end to end |
 | Anything else | 100 | 200 | read on purpose, so length costs a reader rather than every task |

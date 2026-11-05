@@ -53,8 +53,8 @@ It links:
 
 - `claude/CLAUDE.md` → `~/.claude/CLAUDE.md` — global instructions loaded into every session.
 - `claude/skills/` → `~/.claude/skills/` — reusable skills, one directory per skill with a `SKILL.md`.
-- `claude/rules/` → `~/.claude/rules/` — path-scoped rules that load only when a file matching their
-  `paths:` glob is read, rather than on every session like `CLAUDE.md`.
+- `claude/rules/` → `~/.claude/rules/` — rules that load when a file matching their `paths:` glob is read,
+  or in every session like `CLAUDE.md` when they have none (`style.md`, `asking-questions.md`).
 - `claude/docs/` → `~/.claude/docs/` — reference material a skill, rule or `CLAUDE.md` line points at,
   loaded only when something sends you there.
 - `claude/statusline-command.sh` → `~/.claude/statusline-command.sh` — the status line: working directory, then git

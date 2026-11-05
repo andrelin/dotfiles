@@ -44,21 +44,24 @@ A file only reaches 300 lines one justified addition at a time.
 ## Four homes — pick by what triggers the need
 
 **Anything in `CLAUDE.md` is paid for on every task**, so material that only matters sometimes belongs somewhere
-that loads only then. Ask what triggers the need: what you're **doing** → a skill; where you **are** → a rule.
+that loads only then. Ask what triggers the need: what you're **doing** → a skill; where you **are** → a rule;
+always, but its own subject → a rule with no `paths:`.
 
 | Trigger | Home | Loads |
 | --- | --- | --- |
 | A *task* — writing tests, reviewing, diagnosing, generating something | `.claude/skills/<name>/SKILL.md` | when the task matches its `description` |
 | A *place* — a language, a directory, a kind of file | `.claude/rules/<name>.md` with a `paths:` glob | when a file matching the glob is read |
 | Everything, always — stack, layering, naming, the permission rules | `CLAUDE.md` | every session, so it has to earn that |
+| Always, but its own subject and more than a line or two | a rule with no `paths:` (`style.md`) | every session, so it too has to earn that |
 | Pure reference — inventories, reasoning, case studies | a doc a skill or rule points at | only when something sends you there |
 
 A section that opens "before doing X…" is a skill that hasn't been extracted yet; one that only makes sense
 inside one directory is a rule that hasn't been extracted yet.
 
 **The exception that keeps things in `CLAUDE.md`:** anything a task must not get *wrong* stays there even when
-it's narrow. A rule loads when a matching file is read — which can be *after* the mistake — and a skill loads
-when its trigger matches, which assumes the trigger fired. Neither is a guarantee; `CLAUDE.md` is.
+it's narrow. A rule with `paths:` loads when a matching file is read — which can be *after* the mistake — and a skill
+loads when its trigger matches, which assumes the trigger fired. Neither is a guarantee; `CLAUDE.md` and a rule with no
+`paths:` are.
 Permission rules, publish bars and destructive-action limits are all in this category.
 
 When you extract a skill, the `description` is the trigger: write it so it names the **task**, not the topic.

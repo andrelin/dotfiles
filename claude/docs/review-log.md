@@ -32,6 +32,8 @@ Done (code): round 16; unfixed: R16-3, R16-4
 - **Below the table,** in the order they happened: `Re-evaluation after round <n>: <recommendation>`, a stop reading
   `Re-evaluation after round <n>: user decision needed — <question>`; `User decision after round <n>: <answer>`;
   `Note after round <n>: <text>`.
+  A stop's `<question>` stays on that line; what each option does and costs, and the recommendation, go in the
+  findings file, so the line ends the section and § *Resuming* asks it in full (`~/.claude/rules/asking-questions.md`).
 - **`Done (<kind>): round <n>; unfixed: <ids or none>`** is always the section's last line.
 - A row with no round in the findings file — run by hand, or the file lost — is history: it counts, and is never
   re-checked.

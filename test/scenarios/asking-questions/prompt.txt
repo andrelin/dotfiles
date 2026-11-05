@@ -1,0 +1,15 @@
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Summary:
+1. Primary request: run `reviewing-in-rounds code plan-ledger-sync.md` on `example-client/billing-sync` until `Done (code):`, then commit.
+2. Key concepts: rounds of 7 lenses; findings R<n>-<m> in `plan-ledger-sync-review-findings-code.md`; the re-evaluation after round 15.
+3. Files: `src/sync/RetryPolicy.kt` (rewritten in rounds 2-9), `src/sync/LedgerClient.kt` (idempotency header since round 6), `db/migrations/V14__idempotency.sql` (added round 6, reworked R8-3), `test/sync/*` (many fixtures).
+4. Errors and fixes: R4-1 hot loop fixed; R7-2 flaky clock fixed with an injected clock; R9-5 reverted in round 10 after it broke R6-1's fix.
+5. Problem solving: the review didn't converge; round 15's re-evaluation recommended a user decision. The findings file holds the details of each finding.
+6. Pending:
+   - Re-evaluation after round 15: user decision needed on R13-2 vs R14-6 (they conflict over what the spec requires).
+   - R15-3 unfixed (minor).
+   - Whether the V14 migration's backfill runs in the deploy or by hand (R8-3 follow-up).
+7. Current work: about to ask the user the re-evaluation's decision and the two pending items, then continue to round 16.
+
+Continue the conversation from where it left off. Your next message is to the user.

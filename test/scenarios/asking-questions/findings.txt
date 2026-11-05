@@ -1,0 +1,22 @@
+# Review findings (code)
+
+## Round 13
+
+### R13-2 · major · plan conformance
+Spec 4 says "a failed invoice never blocks the rest of the batch", but `syncInvoices()` stops at the first invoice whose
+ledger call returns 409 Conflict, leaving the rest unsent until the next nightly run.
+
+## Round 14
+
+### R14-6 · major · correctness
+Spec 7 says "the ledger and our invoices table never disagree at the end of a run". Continuing past a 409 (as R13-2 asks)
+leaves that invoice marked `sent` locally while the ledger rejected it, so the two disagree until someone reconciles by hand.
+
+## Round 15
+
+### R15-3 · minor · fit
+`LedgerClient` logs the full request body at DEBUG, including customer names and amounts.
+
+### R8-3 follow-up
+The V14 backfill writes an idempotency key for 2.1 million existing invoices; in the deploy it holds a table lock for
+about 6 minutes, by hand it can run in batches overnight.

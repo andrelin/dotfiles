@@ -48,7 +48,7 @@ break it. Personal context is the exception, in a gitignored `CLAUDE.local.md`
 
 ## Code review — locally, never through the platform
 
-On customer work — including inside a `/code-review` run, which loads its own skill and not this file
+On customer work — including inside a `/code-review` run, which loads its own skill, not `reviewing-locally`
 — read the diff from the local clone, never the platform's API or web UI, and post nothing back (no `--comment`,
 no inline comments) unless the user says so. Set up with `git fetch origin main && git diff origin/main...HEAD`.
 

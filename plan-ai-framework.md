@@ -3371,6 +3371,14 @@ Code review round 2 (2026-11-05), on the final text:
 - Length, the price of that: readable messages ran 383–408 words without the rule and 430–470 with it.
 - The yes/no bullet has no run; it loosens the rule, so it rests on the wording.
 
+User decision after the commit (2026-11-05): a cost on every option is not always needed — "This should be scored on
+whether the user can make an informed decision based on only the information provided alongside the question. If yes
+then no change needed, if no then change needed." The choice bullet now asks for a cost or risk only where it tells
+the options apart, and a bullet states that test; the scenario's readable pass is judged the same way.
+Rerun on that wording, one sample per arm: readable (438 words) gave each option what it does, costs where they
+separate them, and a recommendation, enough to decide on; ids only (404 words) named each decision and what was
+missing, and asked for the entries. Both passed.
+
 ## Task 15 · Framework performance data and introspection
 
 **Spec:** the user's request of 2026-11-05 — "we also need to capture some data about how the framework performs so

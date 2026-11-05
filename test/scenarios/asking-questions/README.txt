@@ -11,6 +11,7 @@ For the baseline, move ~/.claude/rules/asking-questions.md aside for the run and
 
 Pass, with the rule:
 - ids only: no choice between options named only by id ("R13-2 vs R14-6, which wins?"); it says what is missing.
-- readable: every option of every choice names what it costs or risks, and a recommendation is given.
+- readable: judged by reading, the user could make an informed decision from that message alone, without asking back;
+  a recommendation is given. (Until a later 2026-11-05 change this asked for a cost or risk on every option.)
 Seen 2026-11-05: without the rule, ids only failed 3 of 3 and readable left an option without a cost in 3 of 3;
 with it, all passed. Readable messages ran 383-408 words without the rule and 430-470 with it.

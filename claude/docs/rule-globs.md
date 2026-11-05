@@ -15,3 +15,5 @@ A rule file's `paths:` list decides when it loads. The budget those files live u
 - **Verify by opening a file the rule should cover and asking which rules loaded.** Ask it that way — asking
   "is `<phrase>` in your context" under-reports and will claim a loaded rule is absent.
   Check a file it should *not* cover too: an over-broad glob is the quieter failure.
+- **To test a rule headless, move its file aside for the baseline run:** `--setting-sources` without `user` also
+  drops `CLAUDE.md` and every other rule, and a throwaway `CLAUDE_CONFIG_DIR` has no login.

@@ -119,5 +119,7 @@ Deleted once the work ships. **Never reference one from anything that outlives i
 memory, PR/MR descriptions — inline the load-bearing content into the durable doc instead.
 Cross-references *between* plans are fine (shared lifecycle); links *from* durable docs *into* plans are not.
 When the last task lands, fold what outlives the work — decisions, conventions, gotchas — into the durable doc it
-belongs in, then delete the plan and its review files in that same change.
+belongs in, but delete the plan and its review files only after the implementation is committed and logged, since
+the log step after that commit still reads them: an untracked plan, as most are, once the work lands on the default
+branch; a tracked one with a `git rm` commit on the branch before it merges.
 A long-lived personal tracker is **not** a plan file — that is `writing-follow-up-items` and `maintaining-follow-up-trackers`.

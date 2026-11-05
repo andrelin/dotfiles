@@ -162,6 +162,8 @@ customer level deferred, and Task 16 added. The plan review (§ *Review log (pla
 majors 12, 12, 6, 3, 5, 3, 5, every one fixed; no round has yet come back free of majors, so it has no `Done (plan):`.
 By the user's session-end rule (§ *Approvals*), the day's work is committed on `ai-framework` and the branch pushed;
 Task 7's checkpoint ref was deleted, since that commit holds it, so a resume compares the index with `HEAD^{tree}`.
+A filed learning rides on the branch too: `writing-plans` § *Plans are temporary* now deletes a plan only after its
+work is committed and logged (the user, 2026-11-05).
 Earlier history: the 2026-11-02 run's Tasks 4, 12, 11 and 7 and Task 14 are on `main` and pushed.
 
 **Start next session here:** `git switch ai-framework && git pull`, then `ai implement plan-ai-framework.md`, which
@@ -3779,8 +3781,9 @@ The user runs every step; Claude may draft the edits, and step 2's `bin/dotfiles
 After every other task, M included, per `writing-plans` § *Plans are temporary*: the fold is built and code-reviewed in
 the run like any task; only the delete waits, as below (plan review R5-22).
 Deviation (2026-11-05, the user's ruling "We delete plans after they have landed on main. We log after we commit to a PR,
-before merging it"): the delete is its own commit on `main`, after the run's last commit has landed there and 15b's
-`ai-log record` has run on it, so the plan still exists when the entry is written.
+before merging it"), and on a tracked plan, "it should be removed from git before merging to the default branch":
+this plan is tracked, so the delete is a `git rm` commit on `ai-framework` after the final code review's commit and
+15b's `ai-log record`, then `main` is fast-forwarded to it — the plan still exists when the entry is written.
 
 **Files:** created `claude/docs/staged-workflow.md` (≤ 100 lines); modified `claude/docs/work-contexts.md`; deleted
 `plan-ai-framework.md`, `plan-ai-framework-review-findings-plan.md` and `plan-ai-framework-review-findings-code.md`

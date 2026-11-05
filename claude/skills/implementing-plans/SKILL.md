@@ -26,16 +26,16 @@ column isn't blank (unstaged or untracked); staged paths are not leftovers.
 
 Then, in this order:
 
-1. **Resuming.** The branch (named as in 4) exists but the plan has no `Base:` line, or the reverse → stop and ask.
-   With both: switch to the branch, keep `Base:`, carry on from the first task not ✅ DONE.
-   The last checkpoint is the ref of the last task in plan order that has one; a task with a ref but no ✅ DONE row
-   whose `<ref>^2^{tree}` equals the index's tree becomes ✅ DONE first.
-   Stop and ask if `Base:` is no longer an ancestor of `HEAD` (`git merge-base --is-ancestor`), or if
-   `git write-tree` differs from the last checkpoint's `<ref>^2^{tree}` (no ref yet: `HEAD^{tree}`) — show
-   `git diff --cached --name-status <ref>^2` and name `git read-tree <ref>^2` as the restore, which drops that diff
-   (`HEAD` for both with no ref).
-   Leftovers in the Files list of a task not ✅ DONE go to its implementer as its starting point; any other leftover
-   → stop and ask. No baseline on resume; the final report says so.
+1. **Resuming.** The branch (named as in 4) exists but the plan has no `Base:` line, or the reverse → stop and ask. With
+   both: switch to the branch, keep `Base:`, carry on from the first task not ✅ DONE. The last checkpoint is the ref of
+   the last task in plan order that has one; a task with a ref but no ✅ DONE row whose `<ref>^2^{tree}` equals the
+   index's tree becomes ✅ DONE first. Stop and ask if `Base:` is no longer an ancestor of `HEAD` (`git merge-base
+   --is-ancestor`), or if `git write-tree` differs from the last checkpoint's `<ref>^2^{tree}` (no ref yet:
+   `HEAD^{tree}`) — show `git diff --cached --name-status <ref>^2` and name `git read-tree <ref>^2` as the restore,
+   which drops that diff (`HEAD` for both with no ref). Leftovers in the Files list of a task not ✅ DONE go to its
+   implementer as its starting point; any other leftover → stop and ask. No baseline on resume; the final report says
+   so. On resume, rewrite each brief from the plan before dispatching: the scratchpad doesn't survive to the next day,
+   and an agent pointed at a missing brief works without its spec.
 2. **A fresh start needs a clean tree:** any entry in the listing, staged or not → stop, listing the files for the
    user to stash or commit, or review would take their work for the plan's. Likewise stop if
    `git for-each-ref refs/checkpoints/<branch>/` lists an earlier run's ref, naming `git update-ref -d` for each.

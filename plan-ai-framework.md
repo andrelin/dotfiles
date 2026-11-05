@@ -3378,6 +3378,9 @@ the options apart, and a bullet states that test; the scenario's readable pass i
 Rerun on that wording, one sample per arm: readable (438 words) gave each option what it does, costs where they
 separate them, and a recommendation, enough to decide on; ids only (404 words) named each decision and what was
 missing, and asked for the entries. Both passed.
+User correction (2026-11-05): "Claude should try to find what's missing before asking me for it." The ids-only arm
+has no file tools by design, so asking was its only move; the rule now names every source to try first, the session
+transcript under `~/.claude/projects/` included, and asks the user only when they come up empty, naming what was tried.
 
 ## Task 15 · Framework performance data and introspection
 

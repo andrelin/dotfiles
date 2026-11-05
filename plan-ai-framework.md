@@ -170,8 +170,8 @@ Earlier history: the 2026-11-02 run's Tasks 4, 12, 11 and 7 and Task 14 are on `
 resumes: first round 8 of the plan review, which also reads Task 15b's session-end rule (added after round 7, not yet
 reviewed); on `Done (plan):`, build 16, 15 and 15b, then the final code review, commit, fast-forward `main`, push, CI.
 
-0. **Open from the reviews, for the user if they matter:** dropping Task 15's per-stage split (R6-1, reported, not yet
-   answered); Task 16's rule will pass its 30-line aim (about 38 counted lines), a minor every round has noted.
+0. **Decided at wrap-up, 2026-11-05, not yet reviewed:** the stage split waits for real entries (Task 15), and
+   `bin/check-md-limits` stops counting front matter (Task 16); round 8 reads both.
 
 1. **Rerun what 2026-10-30 left unfinished,** headless as in the paragraph below, no spending cap — each fix since has
    not been rerun: Task 5's code-review re-evaluation cases (seeded 14, 19 and 15 rows; the four that died on the
@@ -3542,7 +3542,8 @@ log forms in `claude/docs/review-log.md`, its findings headings `### R<round>-<n
 - **No stage split in this slice (plan review R6-1):** `attributionSkill` lapses to null within a turn or two, review
   rounds run as Workflow agents with no args, and a nested plan review sits inside `implementing-plans`, so no rule
   over the skills invoked places work in its stage reliably. Per session, agent type, skill and workflow phase stand
-  in; the Revisit decides from real entries whether a stage split is worth building. A slash-prompt `type: user`
+  in; the Revisit decides from real entries whether a stage split is worth building (the user agreed 2026-11-05:
+  "Wait for real entries"). A slash-prompt `type: user`
   record (`<command-name>`, `<command-args>`, null `promptSource`), as `bin/ai` starts a stage, counts as a user turn
   and its skill as invoked (R4-1).
 - **Reviews, each counted once (plan review R2-35):** the plan's `## Review log (` sections and its
@@ -3730,20 +3731,27 @@ when the script's price table changes.
 **Spec:** the user's report of 2026-11-05 — `~/.claude/rules/writing-code.md` didn't load for a `.cs` file in a
 desktop session, so its `paths:` may not cover C#. Their ruling the same day: cover C# plus the common languages.
 
-**Files:** modified `claude/rules/writing-code.md`.
+**Files:** modified `claude/rules/writing-code.md`, `bin/check-md-limits`, `test/test_check_md_limits.sh`,
+`claude/docs/markdown-limits.md`.
 
 **Change:** the rule's body is language-neutral (tests, comments, star imports, proving causes, formatters, mutating
 a copy), but its `paths:` lists only Kotlin, Java, TS/JS, Python and shell, and a glob that never matches fails
 silently (`claude/docs/rule-globs.md`). Add `**/*.cs`, `**/*.go`, `**/*.rs`, `**/*.rb`, `**/*.swift`, `**/*.c`,
 `**/*.cpp`, `**/*.h`, `**/*.php`, `**/*.scala` and `**/*.gradle`, one per line as the list has them, and add
 `.editorconfig` and `dotnet format` to the formatter bullet's examples so .NET has one.
-The rule stays under its 30-line aim.
+**Front matter leaves the line count (the user, 2026-11-05):** "The frontmatter stuff should be excluded from the line
+length rule, right? … the rule is there to cut down on tokens spent", and readability that costs few tokens is wanted.
+A rule's `paths:` block is never shown to Claude — `plan-files.md` loads from its `# Plan files` heading — and a
+skill's `description` has its own 300-character cap, so `bin/check-md-limits` stops counting front matter toward the
+length aim and cap of every file; `claude/docs/markdown-limits.md` says why. The rule then stays under its 30-line aim.
 
 **Interfaces:** none; Task 13 leaves the rule in place.
 
 **Tests:**
 
 - `bin/check-md-limits claude/rules/writing-code.md`, and markdownlint on it.
+- `test/test_check_md_limits.sh`: a file over its aim only through its front matter passes without a warning; the same
+  lines as body still warn; a lone leading `---` with no closer is still counted, as the checker already treats it.
 - **Loads where it should,** per `claude/docs/rule-globs.md`: headless `claude -p --model opus` in a `mktemp -d` with
   a `.cs` and a `.go` file, read-only tools, the prompt on stdin, asked after reading each file which rules loaded —
   `writing-code.md` must be named. **And not where it shouldn't:** the same for a `.md` file, which must not load it.

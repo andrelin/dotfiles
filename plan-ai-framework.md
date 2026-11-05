@@ -73,6 +73,12 @@ Asked and answered 2026-11-02, for the `implementing-plans` run over Tasks 4, 12
 - Docker is running for Task 11. Task 7's `/doctor prompt-audit` and its eval-set review are the user's, by hand,
   as are Task 11's manual checks.
 
+Applied 2026-11-05 to Task 14, with no new question (corrected after plan review R1-6): the 2026-10-30 first bullet,
+commit to `main`, push and watch CI, red legs included; and the user's 2026-11-03 "start the next tasks from a new
+branch", so the work sits on branch `ai-framework` until its code review, then `main` is fast-forwarded to it.
+The scenario pair runs headless in a `mktemp -d` with read-only tools, under the 2026-10-30 headless-agents yes; no
+copy of `HOME` (R1-3). Closing the round-12 code log and starting a fresh code run follows from the task itself (R1-8).
+
 ## Implementation status
 
 | Task | Status | Notes |
@@ -94,16 +100,21 @@ Asked and answered 2026-11-02, for the `implementing-plans` run over Tasks 4, 12
 | 10 · `bin/ai` stage launcher | ✅ DONE | `type -a ai`, the spike and the end-to-end run passed 2026-10-30; results in Task 10 |
 | 11 · Claude config on Linux and WSL | ✅ DONE | on `main` (0fa56e6, cfc47b6, b400600); Docker legs re-run in review; the manual checks pending |
 | 12 · Hidden-Unicode check on agent-loaded files | ✅ DONE | on `main` (0fa56e6, review fixes cfc47b6, b400600); the bar and deviations in Task 12 |
+| 14 · Questions to the user carry their own context | ✅ DONE | added 2026-11-05 at the user's request; baseline reproduced only after a summary, the with-rule run passed |
+| 15 · Framework performance data and introspection | ⏳ PENDING | sketch, added 2026-11-05; where and when decided |
 | M · Machine-local cleanup (untracked, by hand) | ⏳ PENDING | |
 | 13 · Fold the plan into durable docs and delete it | ⏳ PENDING | |
-| Final code review | ✅ DONE | `Done (code):` round 12 (Tasks 4, 12, 11, 7), unfixed only R12-4's nits |
+| Final code review | ✅ DONE | Task 14: `Done (code):` round 2 (2026-11-05); Tasks 4, 12, 11, 7: round 12 of the closed log |
+
+Base: 66a72859a61d1859d5e822795a65fecf4e242ae1
 
 Order: 1 → 2 → 2b → 3 → 3b, then 6 → 6b, then 5 → 5b → 8 → 9 → 10 (each builds on the one before;
 Task 9 starts with Task 5's pending edits and runnable-now tests; the rest wait for the end of 10, which flips its row),
 then 4 (it names Task 9's skill), then 7 so its audit covers the new skills, and 11 last, being low priority.
 The 2026-11-02 run overrides plan order: 4 and 12 in parallel, then 11, then 7 last, since its evals hide skills
 the run drives and its by-hand steps stop it.
-12 is independent and small: any time after 0. M is by hand, any time after 3. 13 comes after every other task, M included.
+12 is independent and small: any time after 0. 14 is independent of every task but 13, any time; 15 after 14.
+M is by hand, any time after 3. 13 comes after every other task, M included.
 
 ## Handover — where the session of 2026-11-03 stopped
 
@@ -117,6 +128,9 @@ cfc47b6, and b400600 changes one test assertion. Rerun it (`gh run rerun 4166261
 cover it.
 
 **Start next session here,** with `ai implement plan-ai-framework.md`, which cuts its own branch from `main`; then:
+
+0. **Added 2026-11-05:** Task 14 is on `main`. Task 15, framework data and introspection, is a sketch with the
+   user's where and when decided: detail it with `/writing-plans plan-ai-framework.md`, then review and build it.
 
 1. **Rerun what 2026-10-30 left unfinished,** headless as in the paragraph below, no spending cap — each fix since has
    not been rerun: Task 5's code-review re-evaluation cases (seeded 14, 19 and 15 rows; the four that died on the
@@ -461,6 +475,7 @@ Research into Anthropic's docs and engineering posts, practitioner writing and s
 | `claude/skills/writing-mr-descriptions/SKILL.md` | 7 |
 | `bin/check-hidden-unicode`, `test/test_check_hidden_unicode.sh` (new), `.github/workflows/markdown.yml`, `hooks/pre-commit` | 12 |
 | `README.md` § *Scripts* | 10, 12 |
+| `claude/rules/asking-questions.md` (new); `tips/24_claude_code.md`, `writing-agent-instructions/SKILL.md` | 14 |
 | `claude/docs/staged-workflow.md` (new), `claude/docs/work-contexts.md`; this plan and its findings file (deleted) | 13 |
 
 Tasks 2 and 3 both edit `bin/claude-settings-merge`, its test and its tip. Task 3 adds a second subcommand beside
@@ -3255,6 +3270,131 @@ gitlink under `claude/` reports "no such file" and exits 2; only named files sho
 Deferred: no test runs `--cached` from a subdirectory, so the `:./` prefix is untested; Tip 24.3's rewrap is uneven.
 (The first half settled 2026-11-03: paths are resolved to the toplevel, and a subdirectory test covers it.)
 
+## Task 14 · Questions to the user carry their own context
+
+**Spec:** the user's request of 2026-11-05 — "Whenever you ask me questions you need to provide enough context that I
+understand what Im deciding. Currently you often just reference a problem that exist somewhere in the session
+history, and I have to keep asking you to elaborate. This should still only be a short summary, if I need more I can
+ask for it."
+
+**Files:** created `claude/rules/asking-questions.md`, `test/scenarios/asking-questions/`; modified
+`tips/24_claude_code.md`, `claude/skills/writing-agent-instructions/SKILL.md`, `claude/docs/review-log.md`,
+`claude/docs/markdown-limits.md` (code review rounds 1 and 2).
+
+**Change:** a rule with no `paths:` front matter, like `claude/rules/style.md`, so it loads in every session, subagents
+and skill runs included; its first line says why it has none. It requires that every question to the user — through
+`AskUserQuestion`, at the end of a message, or logged or drafted for later (a review's `user decision needed —
+<question>`, a stop in `implementing-plans`) — states what is being decided in its own words: the problem in a
+sentence or two, what each option does, and the recommendation with its reason. A finding id, task number, file
+reference or "the issue above" may appear only beside that restatement, never in its place. The summary stays
+short; the user asks for more when they want it.
+A rule, not a `CLAUDE.md` line: it loads just as surely, and the global file sits at 57 of its 60-line aim.
+A rule rather than a line in `style.md`: one subject per file (`writing-agent-instructions`).
+
+**Interfaces:** none consumed or produced; Task 13 leaves the rule in place.
+
+**Tests:**
+
+- `bin/check-md-limits claude/rules/asking-questions.md` passes, and `ls -l ~/.claude/rules/` shows it through the
+  existing `claude/rules` link, with no installer change.
+- A headless scenario pair (`claude -p`, as Task 6's scenario tests), run by the session: a prompt that holds a long
+  review history with numbered findings and ends needing the user's choice between two of them. Without the rule
+  (`--setting-sources` limited so `~/.claude/rules` doesn't load, or a copy of `HOME` without the file), the question
+  is expected to cite ids alone; with it, the question restates each option in words. Record both outputs' questions
+  in this task.
+
+Deviation (2026-11-05, plan review R1-1, R1-3): no `--setting-sources` and no copy of `HOME`. Dropping the user source
+drops the global `CLAUDE.md` and every rule, and a throwaway config dir has no login. The rule didn't exist yet, so
+the without-run is the real setup before the file and the with-run the same setup after. Both run in a `mktemp -d`
+with read-only tools, on opus, from an invented `example-client` history.
+
+Baseline, 2026-11-05, without the rule:
+
+- A five-turn transcript, the options described in it: the question restated both options and recommended one. No
+  reproduction.
+- A post-summary history listing the open items by id only, no tools: it asked "R13-2 vs R14-6. Which reading of the
+  spec is right?" and "R15-3 … fix it or leave it?" with no content, saying the details sat in a findings file it
+  couldn't read. Reproduced.
+- The same with the findings file readable: it read it and restated every option. No reproduction.
+
+So the failure is a reference whose content has left the context, as after a summary. Deviation in how, not what: the
+rule also says to look a reference up before asking, and to say what is missing when it can't be found, rather than
+offer a bare-id choice. The with-rule pass is the second scenario restating, or naming what it lacks.
+
+Code review round 1 (2026-11-05) asked for more samples and verbatim questions. The pass criterion is now the one
+that can fail: the message does not ask the user to choose between options named only by id. Three samples per arm of
+the reproducing scenario (no tools, post-summary ids only), the without-runs taken with the file moved aside:
+
+- Without the rule, 3 of 3 fail: "R13-2 vs R14-6. Which reading of the spec is right?"; "Tell me which reading of
+  the spec is right, or that the spec needs changing"; "Option A: follow R13-2's reading of the spec. Option B:
+  follow R14-6's reading".
+- With the rule, 3 of 3 pass: each says the summary kept only the ids and no tool can read the findings file, then
+  asks for the entries before the choice, e.g. "paste both entries from `plan-ledger-sync-review-findings-code.md`?
+  Then I'll summarise each option and give a recommendation."
+- With the rule and the findings file readable, after the summary: it read the file and restated each option, e.g.
+  "A: Continue past the 409 and mark that invoice `failed` locally (recommended). This meets both specs".
+- Load check: a headless run in the `mktemp -d`, asked whether the rule is in its context, quoted its last bullet.
+
+The restate, options and id-beside bullets have no failing baseline: opus restated without the rule whenever the
+content was readable. They stay as the user's spec, worded as the requirement, not as a fix for a reproduced failure.
+
+Deviations (2026-11-05, code review round 1):
+
+- A yes/no or information question needs only what is decided and why it is asked; options and a recommendation are
+  for a choice. The Change's "what each option does" presumes options, and the user asked for a short summary.
+- Files gained `tips/24_claude_code.md` (the `claude/rules/` line said every rule is path-scoped) and
+  `claude/skills/writing-agent-instructions/SKILL.md` (a row in *Four homes* for an always-loaded rule with no `paths:`).
+- Not testable headless: `AskUserQuestion` (unavailable under `claude -p`, checked by a verifier) and a logged review
+  question; both rest on the wording. A fresh headless session's subagent loads the rule (a verifier's run), but a
+  session started before the file existed, and its subagents, run without it until restarted.
+- User decision after code review round 1: keep the lookup lines (R1-3), and ship the core lines though they have no
+  failing baseline (R1-4) — "Claude almost always provides some of that as a baseline, but I often find it lacking,
+  that it doesnt quite give me enough to actually make an informed decision". So a choice now also says what each
+  option costs or risks, enough to decide on without asking back.
+- Length: in every with-rule sample each question is two to four sentences; the messages ran 200–350 words because
+  each carried three or four decisions.
+
+Code review round 2 (2026-11-05), on the final text:
+
+- Files gained `claude/docs/review-log.md` (a stop's question stays one line, its options and costs in the findings
+  file), `claude/docs/markdown-limits.md` (the rule budget's reason now covers a rule with no `paths:`) and
+  `test/scenarios/asking-questions/` (the prompt, the findings fixture and how to run and judge it, so the scenario can
+  be rerun when the rule changes).
+- The lookup bullet holds unless a brief forbids opening the file; then the say-what-is-missing bullet applies.
+- Load check: a run quoted the "For a choice … costs or risks" bullet word for word.
+- Ids only, final text: "I won't ask you to choose between two bare ids, so here is what's open and what would unblock
+  it." Passed.
+- Costs, with the findings file readable, three samples per arm: without the rule each run left an option with no cost
+  ("The alternatives are to rank one spec above the other, or to get the spec owner to clarify"; "Do you want that, or
+  should one spec win outright?"; "(b) Keep stopping at the first 409. Spec 7 wins"); with it each named one for every
+  option ("B. Keep stopping at the first 409 … one bad invoice keeps holding back the whole batch").
+- Length, the price of that: readable messages ran 383–408 words without the rule and 430–470 with it.
+- The yes/no bullet has no run; it loosens the rule, so it rests on the wording.
+
+## Task 15 · Framework performance data and introspection
+
+**Spec:** the user's request of 2026-11-05 — "we also need to capture some data about how the framework performs so
+we can evaluate what works, what doesnt work and what needs improving. Introspection is also important so we
+continously improve how we work. After every plan we should have a short introspection of how well the ai-framework
+handled it. We should always be on the look out for things that arent pulling their weight and needs to be cut. And
+we should be able to run introspection across multiple sessions to see how it performed."
+
+Sketch: three parts. (1) Data: per plan, what each stage cost and caught — review rounds and findings by lens and
+severity (already in the logs and findings files), agents spawned, tokens and dollars (the session transcripts under
+`~/.claude/projects/` carry usage), wall time, stops for the user, re-asked questions, failed attempts. (2) A short
+introspection at the end of every plan, before Task 13-style deletion: what worked, what didn't, and what isn't pulling
+its weight and should be cut, each with its evidence; the data and the verdict outlive the plan. (3) A cross-session
+run that reads every stored introspection and the data behind them, and reports trends and cut candidates.
+User decisions, 2026-11-05:
+
+- **Where:** a separate private repo beside the dotfiles, holding only this data. Still free of customer details:
+  redacted copies for our own introspection. Each entry also records what the framework was at the time (the dotfiles
+  commit, skill and plugin versions) and which skills and tools from outside the dotfiles were used.
+- **When:** the final `implementing-plans` step, after the commit: a short introspection, plus raw data collected for
+  later, more thorough introspection across sessions.
+Still open, settled when this task is detailed: the repo's name and creation (a platform write, asked for in bulk), and
+whether collection is a script over the session transcripts or a line each skill writes.
+
 ## Task M · Machine-local cleanup (untracked, by hand)
 
 Nothing here is committed: `~/.claude/settings.json` is machine-local.
@@ -3364,7 +3504,7 @@ every blocking, major and minor was fixed or refuted; the 107 nits left were unf
 8–10 are superseded by the code; on pending tasks, R6-118's stale line numbers in Task 11 are fixed, R6-73 no longer
 matches Task 4's text, and the rest are wording the implementer settles.
 
-## Review log (plan)
+## Review log (plan, closed 2026-11-05)
 
 | Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -3388,7 +3528,17 @@ User decision after round 4: a red CI leg on `main` is fixed by a commit of its 
 `writing-mr-descriptions` conflict, the latter's structure wins.
 Done (plan): round 4; unfixed: R4-1, R4-2, R4-3, R4-4
 
-## Review log (code)
+## Review log (plan)
+
+| Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 5 | 0 | 0 | 8 | 5 | 0 |
+
+Note after round 1: scoped to Task 14, added 2026-11-05, the rest read as context; every major was downgraded by its
+verifier.
+Done (plan): round 1; unfixed: R1-1, R1-2, R1-3, R1-4, R1-5, R1-6, R1-7, R1-8, R1-9, R1-10, R1-11, R1-12, R1-13
+
+## Review log (code, closed 2026-11-05)
 
 | Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -3420,3 +3570,14 @@ Note after the review: the work landed on `main` with this plan (the user, 2026-
 was deleted; `Base:` came out with it, so the next `implementing-plans` run over the remaining tasks starts fresh on a
 new branch.
 Done (code): round 12; unfixed: R12-4
+
+## Review log (code)
+
+| Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 7 | 0 | 4 | 7 | 2 | 12 |
+| 2 | 7 | 0 | 0 | 10 | 1 | 10 |
+
+User decision after round 1: keep the lookup lines; ship the core lines, a choice also saying what each option costs
+or risks.
+Done (code): round 2; unfixed: R2-11

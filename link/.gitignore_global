@@ -54,8 +54,9 @@ __pycache__/
 # can let them back in from its own .gitignore with `!.obsidian/app.json` and the like.
 **/.obsidian/*
 
-# Claude Code — ignore most local agent state, but skills/, rules/, docs/ and skill-triggers/ are project
-# content (custom slash-commands, path-scoped rules and the docs they point at, checked into the repo).
+# Claude Code — ignore most local agent state, but skills/, rules/, docs/, skill-triggers/ and settings.json are project
+# content (custom slash-commands, path-scoped rules, the docs they point at, and the shared project settings;
+# settings.local.json, the personal one, stays ignored).
 # `**/` keeps it matching at any depth, and excluding the *contents* rather than the
 # directory is what lets the negation work — git cannot re-include a path whose parent
 # directory is itself excluded, so a bare `.claude/` would silently defeat the negations.
@@ -64,3 +65,4 @@ __pycache__/
 !**/.claude/rules/
 !**/.claude/docs/
 !**/.claude/skill-triggers/
+!**/.claude/settings.json

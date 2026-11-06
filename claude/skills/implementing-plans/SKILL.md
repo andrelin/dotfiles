@@ -67,9 +67,8 @@ Use `superpowers:subagent-driven-development` (7.0.0) for its loop: per task a f
 - **Parallel** (`superpowers:dispatching-parallel-agents`, one message) only for tasks with disjoint Files lists,
   no order between them — neither's **Interfaces** names the other task or a path in its Files list — and scoped
   tests (those its **Tests** names) sharing no build directory (`build/`, `node_modules`). Unsure → in order.
-- **Before the approvals step, before dispatching any subagent,
-  and before a task only the user can do:** read `~/.claude/docs/implementing-plans-reference.md`
-  — the by-hand rule and the model choice, a failed attempt included.
+- **Before the approvals step, before dispatching any subagent, and before a task only the user can do:** read
+  `~/.claude/docs/implementing-plans-reference.md` — the by-hand rule and the model choice, a failed attempt included.
 
 **Overridden in SDD 7.0.0:** every commit step, whatever `skill-precedence.md` says; its ban on parallel
 implementers (SKILL.md:282), replaced by the rule above; `scripts/task-brief` and § *Setup* (worktree, branch,
@@ -101,6 +100,7 @@ the run with the whole batch unstaged.
   then at once `git update-ref refs/checkpoints/<branch>/<task> "$(git stash create)"`, `<task>` as its heading
   writes it (`2b`) — a save point on a private ref, touching no branch, index or tree. `git read-tree <ref>^2`
   restores the index, `git checkout <ref> -- <paths>` the tree. Then the task's row becomes ✅ DONE.
+- **A plan's `git mv` runs in the session:** auto mode blocks it in a subagent as destructive, so that can only copy.
 - **The plan file is never staged.** The final report lists the refs; the code review deletes them after the commit.
 
 ## Between tasks, revisit the plan

@@ -6,12 +6,12 @@ description: Read before implementing any plan file, or any part of one - in thi
 # Implementing plans
 
 `/implementing-plans <plan-file> [<task>…]`, the path from `git rev-parse --show-toplevel` whatever the cwd; tasks limit the run.
-Each finished task is checkpointed in the index and nothing is committed: the commit follows the code review.
+Each finished task is checkpointed in the index; commits come only at a session end and after the code review, never at customer level.
 
 **The listing**, used throughout: `git status --porcelain -z --no-renames --untracked-files=all --
 ':(top,glob,exclude)plan-*' ':(top,glob,exclude)**/00-follow-ups-*' | tr '\0' '\n'` — `top` so it holds from a
-subdirectory, `--no-renames` so a staged rename is a `D` and an `A`. Its *leftovers* are the entries whose worktree
-column isn't blank (unstaged or untracked); staged paths are not leftovers.
+subdirectory, `--no-renames` so a rename is a `D` and an `A`. Its *leftovers* are the entries with a non-blank worktree
+column (unstaged or untracked), never staged paths.
 
 ## Before the first task
 
@@ -61,23 +61,20 @@ Use `superpowers:subagent-driven-development` (7.0.0) for its loop: per task a f
   you build, whether or not the task lists them" — the plan leaves them to implementation, never out. Every task
   review's brief, re-reviews included, asks whether they are.
   An existing test is any in the tree when that subagent starts, its own task's included.
-- **The review input** replaces `scripts/review-package`, since nothing is committed and `BASE..HEAD` is empty:
+- **The review input** replaces `scripts/review-package`, since nothing is committed bar a session-end commit, so `BASE..HEAD` holds only those:
   `git diff -- <paths>` plus the full content of each new file (`git ls-files --others --exclude-standard -- <paths>`),
   written like each brief and report to `<scratchpad>/impl-<task>-*.md`.
 - **Parallel** (`superpowers:dispatching-parallel-agents`, one message) only for tasks with disjoint Files lists,
   no order between them — neither's **Interfaces** names the other task or a path in its Files list — and scoped
   tests (those its **Tests** names) sharing no build directory (`build/`, `node_modules`). Unsure → in order.
-- **Before the approvals step, before dispatching any subagent,
-  and before a task only the user can do:** read `~/.claude/docs/implementing-plans-reference.md`
-  — the by-hand rule and the model choice, a failed attempt included.
+- **Before the approvals step, before dispatching any subagent, and before a task only the user can do:** read
+  `~/.claude/docs/implementing-plans-reference.md` — the by-hand rule and the model choice, a failed attempt included.
 
-**Overridden in SDD 7.0.0:** every commit step, whatever `skill-precedence.md` says; its ban on parallel
-implementers (SKILL.md:282), replaced by the rule above; `scripts/task-brief` and § *Setup* (worktree, branch,
-the `sdd-workspace` ledger) — resume from the plan's status table; its "rulings, not stalls" — every stop here
-stops; deferred minors go in the task's section as a `Deferred:` line, listed in the final report;
-§ *Model Selection*; its fix-loop escalation — all five rounds run, rounds 4–5 a fresh implementer on the same
-model, the reference doc's retry being the only escalation; its breaker, which parks findings and marks the task complete
-— here a failed attempt; § *Final Review* and § *Finish*.
+**Overridden in SDD 7.0.0:** every commit step, whatever `skill-precedence.md` says; its parallel-implementer ban (SKILL.md:282), replaced by
+**Parallel** above; `scripts/task-brief` and § *Setup* (worktree, branch, `sdd-workspace` ledger), resume coming from the plan's status table;
+"rulings, not stalls", since every stop here stops (a deferred minor is a `Deferred:` line in its task's section, listed in the final report);
+§ *Model Selection*; fix-loop escalation (all five rounds run, 4–5 a fresh implementer on the same model, the reference doc's retry the only one);
+its breaker, which parks findings and marks the task complete, being here a failed attempt; § *Final Review* and § *Finish*.
 
 ## Checkpoint in the index, at every level
 
@@ -101,7 +98,8 @@ the run with the whole batch unstaged.
   then at once `git update-ref refs/checkpoints/<branch>/<task> "$(git stash create)"`, `<task>` as its heading
   writes it (`2b`) — a save point on a private ref, touching no branch, index or tree. `git read-tree <ref>^2`
   restores the index, `git checkout <ref> -- <paths>` the tree. Then the task's row becomes ✅ DONE.
-- **The plan file is never staged.** The final report lists the refs; the code review deletes them after the commit.
+- **A task's `git mv` runs in the session:** auto mode blocks a subagent's as destructive, so a subagent can only copy the file and leave the old one.
+- **A checkpoint never stages the plan file** (the session-end commit does). The report lists the refs; the review or the save deletes them.
 
 ## Between tasks, revisit the plan
 
@@ -118,20 +116,23 @@ After each checkpoint, before the next batch:
 
 ## Keeping the plan in sync
 
-Per `writing-plans` § *Keeping it in sync*, per task: status, and any deviation inline. Never edit a task's spec to
-match what was built without saying so in that task. A deviation in what a task delivers — its behaviour, interface
-or tests — stops the run, the batch unstaged, whoever finds it: this session, an implementer or a task review; the
-user's ruling goes in that task's section. One in how — a stale line number, a renamed helper — is noted inline
-and the run goes on, for the final review to check.
+Per `writing-plans` § *Keeping it in sync*, per task: status, and any deviation inline. Never edit a task's spec to match what was built
+without saying so in that task. A deviation in what a task delivers — its behaviour, interface or tests — stops the run, the batch unstaged,
+whoever finds it (this session, an implementer or a task review); the user's ruling goes in that task's section.
+One in how — a stale line number, a renamed helper — is noted inline and the run goes on, for the final review to check.
 
 ## Finish with the final review, in this run
 
 **The work isn't finished until the final code review says `Done (code):`**, whatever the task reviews found — they
 each saw one task, never the whole. Run `filing-learnings`, then `reviewing-in-rounds code <plan-file>` here, without
 stopping: its reviewers and verifiers are fresh agents, so only the fixing is this session's.
-The final report lists the refs, each task's reported paths, the `Deferred:` lines, the unstaged suite or ignored
-artifacts, and whether a baseline ran. A run that stopped part-way runs no code review; it says which tasks aren't
-✅ DONE and prints `ai implement <plan-file>` to resume.
+The final report lists the refs, each task's paths, the `Deferred:` lines, unstaged or ignored suite artifacts and whether a
+baseline ran. A run that stopped part-way runs no code review: it names the tasks not ✅ DONE and prints `ai implement <plan-file>`.
+
+**A session end** is the user's request to wrap up, or a part-way report that asks the user nothing; a stop to ask is none.
+Follow `~/.claude/docs/session-end-save.md` then.
+A branch with session-end commits lands by a squash-merged PR, never a fast-forward;
+the final review's Completion owns the tracked plan's `git rm -f` before it.
 
 ## Red flags
 
@@ -141,7 +142,7 @@ artifacts, and whether a baseline ran. A run that stopped part-way runs no code 
 | "I'll stop so the user can start the next stage." | Plan iterations and the code review run here; stop only for the user's decisions. |
 | "This task is too small to review." | Every task gets its task review. |
 | "The task doesn't mention error handling." | The implementer adds it, and the edge-case tests, anyway. |
-| "A checkpoint commit is safer." | Nothing is committed here. The index and the ref are the checkpoint. |
+| "A checkpoint commit is safer." | No checkpoint is committed (a session-end commit comes later, not at customer level). The index and the ref are the checkpoint. |
 | "`git add -A` is quicker." | It stages the user's stray files as the plan's. Stage each task's Files list. |
 | "`git stash`, then `stash pop`." | Without `--index` the pop unstages every checkpoint. |
 | "The test was wrong, I'll loosen it." | A deleted or loosened test is how agents reach green. It goes to the user. |

@@ -339,7 +339,71 @@ assert "$(check_file claude/CLAUDE.md "# T
 $(repeat_lines 100)")" "ERROR/1" "the global CLAUDE.md is capped at 75 lines"
 assert "$(check_file skills/x/SKILL.md "# T
 
-$(repeat_lines 120)")" "NOTE/0" "a skill has room to 150 lines, so 122 is only advisory"
+$(repeat_lines 120)")" "clean/0" "a skill has no aim, so 120 lines draw no note"
+assert "$(check_file skills/x/SKILL.md "# T
+
+$(repeat_lines 100)")" "clean/0" "a skill at 100 counted lines is clean"
+assert "$(check_file skills/x/SKILL.md "# T
+
+$(repeat_lines 101)")" "clean/0" "a skill past 100 counted lines draws no note"
+assert "$(check_file skills/x/SKILL.md "# T
+
+$(repeat_lines 250)")" "clean/0" "a skill at 250 counted lines is clean"
+assert "$(check_file skills/x/SKILL.md "# T
+
+$(repeat_lines 251)")" "ERROR/1" "a skill at 251 counted lines is over the cap"
+assert "$(check_file skills/x/SKILL.md "---
+name: x
+description: d
+other: o
+---
+
+# T
+
+$(repeat_lines 250)")" "clean/0" "front matter does not count toward a skill's 250"
+assert "$(check_file skills/x/SKILL.md "---
+name: x
+description: d
+---
+
+# T
+
+$(repeat_lines 251)")" "ERROR/1" "front matter does not lift a skill's cap either"
+assert "$(check_file skills/x/notes.md "# T
+
+$(repeat_lines 100)")" "clean/0" "a non-skill file at 100 lines is clean"
+assert "$(check_file skills/x/notes.md "# T
+
+$(repeat_lines 101)")" "NOTE/0" "a non-skill file keeps its aim of 100"
+assert "$(check_file skills/x/notes.md "# T
+
+$(repeat_lines 200)")" "NOTE/0" "a non-skill file at 200 lines is still only advisory"
+assert "$(check_file skills/x/notes.md "# T
+
+$(repeat_lines 201)")" "ERROR/1" "a non-skill file keeps its cap of 200"
+assert "$(check_file .claude/rules/r.md "# T
+
+$(repeat_lines 51)")" "ERROR/1" "a rule keeps its cap of 50"
+
+# A pin on a skill is moot: no aim to pass, so it is ignored and dropped.
+printf '10\tskills/x/SKILL.md\n' > "$workdir/.md-baseline"
+assert "$(check_file skills/x/SKILL.md "# T
+
+$(repeat_lines 120)")" "clean/0" "a stale pin on a skill does not fail it"
+(cd "$workdir" && bin/check-md-limits --update-baseline >/dev/null 2>&1)
+assert "$(grep -c 'skills/x/SKILL.md' "$workdir/.md-baseline")" "0" \
+  "--update-baseline drops a skill's pin"
+rm -f "$workdir/.md-baseline"
+
+# Over its cap, a skill's pin is dropped too, and the cap itself is still reported.
+printf '10\tskills/x/SKILL.md\n' > "$workdir/.md-baseline"
+printf '# T\n\n%s\n' "$(repeat_lines 251)" > "$workdir/skills/x/SKILL.md"
+update_out="$(cd "$workdir" && bin/check-md-limits --update-baseline 2>&1)"
+assert "$(grep -c 'skills/x/SKILL.md' "$workdir/.md-baseline")" "0" \
+  "--update-baseline drops the pin of a skill over its cap"
+assert "$(grep -c '^SKIP' <<<"$update_out")" "1" "a skill over its cap is still reported as SKIP"
+assert "$(grep -c '^DROP' <<<"$update_out")" "1" "the dropped skill pin is reported as DROP"
+rm -f "$workdir/.md-baseline"
 
 # The rendered/raw split has to work in both directions: what a human-facing page
 # gets for free, a Claude-loaded file still pays for.
@@ -368,11 +432,63 @@ $(for _ in {1..90}; do printf '\n   \nfiller'; done | sed 1d)")" "clean/0" \
 assert "$(check_file claude/headings.md "# T
 $(for _ in {1..90}; do printf '\n## H\nfiller'; done)")" "clean/0" "headings do not count in a Claude-loaded file either"
 
-# 122 lines of front matter: its # lines are YAML comments, not headings.
+# 122 lines of front matter, each a key that would count as body: front matter is
+# left out of the length, so a file over its aim only through it is clean.
 assert "$(check_file claude/front-matter.md "---
-$(for _ in {1..120}; do echo '# c'; done)
+$(for i in {1..120}; do echo "k$i: v"; done)
 ---
-# T")" "NOTE/0" "a # line in front matter still counts"
+# T")" "clean/0" "a file over its aim only through front matter is not warned about"
+
+assert "$(check_file claude/front-matter-as-body.md "# T
+$(for i in {1..120}; do echo "k$i: v"; done)")" "NOTE/0" "the same key: value lines as body still count"
+
+assert "$(check_file front-matter-human.md "---
+$(for _ in {1..250}; do echo 'k: v'; done)
+---
+body")" "clean/0" "front matter does not count toward the hard cap either"
+
+assert "$(check_file claude/unclosed-front-matter.md "---
+$(for _ in {1..120}; do echo 'k: v'; done)
+")" "NOTE/0" "a lone leading --- with no closer is still counted"
+
+assert "$(check_file claude/thematic-break.md "---
+
+Prose between separators.
+$(for _ in {1..120}; do echo 'text'; done)
+
+---
+body")" "NOTE/0" "a blank line after the opening --- means it is not front matter, so it counts"
+
+# A blank line inside real front matter (valid YAML) keeps the block front matter
+# in both the line-length and the line-count passes.
+mkdir -p "$workdir/claude/rules"
+fm_blank="---
+paths:
+
+  - \"a\"
+$(for _ in {1..60}; do echo '  - \"x\"'; done)
+---
+# T
+$(repeat_lines 20)"
+assert "$(check_file claude/rules/blank-in-fm.md "$fm_blank")" "clean/0" \
+  "a rule whose front matter holds a blank line still counts only its body"
+assert "$(check_file blank-in-fm-long.md "---
+k: v
+
+$LONG_LINE: x
+---
+body")" "clean/0" "a long line inside front matter with a blank line is exempt from the cap"
+assert "$(check_file blank-in-fm-body.md "---
+k: v
+
+---
+$LONG_LINE")" "ERROR/1" "a long line after front matter with a blank line is still caught"
+assert "$(check_file claude/rules/fm-blank-first.md "---
+
+k: v
+$(for _ in {1..60}; do echo 'k: v'; done)
+---
+# T")" "ERROR/1" "a blank straight after the opening --- is still not front matter"
 
 e_header "skill descriptions"
 
@@ -640,5 +756,25 @@ cp "$CHECKER" "$nogit/bin/"
 assert "$(cd "$nogit" && bin/check-md-limits >/dev/null 2>&1; echo $?)" "2" \
   "outside a git repository it errors rather than passing empty"
 rm -rf "$nogit"
+
+e_header "--count-raw and front matter"
+
+# The workflow-docs test counts through --count-raw, so it must match the cap's count.
+printf -- '---\nname: x\n---\n# H\n\nbody\n```\n# in fence\n```\n' > "$workdir/count.md"
+assert "$(cd "$workdir" && bin/check-md-limits --count-raw count.md)" "4" \
+  "--count-raw skips front matter, headings and blanks but counts a # line inside a fence"
+assert "$(cd "$workdir" && bin/check-md-limits --count-raw >/dev/null 2>&1; echo $?)" "2" "--count-raw without a file exits 2"
+assert "$(cd "$workdir" && bin/check-md-limits --count-raw count.md count.md >/dev/null 2>&1; echo $?)" "2" "--count-raw with two files exits 2"
+assert "$(cd "$workdir" && bin/check-md-limits --count-raw nope.md >/dev/null 2>&1; echo $?)" "2" "--count-raw on a missing file exits 2"
+
+# One front-matter definition: the same file must be skipped by the line-length check and by the cap.
+# A long line in YAML front matter is not reported, and the same block is not counted.
+printf -- '---\nname: x\ndescription: %s\n---\nbody\n' "$LONG_LINE" > "$workdir/fm.md"
+assert "$(cd "$workdir" && bin/check-md-limits fm.md >/dev/null 2>&1; echo $?)" "0" "a long line inside front matter is not reported"
+assert "$(cd "$workdir" && bin/check-md-limits --count-raw fm.md)" "1" "the same front matter is not counted"
+# Prose between two separators is a thematic break: both checks must see the body.
+printf -- '---\n\nprose\n---\n%s\n' "$LONG_LINE" > "$workdir/hr.md"
+assert "$(cd "$workdir" && bin/check-md-limits hr.md >/dev/null 2>&1; echo $?)" "1" "a thematic break is not front matter for the line check"
+assert "$(cd "$workdir" && bin/check-md-limits --count-raw hr.md)" "4" "a thematic break is not front matter for the count"
 
 test_done

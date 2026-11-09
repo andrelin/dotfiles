@@ -76,7 +76,8 @@ Fold setup, configuration, scaffolding and doc updates into the task whose deliv
 
 ## What each task carries
 
-- **Its issue**, by number in the heading (`## Task 2 · #53: …`): search the tracker first, open and closed issues;
+- **Its issue**, by repo-qualified number in the heading (`## Task 2 · dotfiles#53: …`; an older plan's bare `#53` reads the same):
+  search the tracker first, open and closed issues;
   one close to the task is adapted (its body updated) or left for a new one, whichever leaves each issue one clear
   piece of work. Two tasks may share one issue. Creating or updating goes through `writing-issues`, so Claude writes
   only where it may file — personal and company repos, or a tracker the user has allowed — and drafts elsewhere.
@@ -95,7 +96,8 @@ At handover, and not before, run the placeholder patterns and three-pass self-re
 `~/.claude/docs/plan-handover-checklist.md` — each is a decision the plan should have made, left for a guess.
 **Approvals, in one question:** list in the plan's `## Approvals` every approval it will need — commits, pushes, PRs,
 platform writes, external calls, by-hand steps, tool permissions for its commands — ask once, all together, and
-record each answer with its date; later stages act on a recorded yes without asking, never past § *Work contexts*.
+record each answer with its date; also ask how the branch lands (PR, squash merge, who merges) and for the tracked plan's
+removal commit; later stages act on a recorded yes without asking, never past § *Work contexts*.
 **Then run `reviewing-in-rounds plan <file>`** — the author cannot see the ambiguity they already know the answer to;
 **ready to implement means its log ends in `Done (plan):`**. Then move its tracker item, if it has one, to in-flight
 (`writing-follow-up-items`), and go straight on to `implementing-plans <plan-file>` in this session — unless the user
@@ -119,5 +121,7 @@ Deleted once the work ships. **Never reference one from anything that outlives i
 memory, PR/MR descriptions — inline the load-bearing content into the durable doc instead.
 Cross-references *between* plans are fine (shared lifecycle); links *from* durable docs *into* plans are not.
 When the last task lands, fold what outlives the work — decisions, conventions, gotchas — into the durable doc it
-belongs in, then delete the plan and its review files in that same change.
+belongs in, but delete the plan and its review files only after the implementation is committed and logged, since
+the log step after that commit still reads them: an untracked plan, as most are, once the work lands on the default
+branch; a tracked one with a `git rm -f` commit on the branch before it merges (`-f`: the review leaves its own edits unstaged).
 A long-lived personal tracker is **not** a plan file — that is `writing-follow-up-items` and `maintaining-follow-up-trackers`.

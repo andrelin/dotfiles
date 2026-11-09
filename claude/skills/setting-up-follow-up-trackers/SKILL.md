@@ -41,9 +41,9 @@ No SHAs or review bookkeeping — that lives in the top HTML comment, which the 
 ## The host's word for a PR
 
 The skills say PR throughout whatever the host calls it.
-The tracker itself uses the host's own word and sigil — GitLab merge request `!412`, GitHub pull request `#412`,
+The tracker itself uses the host's own word and sigil — GitLab merge request `<repo>!412`, GitHub pull request `<repo>#412` (repo-qualified),
 a Gerrit change number — consistently within one tree.
 Where the host numbers PRs and issues in one space, as GitHub does, an unqualified `#412` is ambiguous: write
-`PR #412` against `issue #373`, or keep whatever prefix the repo's own commit log already uses.
+`PR <repo>#412` against `issue <repo>#373`, or keep whatever prefix the repo's own commit log already uses.
 
 Markdown: semantic line breaks, 150-char cap (per `~/.claude/rules/markdown-limits.md`).

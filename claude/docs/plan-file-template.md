@@ -12,6 +12,7 @@ The conventions this fills in are the `writing-plans` skill; this is the skeleto
 - version floors, dependency limits, naming rules, platform targets — exact values
 
 ## Approvals
+<!-- list too: how the branch lands (PR, squash merge, who merges); the tracked plan's `git rm -f` commit -->
 - <what, with its scope> — yes, <YYYY-MM-DD> | no | not asked
 
 ## Implementation status

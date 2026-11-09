@@ -53,6 +53,8 @@ tips -h               Help
 - [24. Claude Code integration](tips/24_claude_code.md) — `sync-claude-deny`, `sort-claude-settings`,
   `check-md-limits`, `check-hidden-unicode`, `claude-settings-merge`, `skill-trigger-eval`, `ai`, pre-commit automation, shared `~/.claude` config
   and skills
+- [25. AI framework](tips/25_ai_framework.md) — `ai-log` records how a plan fared:
+  counts, plus a redacted introspection from `note`; `level` prints the work context
 
 ## 3x — Zsh ecosystem
 

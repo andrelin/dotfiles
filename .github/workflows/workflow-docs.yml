@@ -1,0 +1,37 @@
+name: Workflow docs
+# tests.yml and tests-wsl.yml ignore claude/skills, claude/docs, claude/rules and markdown, so a push touching only
+# those never reaches the tests that guard them. This runs those guards on exactly such pushes.
+on:
+  push:
+    paths:
+      - 'claude/skills/**'
+      - 'claude/docs/**'
+      - 'claude/rules/**'
+      - '**.md'
+      - '.md-baseline'
+      - 'bin/ai-log'
+      - 'bin/check-md-limits'
+      - 'test/test_workflow_docs.sh'
+      - 'test/test_ai_log.sh'
+      - 'test/test_check_md_limits.sh'
+      - 'test/helper.sh'
+      - 'test/ai-log/**'
+      - '.github/workflows/workflow-docs.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-docs:
+    name: Workflow docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run the workflow guards
+        run: |
+          export DOTFILES=$PWD
+          # ubuntu-latest ships bash 5 and jq, which test_ai_log.sh needs.
+          failed=0
+          for t in test/test_workflow_docs.sh test/test_ai_log.sh test/test_check_md_limits.sh; do bash "$t" || failed=1; done
+          exit $failed

@@ -1,0 +1,19 @@
+{
+ "version": 2,
+ "plugins": {
+  "superpowers@claude-plugins-official": [
+   {
+    "scope": "user",
+    "version": "7.0.0",
+    "gitCommitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   }
+  ],
+  "example-plugin@example-market": [
+   {
+    "scope": "user",
+    "version": "1.2.3",
+    "gitCommitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+   }
+  ]
+ }
+}

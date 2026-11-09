@@ -45,7 +45,7 @@ both is `writing-issues`.
 **A known issue or ticket number goes in the item's heading, in either half** — beside the PR reference, or alone
 where there is no PR yet. It is the one id that outlives the branch, the PR and the item number.
 One issue routinely spans several PRs and one PR can answer several issues, so put the reference on **every** item
-that serves it. An issue that is merely *context* ("shipped by #442") stays in the body — a heading reference
+that serves it. An issue that is merely *context* ("shipped by dotfiles#442") stays in the body — a heading reference
 means *this item is that issue*.
 **`(issue to file)` holds the number's place** in the heading while the user still has to file the issue, until they
 report the number or the next review run finds it.
@@ -77,7 +77,7 @@ the item that the issue is stale. Decide which by reading the issue against the 
 - **Refs are `<letter><section>.<item>`** — by default `B2.3` in the backlog, `F1.1` in flight — and are
   reassigned every review run, so cross-reference them inside the tracker only ("Couples to B5.4"). **Cite the PR
   number** in anything that has to survive a run, or the plan file while an item has no PR. Say which where a
-  host shares one number space (`PR #412`, `issue #373`).
+  host shares one number space (`PR <repo>#412`, `issue <repo>#373`; a bare `#412` in an older tracker reads the same).
 - **Type badges, in both halves:** 🐛 bug · 🧹 cleanup/refactor · 💬 needs a team decision first ·
   🔨 new build (other repo) · 👀 another dev's PR the user is to review, not theirs to implement.
 - **🔀 marks an in-flight item pending merge** — PR open, out of draft, waiting to land; a plan or draft has none.

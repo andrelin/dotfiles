@@ -35,18 +35,20 @@ It has 15 skills: the 9 in the table below need adapting at customer level, and 
 | `writing-plans` | Use the personal `writing-plans`, at every level; never follow the plugin's commit steps. |
 | `executing-plans`, `subagent-driven-development` | Use the personal `implementing-plans`; see below the table. |
 | `using-git-worktrees` | Worktrees and branches are fine. Ignore `.worktrees` via `$(git rev-parse --git-path info/exclude)`, never `.gitignore`. |
-| `finishing-a-development-branch` | A clean local merge into base, its `git pull` included, is fine; on any conflict `--abort` and hand back; stop before push or PR; draft its cleanup step's commit for the user. |
+| `finishing-a-development-branch` | A clean local merge into base, its `git pull` included, is fine; on any conflict `--abort` and hand back; stop before push or PR; draft its cleanup step's commit for the user. A branch holding session-end commits is never merged locally or fast-forwarded: see below. |
 | `writing-skills` | Its "commit and push to your fork" step is personal-only; draft a PR to the upstream repo for the user at any level. |
 | `receiving-code-review` | Draft the *GitHub Thread Replies* (`gh api …/replies`) for the user and post nothing, per the global § *Code review*. |
 | `diagnosing-superpowers` | Never file an upstream issue from a company or customer session, scrubbed or not; from a personal one, draft it. |
 
 `brainstorming`'s spec is a plan file, but never input to `implementing-plans`.
 `executing-plans` and `subagent-driven-development` are replaced by the personal `implementing-plans` *at every level*:
-it keeps their loop and checkpoints in the index instead of committing, and the commit waits for the user.
+it keeps their loop and checkpoints in the index instead of committing, and the commit waits for the user, bar its session-end commit.
 On company work the rows don't apply, since company keeps personal-level rights, bar drafting an upstream PR or issue
 (`writing-skills`, `diagnosing-superpowers`) and the personal `writing-plans`, which hold at every level.
 `finishing-a-development-branch` there pushes and opens the PR but merges into `main` only after `/code-review` at least and green CI
 — never a push straight to `main`.
+At personal level too, a branch holding `Work in progress: Tasks …` commits lands by a squash-merged PR,
+never its "merge back locally" or a fast-forward, so those commits stay off the default branch (`session-end-save.md` § *Landing*).
 
 Personal counterparts of `superpowers:requesting-code-review`: `reviewing-in-rounds` for the user's own work and
 `reviewing-for-feedback` for someone else's, with `reviewing-locally` as their customer setup.

@@ -48,7 +48,7 @@ break it. Personal context is the exception, in a gitignored `CLAUDE.local.md`
 
 ## Code review — locally, never through the platform
 
-On customer work — including inside a `/code-review` run, which loads its own skill and not this file
+On customer work — including inside a `/code-review` run, which loads its own skill, not `reviewing-locally`
 — read the diff from the local clone, never the platform's API or web UI, and post nothing back (no `--comment`,
 no inline comments) unless the user says so. Set up with `git fetch origin main && git diff origin/main...HEAD`.
 
@@ -71,8 +71,10 @@ quote a colleague's Bokmål verbatim rather than correcting it. Default to Engli
   `git push -u origin <branch>`: with `push.default = tracking`, a bare push lands on the base branch.
   Chain a switch and the write after it with `&&`.
 - **Forgejo work:** every task has a Forgejo issue before work starts — not a small chore such as a docs fix — filed with
-  `writing-issues` if none exists, and you name the work by its issue and PR numbers (#53, PR #112), never a plan's task
+  `writing-issues` if none exists, and you name the work by its issue and PR numbers, never a plan's task
   numbers: the issue is what colleagues see.
+- **In chat and markdown files, name an issue or PR by repo and title:** dotfiles#900 (shell startup time), never a bare #900;
+  in issue and PR text and commits, which GitHub and Forgejo render as links, write `owner/repo#900` (or `#900` within the same repo).
 - **Dependabot and Renovate PRs:** never close one by hand or target one with `closes #N` — `dependency-bot-prs`.
   **Skills:** a personal skill shadows a same-named project one, and **where a plugin skill covers the same ground as a personal one,
   invoke the personal one** — `writing-plans` over `superpowers:writing-plans`, `reviewing-in-rounds` (own work) or `reviewing-for-feedback`

@@ -5,11 +5,31 @@ paths:
   - "**/*.ts"
   - "**/*.tsx"
   - "**/*.js"
+  - "**/*.mjs"
+  - "**/*.cjs"
+  - "**/*.mts"
+  - "**/*.cts"
   - "**/*.jsx"
   - "**/*.py"
   - "**/*.sh"
   - "**/*.zsh"
   - "**/*.kts"
+  - "**/*.cs"
+  - "**/*.razor"
+  - "**/*.cshtml"
+  - "**/*.go"
+  - "**/*.rs"
+  - "**/*.rb"
+  - "**/*.swift"
+  - "**/*.c"
+  - "**/*.cpp"
+  - "**/*.cc"
+  - "**/*.cxx"
+  - "**/*.h"
+  - "**/*.hpp"
+  - "**/*.php"
+  - "**/*.scala"
+  - "**/*.gradle"
   - "bin/**"
   - "hooks/**"
 ---
@@ -22,7 +42,7 @@ paths:
 - **Never use star imports**, expanding any you touch. **Hold every cause as a hypothesis** until you reproduce
   or measure it — the `proving-causes` skill.
 - **Run the project's own formatters and linters** in their fixing form before handing over, found from its config
-  (`package.json`, Gradle tasks, `.pre-commit-config.yaml`, `.husky/`, `biome.json`, `ruff.toml`). Never run one
+  (`package.json`, Gradle tasks, `.editorconfig` with `dotnet format`, `.pre-commit-config.yaml`, `.husky/`, `biome.json`, `ruff.toml`). Never run one
   the project doesn't configure, and say so rather than silently skipping a broken one. Report pre-existing
   failures in code you didn't touch rather than fixing them, and don't let them block your own work; where the user
   owns the commit their hook is no substitute, so run the tools yourself or hand over a self-rewriting diff.

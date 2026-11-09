@@ -1,0 +1,6 @@
+{
+ "agentType": "workflow-subagent",
+ "description": "review:CONSISTENCY",
+ "workflowPhase": "Review",
+ "model": "opus"
+}

@@ -1,0 +1,1402 @@
+#!/usr/bin/env bash
+#
+# Record how the ai-framework performed on one plan: counts from the session transcripts and the plan's review log,
+# written as one JSON entry to a separate private repo, the log clone. This slice stores counts only: tokens, durations,
+# tool, skill, agent-type and lens names, versions and shas; no prompt, question, message, tool input or
+# output, path, branch, commit message or finding text.
+#
+# The level (personal, company or customer) is the one claude/hooks/work-context.sh prints for the work repo; customer
+# also when that fails or the repository has no origin ai-log can name (a local path). There is no list of owners here
+# and no allow file in the log clone.
+#
+# Usage: ai-log record [--dry-run] <plan-file> [<commit>]   run in the work repo
+#        ai-log note <id>                                   run in the work repo, the introspection on stdin
+#        ai-log level                                       print personal, company or customer for the work repo
+#
+# record writes entries/<id>.json in the log clone, commits and pushes it, and prints "entry: <id>" first, then a
+# summary: counts only, in tokens, summed over every entry of the plan, then what to write for note. --dry-run prints
+# the entry's JSON and writes nothing. <commit> (default HEAD) names the id and the entry's commit; the window ends at
+# its committer time, or now when none is given. A re-run keeps an entry's .md. With nothing committed since a session
+# end, HEAD is that session end's commit, so the entry takes that session end's id and replaces its entry with one merged
+# window. A window starts where the plan's previous
+# entry's window ended, by wall clock, so a session that overlaps that moment on another machine has its earlier records
+# counted in neither entry: an accepted undercount. A new plan reusing an earlier plan's file name starts a new chain,
+# with its own windows and summary: the entry keeps the plan's "Base: <sha>" line as plan_base, and a Base differing from
+# the previous entry's is another plan. Without a Base on either side (an older entry, a plan with no Base line) the
+# plan's file having been deleted in git since the previous entry's commit says the same.
+# note reads the introspection (## Worked, ## Didn't and ## Cut candidates, each point ending with its evidence in
+# parentheses), redacts it mechanically (customers listed in ~/.claude-customers, the work repo's remotes and folders,
+# at company level the plan's and branch's words, hostnames, emails, paths, URLs and tokens, each replaced by its kind
+# such as [customer] or [path]), prints the result, writes entries/<id>.md and commits and pushes it as record does.
+# A dotted name ending in a file extension is kept as a file name, except three or more labels ending in md, sh, py or rs
+# (also country codes), which is a host. Known gaps: a two-label host on those four (example.sh) is not redacted, and a
+# three-label file name such as notes.draft.md is redacted as a host.
+# Customer work is deferred: nothing is read or written, one line says so, exit 0.
+#
+# Exit 0 entry or note written (warnings or not), or customer level with nothing written.
+# Exit 1 no plan file, a given commit no newer than the window's start (also with --dry-run), no session in scope, no
+#        assistant record parsed, record refused because a tool, skill, agent, model, plugin or workflow-phase name in the
+#        entry holds a customer listed in ~/.claude-customers (nothing is written), note given an id with no entry, or
+#        note at company level that cannot find the plan to redact its words (no markdown file in the repo is the plan
+#        the entry names; nothing is written).
+# Exit 2 usage, AI_LOG_DIR not a git clone or one whose origin is not the log repo, or note given empty input or one
+#        missing a heading.
+# Exit 3 an unexpected internal failure (a command, usually jq, failed), reported with a line number.
+# Env: AI_LOG_DIR (default ~/.ai-framework-log), AI_LOG_PROJECTS (default ~/.claude/projects),
+#      AI_LOG_PLUGINS (default ~/.claude/plugins/installed_plugins.json), AI_LOG_REMOTE (default
+#      github.com/andrelin/ai-framework-log): the <host>/<owner>/<name> the log clone's origin must be, so record and note
+#      push only to the log repo; a clone with a local-path origin is compared by that path as written.
+# Needs bash 5 and jq.
+
+if ((BASH_VERSINFO[0] < 5)); then
+  echo "ai-log: needs bash 5 or newer (this is ${BASH_VERSION}); on macOS install it with Homebrew and run it from there" >&2
+  exit 2
+fi
+
+set -Eeuo pipefail
+
+# Exit 3: a command failed that this script did not expect to; the exit codes are 0, 1, 2 and 3.
+# WRITTEN flips just before the entry file is written, so the message says what state the log clone may be in.
+WRITTEN=0
+function internal_error() {
+  if [[ "$$" == "$BASHPID" ]]; then
+    if ((WRITTEN)); then
+      echo "ai-log: internal error near line $1; the entry may already be written or committed in the log clone, check it" >&2
+    else
+      echo "ai-log: internal error near line $1; nothing was written" >&2
+    fi
+  fi
+  exit 3
+}
+trap 'internal_error $LINENO' ERR
+
+# Plugins by name only when they come from Anthropic's own marketplaces; superpowers and the built-in
+# anthropic-skills namespace are named whatever their marketplace. Any other plugin is stored as "other".
+ANTHROPIC_MARKETPLACES=(claude-plugins-official claude-code-plugins anthropic-agent-skills knowledge-work-plugins)
+ALWAYS_NAMED_PLUGINS=(superpowers anthropic-skills)
+# Skills Claude Code ships; at company level any other name that no tree lists counts as a project skill.
+KNOWN_BUILTIN_SKILLS=(init review security-review loop schedule simplify code-review update-config keybindings-help
+  fewer-permission-prompts claude-api run batch debug)
+
+TILDE='~'
+AI_LOG_DIR="${AI_LOG_DIR:-$HOME/.ai-framework-log}"
+AI_LOG_PROJECTS="${AI_LOG_PROJECTS:-$HOME/.claude/projects}"
+AI_LOG_PLUGINS="${AI_LOG_PLUGINS:-$HOME/.claude/plugins/installed_plugins.json}"
+
+WARNS=()
+TMP=""
+
+function usage() {
+  cat >&2 <<'EOF'
+usage: ai-log record [--dry-run] <plan-file> [<commit>]
+       ai-log note <id>     (reads the introspection on stdin)
+       ai-log level
+EOF
+  exit 2
+}
+
+function die() {
+  local rc="$1"
+  shift
+  echo "ai-log: $*" >&2
+  exit "$rc"
+}
+
+# A warning reaches the entry even from inside $(...), so it goes through a file once the temp dir exists.
+function warn() {
+  echo "ai-log: warning: $*" >&2
+  if [[ -n "$TMP" ]]; then printf '%s\n' "$*" >> "$TMP/warns"; else WARNS+=("$*"); fi
+}
+
+function cleanup() {
+  [[ -z "$TMP" ]] || rm -rf "$TMP"
+}
+
+function sha256() {
+  if command -v sha256sum > /dev/null; then sha256sum; else shasum -a 256; fi | cut -c1-64
+}
+
+# h12 <part>...: the first 12 hex of a sha256 over the parts, one per line.
+function h12() {
+  printf '%s\n' "$@" | sha256 | cut -c1-12
+}
+
+# The tree this script lives in, through any symlink.
+function resolve_tree() {
+  local src="${BASH_SOURCE[0]}" dir
+  while [[ -L "$src" ]]; do
+    dir="$(cd -P "$(dirname "$src")" && pwd)"
+    src="$(readlink "$src")"
+    [[ "$src" == /* ]] || src="$dir/$src"
+  done
+  (cd -P "$(dirname "$src")/.." && pwd)
+}
+
+# normalize_origin <url>: lowercase <host>/<owner>/<repo> with no scheme, user, port or .git; nothing when the guard's
+# parse_url (claude/hooks/work-context.sh) reads the URL as no remote: a local path, an unlisted scheme, or a path with
+# no owner. It follows parse_url and host_alias rule for rule, so the level the guard gives and the id made from this
+# agree; test_ai_log.sh runs a table of origins through both. A well-known host with a suffix or prefix separated by -, _
+# or . (github.com-personal) reads as that host, so two machines' clones of one repo share an id; a dotless alias names
+# no host this script can know and stays as written, except one with an Azure DevOps v3/ path, which is Azure DevOps.
+function normalize_origin() {
+  local u="${1,,}" host path known rest dotless=0
+  case "$u" in
+    /* | ./* | ../*) return 0 ;;
+  esac
+  if [[ "$u" == *://* ]]; then
+    case "${u%%://*}" in ssh | git+ssh | ssh+git | https | http | git) ;; *) return 0 ;; esac
+    rest="${u#*://}"
+    [[ "$rest" == */* ]] || return 0
+    host="${rest%%/*}"
+    path="${rest#*/}"
+    host="${host##*@}"
+    host="${host%%:*}"
+  else
+    host="${u%%:*}"
+    [[ "$u" == *:* && "$host" != */* ]] || return 0
+    path="${u#*:}"
+    host="${host##*@}"
+  fi
+  [[ -n "$host" ]] || return 0
+  path="${path#/}"
+  path="${path%/}"
+  path="${path%.git}"
+  [[ "$host" == *.* ]] || dotless=1
+  for known in github.com gitlab.com bitbucket.org ssh.dev.azure.com vs-ssh.visualstudio.com dev.azure.com; do
+    [[ "$host" != "$known" ]] || break
+    if [[ "$host" == "$known"[-_.]* || "$host" == *[-_.]"$known" ]]; then host="$known"; break; fi
+  done
+  # Azure DevOps, as the guard's parse_url reads it: ssh paths are v3/<org>/<project>/<repo> on ssh.dev.azure.com, the
+  # legacy vs-ssh host or a dotless alias, https paths <org>/<project>/_git/<repo>, and a legacy <org>.visualstudio.com
+  # host is one org.
+  if [[ "$path" == v3/*/*/* ]]; then
+    if ((dotless)); then
+      path="${path#v3/}"
+      host=ssh.dev.azure.com
+    elif [[ "$host" == ssh.dev.azure.com || "$host" == vs-ssh.visualstudio.com ]]; then
+      path="${path#v3/}"
+    fi
+  fi
+  if [[ "$host" == ssh.dev.azure.com || "$host" == vs-ssh.visualstudio.com ]]; then
+    host=dev.azure.com
+  elif [[ "$host" == [!.]*.visualstudio.com ]]; then
+    path="${host%%.*}/$path"
+    host=dev.azure.com
+  fi
+  [[ "$path" == */* ]] || return 0
+  if [[ "$host" == dev.azure.com ]]; then path="${path/\/_git\//\/}"; fi
+  printf '%s/%s' "$host" "$path"
+}
+
+# plan_base_of <plan file>: the sha on the plan's "Base: <sha>" line (backticks allowed), as the full sha when this
+# repository knows it, else as written, lowercase; nothing when there is no such line or no hex sha on it.
+function plan_base_of() {
+  local line b full
+  line="$(grep -m1 -E '^Base:[[:space:]]*`?[0-9a-fA-F]{7,64}`?[[:space:]]*$' "$1" 2> /dev/null || true)"
+  [[ -n "$line" ]] || return 0
+  b="${line#Base:}"
+  b="${b//[[:space:]\`]/}"
+  b="${b,,}"
+  full="$(git rev-parse --verify --quiet "$b^{commit}" 2> /dev/null || true)"
+  printf '%s' "${full:-$b}"
+}
+
+# compute_level: sets ORIGIN and LEVEL (personal, company or customer) for the repo in the working directory, taking the
+# level claude/hooks/work-context.sh prints as it is: personal or company as printed, customer when it prints customer or
+# fails. LEVEL_WHY says why the level is customer when the guard failed or printed nothing usable, for the callers to print.
+function compute_level() {
+  local url="" wc="" rc=0
+  LEVEL_WHY=""
+  url="$(git remote get-url origin 2> /dev/null)" || url=""
+  ORIGIN=""
+  [[ -z "$url" ]] || ORIGIN="$(normalize_origin "$url")"
+  wc="$("$TREE/claude/hooks/work-context.sh" level "$PWD" 2> /dev/null)" || rc=$?
+  LEVEL=customer
+  if ((rc == 0)) && [[ "$wc" == personal || "$wc" == company ]]; then
+    LEVEL="$wc"
+  elif ((rc != 0)); then
+    LEVEL_WHY="the work-context guard failed (exit $rc)"
+  elif [[ "$wc" != customer ]]; then
+    LEVEL_WHY="the work-context guard printed no level"
+  fi
+  # An entry's id and chain come from the origin, so a repository with none ai-log can name is deferred whatever the guard says.
+  if [[ "$LEVEL" != customer && -z "$ORIGIN" ]]; then
+    LEVEL=customer
+    LEVEL_WHY="the repository has no origin"
+  fi
+  return 0
+}
+
+function in_log_clone() {
+  (cd "$AI_LOG_DIR" && "$@")
+}
+
+# require_clone: AI_LOG_DIR must be the top of a git clone of the log repo, github.com/andrelin/ai-framework-log or the
+# <host>/<owner>/<name> in AI_LOG_REMOTE, so a record or note never pushes to some other repository's origin. The clone's
+# origin is compared as normalize_origin reads it, or as written when that is a local path, which is no remote.
+function require_clone() {
+  local top="" here="" url="" got="" want="${AI_LOG_REMOTE:-github.com/andrelin/ai-framework-log}"
+  if [[ -d "$AI_LOG_DIR" ]]; then
+    top="$(in_log_clone git rev-parse --show-toplevel 2> /dev/null)" || top=""
+    here="$(cd -P "$AI_LOG_DIR" && pwd -P)"
+    [[ -z "$top" ]] || top="$(cd -P "$top" && pwd -P)"
+  fi
+  if [[ -z "$top" || "$top" != "$here" ]]; then
+    die 2 "$AI_LOG_DIR is not a git clone of the log repo; run: gh repo clone andrelin/ai-framework-log \"\$HOME/.ai-framework-log\""
+  fi
+  url="$(in_log_clone git remote get-url origin 2> /dev/null)" || url=""
+  got="$(normalize_origin "$url")"
+  [[ -n "$got" ]] || got="$url"
+  if [[ -z "$got" || "${got,,}" != "${want,,}" ]]; then
+    die 2 "the origin of $AI_LOG_DIR is not $want (expected the log repo's remote; set AI_LOG_REMOTE=<host>/<owner>/<name> to use another); nothing was written"
+  fi
+  # A push goes to the push URL when one is set, so that must be the log repo too.
+  url="$(in_log_clone git remote get-url --push origin 2> /dev/null)" || url=""
+  got="$(normalize_origin "$url")"
+  [[ -n "$got" ]] || got="$url"
+  if [[ -z "$got" || "${got,,}" != "${want,,}" ]]; then
+    die 2 "the push URL of the origin of $AI_LOG_DIR is not $want (a remote.origin.pushurl points elsewhere); nothing was written"
+  fi
+}
+
+# log_branch: the log clone's current branch, nothing when HEAD is detached.
+function log_branch() {
+  in_log_clone git symbolic-ref -q --short HEAD 2> /dev/null || true
+}
+
+# commit_and_push <path in the clone> <message>: add and commit that one path, rebase onto origin's branch and push to
+# origin explicitly (never to a pushurl or upstream require_clone did not check). A failure is a warning, the commit is kept.
+function commit_and_push() {
+  local path="$1" msg="$2" branch
+  in_log_clone git add "$path"
+  if ! in_log_clone git diff --cached --quiet -- "$path"; then
+    in_log_clone git commit -q -m "$msg" -- "$path" > /dev/null
+  fi
+  branch="$(log_branch)"
+  if [[ -z "$branch" ]]; then
+    warn "the log clone has no branch checked out; the commit is kept for the next push"
+    return 0
+  fi
+  if ! in_log_clone git pull --rebase -q origin "$branch" > /dev/null 2>&1; then
+    in_log_clone git rebase --abort > /dev/null 2>&1 || true
+    warn "git pull --rebase in the log clone failed; the commit is kept for the next push"
+  fi
+  in_log_clone git push -q origin "HEAD:$branch" > /dev/null 2>&1 || warn "git push from the log clone failed; the commit is kept for the next push"
+}
+
+# --- jq programs -----------------------------------------------------------------------------------------------
+
+# Shared: normalise a transcript timestamp to YYYY-MM-DDTHH:MM:SS.mmmZ so strings compare as times.
+JQ_COMMON='
+def nt:
+  if test("\\.[0-9]+Z$") then (capture("^(?<a>.*)\\.(?<f>[0-9]+)Z$") | "\(.a).\((.f + "000")[0:3])Z")
+  else sub("Z$"; ".000Z") end;
+def tstr: if type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}(\\.[0-9]+)?Z$") then nt else null end;
+def okname: if type == "string" and test("^[A-Za-z0-9_.:/@\\[\\]-]{1,100}$") then . else null end;
+'
+
+# Map a lens text to a heading of review-lenses.md, else "other", so aggregates carry no free text.
+JQ_LENS='
+def lensname($headings):
+  (ascii_downcase | gsub("^[\\s`*\"'"'"'>_-]+"; "")) as $t
+  | ([$headings[] | select(. as $h | ($t | startswith($h | ascii_downcase))
+        and (($t[($h | length):] | .[0:1]) | test("^[a-z0-9]$") | not))] | sort_by(length) | last) as $a
+  | if $a != null then $a else
+      (($t | capture("^(?<w>[a-z0-9]+)")? | .w) // "") as $w
+      | ([$headings[] | select(((ascii_downcase | capture("^(?<f>[a-z0-9]+)")? | .f) // "") == $w)]) as $b
+      | if ($b | length) == 1 then $b[0]
+        else ({whole: "The change as a whole", conformance: "Plan conformance", docs: "Docs ship with the change",
+               workctx: "Work context", workcontext: "Work context", decisions: "Decisions an executor can'"'"'t make", scope: "Scope and slicing"}[$w]) as $al
+          | if $al != null and ($headings | index($al)) != null then $al else "other" end
+        end
+    end;
+'
+
+# Per candidate main file: first cwd, first and last timestamp, and the timestamps of tool_use records naming the plan.
+JQ_CAND="$JQ_COMMON"'
+reduce (inputs | (try fromjson catch null) | select(type == "object")) as $r ({cwd: null, first: null, last: null, m: []};
+  ($r.timestamp | tstr) as $t
+  | .cwd = (.cwd // $r.cwd)
+  | if $t != null then
+      .first = (if .first == null or $t < .first then $t else .first end)
+      | .last = (if .last == null or $t > .last then $t else .last end)
+    else . end
+  | if $t != null and $r.type == "assistant" and (($r.message.content | type) == "array")
+       and ([$r.message.content[]? | select(type == "object" and .type == "tool_use") | (.input | tostring) | contains($bn)] | any)
+    then .m += [$t] else . end)
+'
+
+# Lens of one agent transcript: the description after review: or verify:, else the text after "Lens:" in its first user record.
+JQ_AGENT_LENS="$JQ_COMMON$JQ_LENS"'
+def utext:
+  if (.message.content | type) == "string" then .message.content
+  elif (.message.content | type) == "array" then ([.message.content[]? | select(type == "object" and .type == "text") | .text] | join("\n"))
+  else "" end;
+(($desc | capture("^\\s*(review|verify)\\s*:\\s*(?<l>.*)$"; "i")? | .l) // null) as $d
+| if $d != null then ($d | lensname($headings))
+  else
+    (first(inputs | (try fromjson catch null) | select(type == "object" and .type == "user")) // null) as $u
+    | if $u == null then empty
+      else (($u | utext) | capture("Lens:\\s*(?<l>[^\\n]*)")? | .l) as $l
+        | if $l == null then empty else ($l | lensname($headings)) end
+      end
+  end
+'
+
+# Per file: one compact record per transcript line that the counts need, inside the window.
+JQ_REDUCE="$JQ_COMMON"'
+def num: if type == "number" then . else 0 end;
+# A model id at company level has no "/" and at most a short ":<digits>" suffix, so an ARN or inference-profile id, with its
+# account number and region, is unknown rather than stored.
+def okmodel: if type == "string" and test("^[A-Za-z0-9_.@-]{1,100}(:[0-9]{1,2})?$") then . else null end;
+
+def intext:
+  if (.message.content | type) == "string" then .message.content
+  elif (.message.content | type) == "array" then ([.message.content[]? | select(type == "object" and .type == "text") | .text] | join("\n"))
+  else "" end;
+def inwin($t): $t != null and (if $incl then $t >= $start else $t > $start end) and $t <= $end;
+($agent | okname // "unknown") as $ag
+| ($phase | if . == "" then "" elif IN("Review", "Verify", "Fix", "Implement", "Plan") then . else "other" end) as $ph
+| (try fromjson catch null) as $r
+| if ($r | type) != "object" then (if test("\\S") then {k: "bad"} else empty end)
+  else
+    ($r.timestamp | tstr) as $t
+    | ($r.type) as $ty
+    | if ($ty == "assistant" or $ty == "user" or ($ty == "system" and $r.subtype == "turn_duration")) and $t == null then {k: "nots"}
+      elif $t == null or ($t | inwin($t) | not) then empty
+      elif $ty == "assistant" then
+        ($r.message // {}) as $m
+        | ($m.usage) as $u
+        | {k: "a", s: $session, ag: $ag, lens: $lens, ph: $ph, ts: $t,
+           uuid: ($r.uuid // "nouuid-\($t)"), mid: ($m.id // $r.uuid // "nomid-\($t)"),
+           model: (($m.model | okmodel) // "unknown"), synth: ($m.model == "<synthetic>"),
+           u: (if ($u | type) == "object" then
+                 (($u.cache_creation | if type == "object" then . else null end) as $cc
+                  | {i: ($u.input_tokens | num), o: ($u.output_tokens | num), cr: ($u.cache_read_input_tokens | num),
+                     w1: (if $cc != null then ($cc.ephemeral_1h_input_tokens | num) else 0 end),
+                     w5: (if $cc != null then ($cc.ephemeral_5m_input_tokens | num) else ($u.cache_creation_input_tokens | num) end)})
+               else null end),
+           tools: [($m.content // [])[]? | select(type == "object" and .type == "tool_use")
+                   | ((.name | okname) // "unknown") as $n | (.input // {}) as $in
+                   | {n: $n,
+                      sk: (if $n == "Skill" then ($in.skill | okname) else null end),
+                      at: (if $n == "Agent" or $n == "Task" then (if $in.subagent_type == null then "general-purpose" else (($in.subagent_type | okname) // "unknown") end) else null end),
+                      am: (if $n == "Agent" or $n == "Task" then (($in.model | okmodel) // "default") else null end)}],
+           attr: ($r.attributionSkill | okname), ver: ($r.version | okname)}
+      elif $ty == "user" and ($r.isSidechain != true) then
+        ($r | intext) as $x
+        | (($x | capture("<command-name>\\s*/?(?<c>[^<\\s]+)\\s*</command-name>")? | .c) // null) as $cm
+        | (($r.isMeta != true) and $cm != null) as $slash
+        | (($r.promptSource | IN("typed", "queued", "suggestion_accepted", "sdk")) or $slash) as $turn
+        | ($r.interruptedMessageId != null) as $int
+        | if $turn or $int then
+            {k: "u", s: $session, ts: $t, uuid: ($r.uuid // "nouuid-\($t)"), turn: $turn, int: $int,
+             slash: (if $slash then ($cm | okname) else null end), ver: ($r.version | okname)}
+          else empty end
+      elif $ty == "system" and $r.subtype == "turn_duration" and ($r.isSidechain != true) then
+        {k: "d", s: $session, ts: $t, uuid: ($r.uuid // "nouuid-\($t)"), ms: ($r.durationMs | num)}
+      else empty end
+  end
+'
+
+# The aggregate: the deduplicated records of every session, summed per session and in total.
+JQ_AGGREGATE="$JQ_COMMON"'
+def zt: {input: 0, output: 0, cache_read: 0, cache_write_5m: 0, cache_write_1h: 0};
+def toks:
+  reduce .[] as $r ({};
+    .[$r.model] |= ((. // zt) | .input += $r.u.i | .output += $r.u.o | .cache_read += $r.u.cr
+                    | .cache_write_5m += $r.u.w5 | .cache_write_1h += $r.u.w1));
+def counts: reduce .[] as $x ({}; .[$x] += 1);
+def tms: ((.[0:19] + "Z" | fromdateiso8601) * 1000) + (.[20:23] | tonumber);
+def builtin_agents: ["general-purpose", "Explore", "Plan", "claude-code-guide", "statusline-setup", "web-fetch", "fork",
+                     "claude", "workflow-subagent", "main", "unknown"];
+def builtin_cmds: ["exit", "clear", "compact", "help", "model", "config", "resume", "cost", "context", "status", "mcp",
+                   "agents", "doctor", "login", "logout", "permissions", "rewind", "rename", "usage", "vim", "theme",
+                   "terminal-setup", "ide", "memory", "hooks", "fast", "export", "copy", "plugin", "plugins", "bug"];
+def rn_agent:
+  . as $t
+  | if (builtin_agents | index($t)) != null then $t
+    elif ($t | contains(":")) then (if ($allowed | index($t | split(":")[0])) != null then $t else "_other_plugin" end)
+    elif $level == "company" then "_custom_agent"
+    else $t end;
+def rn_skill:
+  . as $n | ($skillclass[$n] // (if $level == "company" then "project" else "builtin" end)) as $c
+  | if $c == "plugin_other" then "_other_plugin" elif $c == "project" and $level == "company" then "_project" else $n end;
+def rn_tool:
+  . as $n
+  | if startswith("mcp__") | not then $n
+    elif $level == "company" then "_mcp"
+    elif startswith("mcp__plugin_") and (($allowed | map("mcp__plugin_" + . + "_") | any(. as $p | $n | startswith($p))) | not) then "_other_plugin"
+    else $n end;
+
+def summarize($au; $aa; $uu; $dd; $ww):
+  ($aa | map(.tools[])) as $tl
+  | {
+      wall_ms: (($aa + $uu + $dd | map(.ts)) as $ts | if ($ts | length) == 0 then 0 else (($ts | max | tms) - ($ts | min | tms)) end),
+      active_ms: ($dd | map(.ms) | add // 0),
+      tokens: (if ($au | length) == 0 then null else ($au | toks) end),
+      user_turns: ($uu | map(select(.turn)) | length),
+      interrupts: ($uu | map(select(.int)) | length),
+      questions: ($tl | map(select(.n == "AskUserQuestion")) | length),
+      tools: ($tl | map(.n | rn_tool) | counts),
+      skills: (([$tl[] | select(.sk != null) | .sk] + [$uu[] | select(.slash != null) | .slash | select(IN(builtin_cmds[]) | not)])
+               | map(rn_skill) | counts),
+      agents: ($tl | map(select(.at != null) | "\(.at | rn_agent)/\(.am)") | counts),
+      workflows: {runs: ($ww | length), agents: ($ww | map(.ag) | add // 0), ms: ($ww | map(.ms) | add // 0),
+                  phases: ($au | map(select(.ph != "")) | group_by(.ph) | map({key: .[0].ph, value: toks}) | from_entries)},
+      by_agent_type: ($au | map(.ag |= rn_agent) | group_by(.ag) | map({key: .[0].ag, value: toks}) | from_entries),
+      by_lens: ($au | map(select(.lens != "")) | group_by(.lens) | map({key: .[0].lens, value: toks}) | from_entries)
+    };
+
+$recs as $R
+| ($R | map(select(.k == "bad")) | length) as $nbad
+| ($R | map(select(.k == "nots")) | length) as $nnots
+| ($R | map(select(.k == "a")) | unique_by(.uuid)) as $AA
+| ($R | map(select(.k == "a" and .u != null and (.synth | not))) | unique_by(.mid)) as $AU
+| ($R | map(select(.k == "u")) | unique_by(.uuid)) as $UU
+| ($R | map(select(.k == "d")) | unique_by(.uuid)) as $DD
+| ($R | map(select(.k == "w")) | unique_by(.rid)) as $WW
+| ($sessions | map(. as $s | {s: $s,
+     v: summarize($AU | map(select(.s == $s)); $AA | map(select(.s == $s)); $UU | map(select(.s == $s));
+                  $DD | map(select(.s == $s)); $WW | map(select(.s == $s))),
+     start: (($AA + $UU + $DD | map(select(.s == $s) | .ts)) | min)})) as $S
+| summarize($AU; $AA; $UU; $DD; $WW) as $T
+| ($AA | map(select(.synth | not) | select(.u == null)) | length) as $nousage
+| ([$AA[] | .tools[] | select(.sk != null) | .sk] + [$UU[] | select(.slash != null) | .slash | select(IN(builtin_cmds[]) | not)]
+   + [$AA[] | select(.attr != null) | .attr] | unique) as $skillnames
+| ([$AA[] | .tools[] | select(.at != null) | .at] + [$AU[] | .ag] | unique | map(select(. as $t | (builtin_agents | index($t)) == null and ($t | contains(":") | not)))) as $customagents
+| ([$AA[] | .tools[] | select(.n | startswith("mcp__")) | .n] | unique) as $mcptools
+| ([$AA[] | .ver] + [$UU[] | .ver] | map(select(. != null)) | unique) as $versions
+| {
+    n_assistant: ($AA | length),
+    new_warnings: ([
+        (if $nbad > 0 then "\($nbad) transcript line(s) were not JSON" else empty end),
+        (if $nnots > 0 then "\($nnots) transcript record(s) had no usable timestamp" else empty end),
+        (if $nousage > 0 then "\($nousage) assistant record(s) had no usage" else empty end)
+      ]),
+    entry: ($meta + {
+      framework: ($meta.framework + {claude_code_versions: $versions}),
+      skills_outside: ($skillnames | map(. as $n | ($skillclass[$n] // (if $level == "company" then "project" else "builtin" end)) as $c | select($c != "dotfiles")
+                         | {key: ($n | rn_skill), value: (if $c == "plugin_other" then "plugin" else $c end)}) | from_entries),
+      redacted: {
+        project_skills: (if $level == "company" then ($skillnames | map(select(($skillclass[.] // (if $level == "company" then "project" else "builtin" end)) == "project")) | length) else 0 end),
+        other_plugin_skills: ($skillnames | map(select(($skillclass[.] // "builtin") == "plugin_other")) | length),
+        custom_agent_types: (if $level == "company" then ($customagents | length) else 0 end),
+        mcp_tools: (if $level == "company" then ($mcptools | length) else 0 end)
+      },
+      sessions: ($S | map(.v + {start: .start})),
+      totals: ($T + {wall_ms: ($S | map(.v.wall_ms) | add // 0)})
+    })
+  }
+'
+
+# The review log: one pass over the plan's sections and the findings files that go with them.
+JQ_REVIEWS_A='
+def parse_findings($text):
+  reduce ($text | split("\n"))[] as $l ({f: [], bad: 0, cur: null};
+    if ($l | test("^### R[0-9]+-[0-9]+ · (refuted|note|out of scope)")) then .cur = null
+    elif ($l | test("^### R[0-9]")) then
+      ([$l | capture("^### R(?<r>[0-9]+)-(?<n>[0-9]+) · (?<sev>[a-z]+) · (?<lens>.*)$")] | first) as $h
+      | if $h == null or (["blocking", "major", "minor", "nit"] | index($h.sev)) == null then .bad += 1 | .cur = null
+        else .f += [{r: ($h.r | tonumber), sev: $h.sev, lens: $h.lens, out: "open"}] | .cur = ((.f | length) - 1) end
+    elif ($l | test("^#{1,6} ")) then .cur = null
+    elif .cur != null then
+      (if ($l | test("^Fixed:")) then .f[.cur].out = "fixed"
+       elif ($l | test("^Refuted:")) and .f[.cur].out == "open" then .f[.cur].out = "refuted"
+       else . end)
+    else . end);
+def analyse:
+  . as $s
+  | {kind, closed,
+     rows: ($s.lines | map(select(test("^\\|\\s*[0-9]+\\s*\\|"))) | map({round: (capture("^\\|\\s*(?<r>[0-9]+)") | .r | tonumber), line: .})),
+     reeval: [$s.lines[] | capture("^Re-evaluation after round (?<r>[0-9]+)")? | .r | tonumber],
+     decis: [$s.lines[] | capture("^User decision after round (?<r>[0-9]+)")? | .r | tonumber],
+     done: ([$s.lines | to_entries[] | .key as $i
+             | .value | capture("^Done \\((?<k>[a-z]+)\\): round (?<r>[0-9]+); unfixed: (?<u>.*)$")?
+             | .u = ([.u] + ($s.lines[$i + 1:] | map(select(test("\\S")))) | join(" "))] | last)};
+def fname:
+  (.name | ltrimstr($stem + "-review-findings-") | rtrimstr(".md"))
+  | ([capture("^(?<k>[a-z]+)(-closed-(?<d>[0-9]{4}-[0-9]{2}-[0-9]{2})(-(?<n>[0-9]+))?)?$")] | first) as $h
+  | if $h == null then null else {k: $h.k, d: $h.d, n: (($h.n // "1") | tonumber)} end;
+(reduce ($plan | split("\n"))[] as $l ({secs: [], in: false, badhead: 0};
+   if ($l | test("^## Review log \\(")) then
+     ([$l | capture("^## Review log \\((?<kind>[a-z]+)(, closed (?<d>[0-9]{4}-[0-9]{2}-[0-9]{2})(-[0-9]+)?)?\\)\\s*$")] | first) as $h
+     | if $h == null then .in = false | .badhead += 1
+       else .secs += [{kind: $h.kind, closed: $h.d, lines: []}] | .in = true end
+   elif ($l | test("^#{1,2} ")) then .in = false
+   elif .in then ((.secs | length) - 1) as $i | .secs[$i].lines += [$l]
+   else . end)) as $P
+| ($ffiles | map(. + {p: fname}) | map(select(.p != null))) as $F
+| ($P.secs | map(analyse)) as $A
+| {badhead: $P.badhead,
+   parsed: ($A | to_entries | map(
+       .key as $i | .value as $s
+       | ($A[0:$i] | map(select(.kind == $s.kind and .closed == $s.closed)) | length) as $nth
+       | ($F | map(select(.p.k == $s.kind and .p.d == $s.closed)) | sort_by(.p.n)) as $cand
+       | ($cand[$nth] // null) as $f
+       | select($s.closed == null or $s.closed >= $startdate)
+       | ($f | if . == null then {f: [], bad: 0} else parse_findings(.text) end) as $pf
+       | ($f | if . == null then "" else (.text | split("\n") | map(select(test("^### R"))) | first // "") end) as $fh
+       | $s + {findings: $pf.f, badf: $pf.bad, keysrc: ([$s.kind, ($s.rows[0].line // ""), $fh] | tojson)}))}
+'
+
+JQ_REVIEWS_B="$JQ_LENS"'
+# The kind is free text from a heading or a file name, so only plan and code are stored; any other is "other".
+def kindname: if . == "plan" or . == "code" then . else "other" end;
+$A.parsed as $parsed
+| ($parsed | to_entries | map(
+    .key as $i | .value as $p
+    | $keys[$i] as $key
+    | ($skips[$key] // 0) as $skip
+    | ($p.rows | .[$skip:]) as $kept
+    | ($kept | map(.round)) as $rounds
+    | (if $skip > 0 and $skip <= ($p.rows | length) then $p.rows[$skip - 1].round else -1 end) as $skipround
+    | {kind: ($p.kind | kindname), key: $key, rows: ($kept | length),
+       done_round: (if $p.done == null then null else ($p.done.r | tonumber) end),
+       unfixed: (if $p.done == null then null elif ($p.done.u | test("^\\s*none\\s*$")) then 0 else ($p.done.u | split(",") | length) end),
+       re_evaluations: ($p.reeval | map(select(. > $skipround)) | length),
+       user_decisions: ($p.decis | map(select(. > $skipround)) | length),
+       _f: ($p.findings | map(select(.r as $r | $rounds | index($r) != null)))})) as $R
+| {
+    reviews: ($R | map(del(._f))),
+    findings: (reduce ($R[] | .kind as $k | ._f[] | {k: $k, l: (.lens | lensname($headings)), s: .sev, o: .out}) as $f ({};
+                 .[$f.k][$f.l][$f.s][$f.o] += 1)
+               | with_entries(.value |= with_entries(.value |= with_entries(.value |= ({fixed: 0, refuted: 0, open: 0} + .))))),
+    bad: ($A.badhead + ($parsed | map(.badf) | add // 0))
+  }
+'
+
+# --- note: the mechanical redaction ----------------------------------------------------------------------------
+
+# Words no one names a customer by. Folder, plan and branch words that are one of these are not redacted, and neither
+# are a host's generic labels (git, www, github, gitlab ...); the host's TLD is never a term.
+GENERIC_WORDS=" plan plans the and for with from into this that task tasks work fix fixes feat feature features chore docs doc
+  test tests code review reviews wip branch main master develop dev new add update use using app apps src lib bin git github
+  gitlab gitea forgejo www com org net edu gov dot users user home projects project repos repo repositories documents
+  desktop tmp var folders private etc scm ai "
+GENERIC_WORDS="${GENERIC_WORDS//$'\n'/ }"
+
+# Generic labels of a customer's host as well: service names and second-level suffixes, which name no customer.
+GENERIC_LABELS=" api portal jira mail vpn intranet ci staging prod auth login docs wiki co ac "
+
+function is_generic() { local w="${1,,}"; [[ "$GENERIC_WORDS" == *" $w "* || ( "${2:-0}" == 2 && "$GENERIC_LABELS" == *" $w "* ) ]]; }
+
+# add_term <kind> <term> <min length> <1 to skip generic words, 2 to skip generic host labels too>: one line of $TMP/terms, kind<TAB>term.
+# Kinds: P path, H host, X owner pair, C customer, R repo.
+function add_term() {
+  local k="$1" t="$2"
+  t="${t#"${t%%[![:space:]]*}"}"
+  t="${t%"${t##*[![:space:]]}"}"
+  ((${#t} >= $3)) || return 0
+  [[ "$t" != *$'\t'* && "$t" != *$'\n'* ]] || return 0
+  if (($4)) && is_generic "$t" "$4"; then return 0; fi
+  printf '%s\t%s\n' "$k" "$t" >> "${TERMS_FILE:-$TMP/terms}"
+}
+
+# add_words <kind> <text>: each word of the text of three or more characters, bar digits alone and the generic ones.
+# Words split on ASCII non-alphanumerics only, bytes of non-ASCII letters staying in the word: BSD tr (macOS) and GNU tr
+# (Linux) otherwise disagree on what a letter is, and a word split mid-letter leaks its leading letters.
+function add_words() {
+  local w
+  while IFS= read -r w; do
+    if [[ -n "$w" && ! "$w" =~ ^[0-9]+$ ]]; then add_term "$1" "$w" 3 1; fi
+  done < <(printf '%s\n' "$2" | LC_ALL=C tr -cs 'A-Za-z0-9\200-\377' '\n')
+}
+
+# add_host_forms <host>: the host whole, and each of its labels but the TLD and the generic ones.
+function add_host_forms() {
+  local h="${1,,}" rest lab
+  local -a labs
+  h="${h#ssh.}"
+  add_term H "$h" 3 0
+  rest="${h%.*}"
+  [[ "$rest" != "$h" ]] || return 0
+  IFS=. read -ra labs <<< "$rest"
+  local all=1 i
+  for lab in "${labs[@]}"; do
+    if ((${#lab} >= 2)) && ! is_generic "$lab" 2; then all=0; fi
+    add_term C "$lab" 2 2
+  done
+  # A host of generic labels only (portal.no) still has a word that names it: its last label bar a second-level suffix.
+  if ((all)); then
+    for ((i = ${#labs[@]} - 1; i >= 0; i--)); do
+      if [[ " co ac com org net gov edu " == *" ${labs[i],,} "* ]]; then continue; fi
+      add_term C "${labs[i]}" 2 0
+      break
+    done
+  fi
+}
+
+# add_org <host> <owner>: a host/owner as the pair, the host and the owner.
+function add_org() {
+  local h="${1,,}"
+  h="${h#ssh.}"
+  add_term H "$h" 3 0
+  add_term X "$h/$2" 3 0
+  add_term C "$2" 2 0
+}
+
+# add_dir <path> [<name>]: a directory customer as its path, its ~/ form and its last component; a relative entry is a name too.
+function add_dir() {
+  local p="$1" c
+  [[ "$p" != "$TILDE" ]] || p="$HOME"
+  [[ "$p" != "$TILDE/"* ]] || p="$HOME/${p#"$TILDE"/}"
+  p="${p%/}"
+  [[ -n "$p" ]] || return 0
+  add_term P "$p" 2 0
+  if [[ "$p" == "$HOME"/* ]]; then add_term P "$TILDE/${p#"$HOME"/}" 2 0; fi
+  if c="$(cd -P "$p" 2> /dev/null && pwd -P)" && [[ -n "$c" ]]; then add_term P "$c" 2 0; fi
+  add_term C "${p##*/}" 2 0
+  if [[ -n "${2:-}" ]]; then add_term C "$2" 2 0; fi
+}
+
+# add_customer_line <line>: one line of ~/.claude-customers, read in the forms the guard reads (claude/hooks/work-context.sh
+# customer_entry), but without its refusals: a line that is none of them is a name, so it is redacted whole.
+function add_customer_line() {
+  local line="$1" first rest host owner
+  line="${line#$'\xEF\xBB\xBF'}"
+  line="${line#"${line%%[![:space:]]*}"}"
+  [[ "$line" != "#"* ]] || return 0
+  line="$(sed -E 's/[[:space:]]+#.*$//' <<< "$line")"
+  line="${line%"${line##*[![:space:]]}"}"
+  [[ -n "$line" ]] || return 0
+  if ((${#line} >= 2)) && [[ "$line" == \"*\" || "$line" == \'*\' ]]; then line="${line:1:${#line}-2}"; fi
+  case "$line" in
+    '${HOME}'*) line="$TILDE${line#'${HOME}'}" ;;
+    '$HOME'*) line="$TILDE${line#'$HOME'}" ;;
+  esac
+  line="${line%/}"
+  [[ -n "$line" ]] || return 0
+  case "$line" in
+    "$TILDE" | "$TILDE/"* | /*) add_dir "$line"; return 0 ;;
+  esac
+  if [[ "$line" == *://* ]]; then
+    line="${line%%[?#]*}"
+    line="${line/\/orgs\//\/}"
+    line="${line/\/groups\//\/}"
+    line="${line/\/enterprises\//\/}"
+    rest="${line#*://}"
+    rest="${rest%/}"
+    host="${rest%%/*}"
+    host="${host##*@}"
+    host="${host%%:*}"
+    if [[ "$rest" == */* ]]; then
+      owner="${rest#*/}"
+      add_org "$host" "${owner%%/*}"
+    else
+      add_host_forms "$host"
+    fi
+    return 0
+  fi
+  first="${line%%:*}"
+  if [[ "$line" == *:* && "${first##*@}" == *.* && "$first" != */* ]]; then
+    host="${first##*@}"
+    rest="${line#*:}"
+    if [[ "$rest" =~ ^[0-9]+$ ]]; then add_host_forms "$host"; else add_org "$host" "${rest%%/*}"; fi
+    return 0
+  fi
+  if [[ "$line" == */* ]]; then
+    first="${line%%/*}"
+    if [[ "$first" == *.* && "$first" != .* ]]; then
+      rest="${line#*/}"
+      rest="${rest/#orgs\//}"
+      rest="${rest/#groups\//}"
+      add_org "$first" "${rest%%/*}"
+    else
+      add_dir "$HOME/$line" "$line"
+      add_name "$line"
+    fi
+    return 0
+  fi
+  if [[ "$line" =~ ^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$ ]]; then
+    add_host_forms "$line"
+    return 0
+  fi
+  add_name "$line"
+  if [[ "$line" == *,* ]]; then add_name "${line%%,*}"; fi
+}
+
+# add_name <name>: a customer's name, and without a legal form before or after it (Foo Bar AS is Foo Bar too).
+function add_name() {
+  local n="$1" lower="${1,,}"
+  add_term C "$n" 2 0
+  if [[ "$lower" =~ ^(.+)[[:space:]]+(as|asa|ab|a/s|ltd\.?|limited|inc\.?|gmbh|llc|oy|corp\.?|bv|nv|sa|plc|co\.?)$ ]]; then
+    add_term C "${n:0:${#BASH_REMATCH[1]}}" 2 0
+  fi
+  if [[ "$lower" == "a/s "* ]]; then add_term C "${n:4}" 2 0; fi
+}
+
+# add_remote_terms: the work repo's remotes' hosts, owners and names; an owner or name that is a generic word (a repo called review) is kept.
+function add_remote_terms() {
+  local r url rest host path seg
+  local -a segs
+  while IFS= read -r r; do
+    [[ -n "$r" ]] || continue
+    url="$(git remote get-url "$r" 2> /dev/null)" || continue
+    host="" path=""
+    if [[ "$url" == *://* ]]; then
+      rest="${url#*://}"
+      host="${rest%%/*}"
+      host="${host##*@}"
+      host="${host%%:*}"
+      [[ "$rest" != */* ]] || path="${rest#*/}"
+    elif [[ "$url" == *:* && "${url%%:*}" != */* ]]; then
+      host="${url%%:*}"
+      host="${host##*@}"
+      path="${url#*:}"
+    else
+      path="${url##*/}"
+    fi
+    [[ -z "$host" ]] || add_term H "$host" 3 0
+    path="${path%/}"
+    path="${path%.git}"
+    IFS=/ read -ra segs <<< "$path"
+    if [[ -z "$host" ]]; then segs=("${segs[@]: -1}"); fi
+    for seg in "${segs[@]:0:${#segs[@]}-1}"; do add_term C "$seg" 2 1; done
+    if ((${#segs[@]} > 0)); then add_term R "${segs[${#segs[@]}-1]}" 2 1; fi
+  done < <(git remote)
+}
+
+# add_folder_terms <path>: the folder's name and those above it up to $HOME, or every folder of the path when it lies
+# outside $HOME, bar the generic ones.
+function add_folder_terms() {
+  local p="$1" rel comp
+  local -a comps
+  if [[ "$p" == "$HOME"/* ]]; then rel="${p#"$HOME"/}"; else rel="$p"; fi
+  IFS=/ read -ra comps <<< "$rel"
+  for comp in "${comps[@]}"; do
+    [[ -n "$comp" ]] || continue
+    add_term R "$comp" 2 1
+  done
+}
+
+# build_terms <root> <entry file>: $TMP/terms for the work repo, as note redacts it.
+function build_terms() {
+  local root="$1" ef="$2" line f key base head branch found
+  : > "$TMP/terms"
+  if [[ -f "$HOME/.claude-customers" && -r "$HOME/.claude-customers" ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do add_customer_line "$line"; done < "$HOME/.claude-customers"
+  fi
+  add_remote_terms
+  add_folder_terms "$root"
+  add_folder_terms "$(cd -P "$root" && pwd -P)"
+  if [[ "$LEVEL" == company ]]; then
+    # The entry hashes the plan's name, so the plan is any markdown file in the repo that hashes to its plan_key.
+    key="$(jq -r '.plan_key // empty' "$ef")"
+    found=0
+    while IFS= read -r f; do
+      base="${f##*/}"
+      [[ "$(h12 "$ORIGIN" "$base")" == "$key" ]] || continue
+      found=1
+      add_words R "${base%.md}"
+      head="$(grep -m1 '^# ' "$f" || true)"
+      add_words R "$head"
+    done < <(find "$root" \( -name .git -o -name node_modules \) -prune -o -type f -name '*.md' -print)
+    ((found)) || die 1 "company level: no markdown file in this repository is the plan of entry $(jq -r '.id' "$ef"), so its words cannot be redacted; run note in a checkout that holds the plan, inside the repository"
+    branch="$(git symbolic-ref --short -q HEAD 2> /dev/null || true)"
+    add_words R "$branch"
+  fi
+}
+
+# Each pass replaces its matches with a one-letter placeholder between control characters, which no later pass can
+# match, and the last step turns the placeholders into [kind]. Matches are case-insensitive and whole-word, any
+# character but an ASCII letter or digit breaking a word (the regex engine takes no wider class in a case-insensitive look-behind). Terms: P path, H host, X owner pair, C customer, R repo.
+JQ_TERMDEFS='
+def esc: gsub("(?<c>[\\\\.^$*+?()\\[\\]{}|])"; "\\\(.c)");
+def alt: map(esc | gsub("\\s+"; "[^A-Za-z0-9]+")) | join("|");
+def word($ts): "(?<![A-Za-z0-9])(?:" + ($ts | alt) + ")(?![A-Za-z0-9])";
+'
+JQ_REDACT="$JQ_TERMDEFS"'
+def ph($k): "\u0001" + $k + "\u0002";
+def C: "[^\\s\\x22\\x27\\x60<>()\\[\\]]";
+def E: "[^\\s\\x22\\x27\\x60<>()\\[\\].,;:!?]";
+def S: "[^\\s\\x22\\x27\\x60<>()\\[\\],;/]";
+def exts: ["md","sh","bash","zsh","json","jsonl","js","mjs","cjs","ts","tsx","jsx","yml","yaml","toml","txt","py","rb","go","rs",
+  "lock","css","scss","html","htm","xml","csv","tsv","png","jpg","jpeg","gif","svg","pdf","log","bak","tmp","swp","env","ini",
+  "cfg","conf","sql","cpp","hpp","java","kt","swift","lua","vim","php","class","jar","gz","tgz","tar","rst",
+  "adoc","ipynb"] | join("|");
+def h4: "[0-9A-Fa-f]{1,4}";
+def v6: "(?=[0-9A-Fa-f:]*[0-9A-Fa-f]{3})(?:" + h4 + "(?::" + h4 + ")*)?::(?:" + h4 + "(?::" + h4 + ")*)?";
+def structural: [
+  {k: "U", re: ("[A-Za-z][A-Za-z0-9+.-]*://" + C + "*" + E)},
+  {k: "U", re: "(?<![A-Za-z0-9._%+-])[A-Za-z0-9._-]+@[A-Za-z0-9.-]+:[A-Za-z0-9._~/-]*[A-Za-z0-9_~/-]"},
+  {k: "E", re: "(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+(?:@|%40)[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*"},
+  {k: "P", re: ("(?<![A-Za-z0-9])[A-Za-z]:[\\\\/]" + C + "*" + E)},
+  {k: "P", re: ("(?<![A-Za-z0-9\\\\])\\\\\\\\[A-Za-z0-9._$-]+(?:\\\\" + C + "+)*(?<![.:!?])")},
+  {k: "P", re: ("(?<![A-Za-z0-9_.~/\\\\:-])(?:/" + S + "+(?:/" + S + "+)+(?<![.:!?])|/(?:etc|usr|var|home|tmp|opt|Users|Volumes|private|mnt|srv|root|proc|Library|Applications)(?![A-Za-z0-9_-]))")},
+  {k: "P", re: ("(?<![A-Za-z0-9_.~/\\\\:-])~[A-Za-z0-9._-]*(?:/" + S + "+)+(?<![.:!?])")},
+  {k: "H", re: "(?<![0-9.vV])(?<!node )(?<!version )(?:(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(?::[0-9]{1,5})?(?![0-9]|\\.[0-9]|-)"},
+  {k: "H", re: ("\\[(?:::1|" + v6 + ")\\](?::[0-9]{1,5})?")},
+  {k: "H", re: ("(?<![A-Za-z0-9:])(?:::1|" + v6 + "|(?=[0-9A-Fa-f:]*[0-9A-Fa-f]{4})(?:" + h4 + ":){7}" + h4 + ")(?![A-Za-z0-9:])")},
+  {k: "T", cs: true, re: "(?<![A-Za-z0-9])(?:ghp_[A-Za-z0-9]{8,}|gh[ousr]_[A-Za-z0-9]{8,}|github_pat_[A-Za-z0-9_]{8,}|glpat-[A-Za-z0-9_-]{8,}|sk-(?=(?:[_-]*[A-Za-z0-9]){20})[A-Za-z0-9_-]+|xox[abposr]-[0-9][A-Za-z0-9-]{7,}|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+|(?=[A-Za-z0-9+/]*[0-9])(?=[A-Za-z0-9+/]*[a-z])(?=[A-Za-z0-9+/]*[A-Z])[A-Za-z0-9+/]{32,}={0,2}|[A-Za-z0-9+]{32,})"}
+];
+def hostname:
+  {k: "H", re: ("(?<![A-Za-z0-9.-])(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\.)+(?!(?:" + exts + ")(?![A-Za-z0-9]))[A-Za-z]{2,24}(?![A-Za-z0-9]|\\.[A-Za-z0-9])")};
+# Three or more labels ending in md, sh, py or rs (country codes that are also file extensions) are a host, as long as the
+# label before the extension has a letter, so release-1.2.3.md stays a file name; two labels (setup.sh) stay one too.
+def hostname_cc:
+  {k: "H", re: "(?<![A-Za-z0-9.-])(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\.)+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*\\.(?:md|sh|py|rs)(?![A-Za-z0-9]|\\.[A-Za-z0-9])"};
+def termpass($terms; $kind; $ph): ([$terms[] | select(.k == $kind) | .t] | unique_by(ascii_downcase) | sort_by(-length)) as $ts
+  | if ($ts | length) == 0 then empty
+    else {k: $ph, re: (
+      if $kind == "P" then word($ts) + "(?:/" + S + "+)*(?<![.:!?])"
+      elif $kind == "H" then "(?<![A-Za-z0-9])(?:[A-Za-z0-9-]+\\.)*(?:" + ($ts | alt) + ")(?![A-Za-z0-9])"
+      elif $kind == "C" then "(?<![A-Za-z0-9])(?:" + ($ts | alt) + ")(?:es|s)?(?![A-Za-z0-9])"
+      else word($ts) end)} end;
+def passes($t): [termpass($t; "P"; "P")] + structural
+  + [termpass($t; "X"; "C"), termpass($t; "H"; "H"), hostname, hostname_cc, termpass($t; "C"; "C"), termpass($t; "R"; "R")];
+def names: {U: "[url]", E: "[email]", P: "[path]", T: "[token]", H: "[host]", C: "[customer]", R: "[repo]"};
+def redact($t): gsub("[\u0001\u0002]"; "") | reduce passes($t)[] as $p (.; gsub($p.re; ph($p.k); if $p.cs then "" else "i" end))
+  | gsub("\u0001(?<k>[A-Z])\u0002"; names[.k]);
+($tfile | split("\n") | map(select(length > 0) | split("\t") | {k: .[0], t: (.[1:] | join("\t"))})) as $terms
+| gsub("[\u0003\u0004]"; "") | split("\n") as $lines
+| ($lines | to_entries | map(if (.value | test("^## (Worked|Didn'"'"'t|Cut candidates)\\s*$")) then "\u0003\(.key)\u0004" else .value end) | join("\n"))
+| redact($terms)
+| gsub("\u0003(?<i>[0-9]+)\u0004"; $lines[.i | tonumber])
+'
+
+# Does a name the entry carries from the machine hold a term of the customers file? One true or false. Only the
+# name-carrying keys count (tools, skills, agents/model, models, workflow phases, agent types, plugins) and the entry's repo and plan names: warnings, lens headings,
+# review kinds and values are the script's own text, so a listed word that is also an ordinary word in them blocks nothing.
+JQ_LEAK="$JQ_TERMDEFS"'
+def names: [(.tools // {}), (.skills // {}), (.agents // {}), (.tokens // {}), (.workflows.phases // {}), (.by_agent_type // {})] | map(keys[]);
+($tfile | split("\n") | map(select(length > 0) | split("\t") | .[1:] | join("\t")) | unique_by(ascii_downcase)) as $ts
+| if ($ts | length) == 0 then false
+  else ([(.sessions[]?, .totals | names[]), ((.skills_outside // {}) | keys[]), ((.framework.plugins // {}) | keys[]), (.repo // empty), (.plan // empty)]
+        | any(test(word($ts); "i"))) end
+'
+
+# plan_summary <plan_key> <id> <entry file>...: what the entries of <id>'s chain add up to (a plan file that reused the name later starts another), one line each; the files are valid JSON.
+JQ_SUMMARY='
+def tk: (. // {}) | map((.input // 0) + (.output // 0) + (.cache_read // 0) + (.cache_write_5m // 0) + (.cache_write_1h // 0)) | add // 0;
+def listed: if length == 0 then "none" else join(", ") end;
+def summed(f): group_by(.t) | map("\(.[0].t) \(map(f) | add)");
+[.[] | select(.plan_key == $k)] as $P
+| ([$P[] | select(.id == $id)] | first) as $cur
+| ($cur.window.end // "") as $ce
+| ([$P[] | select(.window.after == null and (.window.end // "") <= $ce)] | max_by(.window.end // "") | .window.end // "") as $from
+| ([$P[] | select(.window.after == null and (.window.end // "") > $ce)] | min_by(.window.end // "") | .window.end // null) as $to
+| [$P[] | select((.window.end // "") >= $from and ($to == null or (.window.end // "") < $to))] | sort_by(.window.end // "") as $E
+| ([$E[] | .reviews[]? | {t: .kind, r: (.rows // 0), m: 0}]
+   + [$E[] | (.findings // {}) | to_entries[] | {t: .key, r: 0, m: ([.value[]? | (.major // {}) | .[]] | add // 0)}]) as $R
+| "windows: \($E | length)",
+  "tokens per session: " + ([range(0; $E | length) as $i | ($E[$i].sessions // []) | to_entries[] | "w\($i + 1)s\(.key + 1) \(.value.tokens | tk)"] | listed),
+  "agents per type: " + ([$E[] | (.totals.agents // {}) | to_entries[] | {t: (.key | sub("/[^/]*$"; "")), n: .value}] | summed(.n) | listed),
+  "workflow phases, tokens: " + ([$E[] | (.totals.workflows.phases // {}) | to_entries[] | {t: .key, n: (.value | tk)}] | summed(.n) | listed),
+  "rounds and majors per review kind: " + ($R | group_by(.t) | map("\(.[0].t) \(map(.r) | add) rounds, \(map(.m) | add) majors") | listed),
+  "user turns: \([$E[] | .totals.user_turns // 0] | add // 0), questions: \([$E[] | .totals.questions // 0] | add // 0)"
+'
+
+# --- record ----------------------------------------------------------------------------------------------------
+
+function cmd_level() {
+  [[ $# -eq 0 ]] || usage
+  git rev-parse --show-toplevel > /dev/null 2>&1 || die 2 "not inside a git repository"
+  compute_level
+  echo "$LEVEL"
+  [[ -z "$LEVEL_WHY" ]] || echo "ai-log: customer because $LEVEL_WHY" >&2
+}
+
+function cmd_record() {
+  local dry=0
+  while [[ $# -gt 0 && "$1" == -* ]]; do
+    case "$1" in
+      --dry-run) dry=1; shift ;;
+      --) shift; break ;;
+      *) usage ;;
+    esac
+  done
+  [[ $# -ge 1 && $# -le 2 ]] || usage
+  local plan_arg="$1" commit_arg="${2:-}"
+  [[ -n "$plan_arg" && -n "$commit_arg" || $# -eq 1 ]] || usage
+  command -v jq > /dev/null || die 2 "jq is required"
+
+  local root
+  root="$(git rev-parse --show-toplevel 2> /dev/null)" || die 2 "not inside a git repository"
+  compute_level
+  if [[ "$LEVEL" == customer ]]; then
+    echo "ai-log: customer level is deferred, nothing recorded"
+    [[ -z "$LEVEL_WHY" ]] || echo "ai-log: customer because $LEVEL_WHY" >&2
+    return 0
+  fi
+  require_clone
+
+  local plan_path="$plan_arg"
+  [[ "$plan_path" == /* ]] || plan_path="$root/$plan_path"
+  [[ -f "$plan_path" ]] || die 1 "no such plan file: $plan_arg"
+  local bn="${plan_path##*/}"
+
+  # The commit: its sha and date name the entry; the window ends at a given commit's time, else now.
+  local sha cdate ct end_ts
+  sha="$(git rev-parse --verify --quiet "${commit_arg:-HEAD}^{commit}")" || {
+    if [[ -n "$commit_arg" ]]; then die 2 "no such commit: $commit_arg"; else die 1 "the repository has no commit"; fi
+  }
+  ct="$(git log -1 --format=%ct "$sha")"
+  cdate="$(git log -1 --format=%cI "$sha")"
+  cdate="${cdate:0:10}"
+  if [[ -n "$commit_arg" ]]; then
+    end_ts="$(jq -n -r --argjson t "$ct" '$t | todate | sub("Z$"; ".000Z")')"
+  else
+    end_ts="$(jq -n -r 'now as $n | ($n | floor | todate | rtrimstr("Z")) + "." + ((($n * 1000) | floor) % 1000 | tostring | ("000" + .)[-3:]) + "Z"')"
+  fi
+
+  local plan_key id
+  plan_key="$(h12 "$ORIGIN" "$bn")"
+  id="$cdate-$(h12 "$ORIGIN" "$bn" "$sha")"
+
+  TMP="$(mktemp -d)"
+  trap cleanup EXIT
+
+  # The clone: pull first so the window sees entries other machines pushed.
+  # A dry run only fetches: the clone's own branch and files stay as they are, and newer entries are read from origin.
+  if ((dry == 1)); then
+    in_log_clone git fetch -q origin > /dev/null 2>&1 || warn "git fetch in the log clone failed; the window may miss newer entries"
+  else
+    local lbranch
+    lbranch="$(log_branch)"
+    { [[ -n "$lbranch" ]] && in_log_clone git pull --ff-only -q origin "$lbranch" > /dev/null 2>&1; } || warn "git pull in the log clone failed; the window may miss newer entries"
+  fi
+  local entries="$AI_LOG_DIR/entries" prior_files=() f
+  shopt -s nullglob
+  for f in "$entries"/*.json; do
+    if jq -e 'type == "object"' "$f" > /dev/null 2>&1; then prior_files+=("$f"); else warn "an entry file in the log clone is not valid JSON"; fi
+  done
+  shopt -u nullglob
+  if ((dry == 1)) && in_log_clone git rev-parse -q --verify '@{u}' > /dev/null 2>&1; then
+    local rf rp lp rwins
+    while IFS= read -r rf; do
+      [[ "$rf" == entries/*.json ]] || continue
+      mkdir -p "$TMP/remote"
+      rp="$TMP/remote/${rf##*/}"
+      lp="$AI_LOG_DIR/$rf"
+      if ! in_log_clone git show "@{u}:$rf" > "$rp" 2> /dev/null || ! jq -e 'type == "object"' "$rp" > /dev/null 2>&1; then
+        warn "an entry file on origin is not valid JSON"
+        continue
+      fi
+      if [[ -e "$lp" ]]; then
+        # A re-recorded id differs from the clone's copy: the later window end wins, origin's on a tie; the clone is not written.
+        cmp -s "$lp" "$rp" && continue
+        # An unreadable local copy loses to origin's.
+        rwins=0
+        jq -e -n --slurpfile l "$lp" --slurpfile r "$rp" '($r[0].window.end // "") >= ($l[0].window.end // "")' > /dev/null 2>&1 || rwins=$?
+        ((rwins != 1)) || continue
+        local -a kept=()
+        for f in "${prior_files[@]}"; do [[ "$f" == "$lp" ]] || kept+=("$f"); done
+        prior_files=("${kept[@]+"${kept[@]}"}")
+      fi
+      prior_files+=("$rp")
+    done < <(in_log_clone git ls-tree -r --name-only '@{u}' entries/ 2> /dev/null)
+  fi
+  local priors='[]'
+  if ((${#prior_files[@]} > 0)); then
+    priors="$(jq -c -s --arg k "$plan_key" --arg id "$id" --arg end "$end_ts" \
+      '[.[] | select(.plan_key == $k and .id != $id and ((.window.end // "") <= $end))]' "${prior_files[@]}")"
+  fi
+  local start_ts after incl
+  start_ts="$(jq -r 'max_by(.window.end) | .window.end // empty' <<< "$priors")"
+  after="$(jq -r 'max_by(.window.end) | .id // empty' <<< "$priors")"
+
+  # A plan file reusing an earlier plan's name starts a new chain. The plan's Base: line, written when implementation
+  # starts, names the commit its branch was cut from, so a different Base than the last entry's is another plan. An
+  # entry or plan without a Base is decided by the fallback: the earlier plan's file was deleted after its last entry's
+  # commit. A new chain's window starts after the old chain's last window end (Base) or at the first appearance after
+  # the deletion (fallback), not at the old plan's.
+  local plan_base="" prior_base="" new_chain=0 floor_ts=""
+  plan_base="$(plan_base_of "$plan_path")"
+  if [[ -n "$after" ]]; then
+    prior_base="$(jq -r 'max_by(.window.end) | .plan_base // empty' <<< "$priors")"
+    if [[ -n "$plan_base" && -n "$prior_base" ]]; then
+      if [[ "$plan_base" != "$prior_base" ]]; then
+        new_chain=1
+        floor_ts="$start_ts"
+      fi
+    elif [[ "$plan_path" == "$root"/* ]]; then
+      local pc pdel
+      pc="$(jq -r 'max_by(.window.end) | .commit // empty' <<< "$priors")"
+      if [[ -n "$pc" ]] && git cat-file -e "$pc^{commit}" 2> /dev/null; then
+        pdel="$(git log -1 --diff-filter=D --no-renames --format=%ct "$pc..$sha" -- "${plan_path#"$root"/}" 2> /dev/null || true)"
+        if [[ -n "$pdel" ]]; then
+          new_chain=1
+          floor_ts="$(jq -n -r --argjson t "$pdel" '$t | todate | sub("Z$"; ".000Z")')"
+        fi
+      fi
+    fi
+    if ((new_chain)); then
+      priors='[]'
+      start_ts=""
+      after=""
+    fi
+  fi
+
+  # Candidate sessions: top-level transcripts that name the plan and whose cwd is the work repo or below.
+  local root_p
+  root_p="$(cd -P "$root" && pwd -P)"
+  local -A cwd_ok=()
+  local cands_json="$TMP/cands.jsonl" cf meta cwd real
+  : > "$cands_json"
+  local hits
+  # Claude Code names a project's directory after its path with every non-alphanumeric character as "-": scan only the
+  # directories for this repo (and below, which add a "-" suffix). No match, say a long path truncated with a hash, scans all.
+  local -a scan_dirs=()
+  local enc d
+  for enc in "$(printf '%s' "$root" | sed 's/[^A-Za-z0-9]/-/g')" "$(printf '%s' "$root_p" | sed 's/[^A-Za-z0-9]/-/g')"; do
+    for d in "$AI_LOG_PROJECTS/$enc" "$AI_LOG_PROJECTS/$enc"-*; do
+      [[ -d "$d" && " ${scan_dirs[*]:-} " != *" $d "* ]] && scan_dirs+=("$d")
+    done
+  done
+  ((${#scan_dirs[@]} > 0)) || scan_dirs=("$AI_LOG_PROJECTS")
+  hits="$(grep -rlF --include='*.jsonl' --exclude-dir=subagents -- "$bn" "${scan_dirs[@]}" 2> /dev/null || true)"
+  while IFS= read -r cf; do
+    [[ -n "$cf" ]] || continue
+    case "${cf#"$AI_LOG_PROJECTS"/}" in */*/*) continue ;; esac
+    meta="$(jq -R -n -c --arg bn "$bn" "$JQ_CAND" "$cf")" || { warn "a transcript could not be read"; continue; }
+    cwd="$(jq -r '.cwd // empty' <<< "$meta")"
+    [[ -n "$cwd" ]] || continue
+    if [[ -z "${cwd_ok[$cwd]+set}" ]]; then
+      real="$cwd"
+      [[ ! -d "$cwd" ]] || real="$(cd -P "$cwd" && pwd -P)"
+      if [[ "$real" == "$root_p" || "$real" == "$root"/* || "$real" == "$root" || "$real" == "$root_p"/* || "$cwd" == "$root_p" || "$cwd" == "$root_p"/* ]]; then
+        cwd_ok[$cwd]=1
+      else
+        cwd_ok[$cwd]=0
+      fi
+    fi
+    [[ "${cwd_ok[$cwd]}" == 1 ]] || continue
+    jq -c --arg path "$cf" '. + {path: $path}' <<< "$meta" >> "$cands_json"
+  done <<< "$hits"
+
+  local first_app
+  first_app="$(jq -r -s --arg f "$floor_ts" '[.[].m[] | select($f == "" or . > $f)] | min // empty' "$cands_json")"
+  incl=false
+  if [[ -z "$start_ts" ]]; then
+    start_ts="$first_app"
+    incl=true
+    after=""
+  fi
+  if [[ -z "$start_ts" ]]; then
+    die 1 "no session in scope: none of the sessions in this repository names $bn"
+  fi
+  if [[ ! "$start_ts" < "$end_ts" ]]; then
+    if ((dry == 1)); then
+      die 1 "the window is empty or inverted (start $start_ts, end $end_ts): the commit is no newer than the window's start; nothing would be recorded"
+    fi
+    die 1 "the commit is no newer than the window's start ($start_ts); nothing to record"
+  fi
+
+  # Sessions in scope, ordered so a resumed copy is counted in the session that first held the records.
+  local sessions
+  sessions="$(jq -c -s --arg s "$start_ts" --arg e "$end_ts" --argjson incl "$incl" '
+      map(select(.m | any(. <= $e and (if $incl then . >= $s else . > $s end))))
+      | sort_by([.first, .last, .path])' "$cands_json")"
+  local nsess
+  nsess="$(jq 'length' <<< "$sessions")"
+  ((nsess > 0)) || die 1 "no session in scope: no session names $bn inside the window"
+
+  # Lens headings.
+  local headings='[]'
+  if [[ -f "$TREE/claude/docs/review-lenses.md" ]]; then
+    headings="$(grep '^### ' "$TREE/claude/docs/review-lenses.md" | sed -e 's/^### //' -e 's/[[:space:]]*$//' | jq -R -s -c 'split("\n") | map(select(length > 0))')"
+  else
+    warn "claude/docs/review-lenses.md not found; agent and finding lenses are all other"
+  fi
+
+  # Records.
+  local recs="$TMP/recs.jsonl" i path sdir sid a lens desc phase atype wf
+  : > "$recs"
+  function reduce_file() { # <file> <session id> <agent type> <lens> <phase>
+    jq -R -c --arg session "$2" --arg agent "$3" --arg lens "$4" --arg phase "$5" \
+      --arg start "$start_ts" --arg end "$end_ts" --argjson incl "$incl" --arg level "$LEVEL" "$JQ_REDUCE" "$1" >> "$recs" \
+      || warn "a transcript could not be fully read"
+  }
+  function agent_lens() { # <file> <description>
+    jq -R -n -r --argjson headings "$headings" --arg desc "$2" "$JQ_AGENT_LENS" "$1" 2> /dev/null \
+      || { warn "an agent transcript's lens could not be read"; true; }
+  }
+  # agent_meta <meta file>: sets atype, desc and phase with one jq call; a missing file leaves them empty.
+  function agent_meta() {
+    local mf="$1" line=""
+    atype="" desc="" phase=""
+    [[ -f "$mf" ]] || return 0
+    if line="$(jq -r '[.agentType, .description, .workflowPhase] | map("_" + (. // "" | tostring)) | @tsv' "$mf" 2> /dev/null)"; then
+      IFS=$'\t' read -r atype desc phase <<< "$line"
+      atype="${atype#_}"
+      desc="${desc#_}"
+      phase="${phase#_}"
+    else
+      warn "an agent .meta.json could not be read"
+    fi
+  }
+  local session_ids=()
+  for ((i = 0; i < nsess; i++)); do
+    path="$(jq -r --argjson i "$i" '.[$i].path' <<< "$sessions")"
+    sid="S$((i + 1))"
+    session_ids+=("$sid")
+    reduce_file "$path" "$sid" main "" ""
+    sdir="${path%.jsonl}"
+    shopt -s nullglob
+    for a in "$sdir"/subagents/agent-*.jsonl; do
+      agent_meta "${a%.jsonl}.meta.json"
+      lens="$(agent_lens "$a" "$desc")"
+      reduce_file "$a" "$sid" "${atype:-unknown}" "$lens" ""
+    done
+    for a in "$sdir"/subagents/workflows/wf_*/agent-*.jsonl; do
+      agent_meta "${a%.jsonl}.meta.json"
+      lens="$(agent_lens "$a" "$desc")"
+      reduce_file "$a" "$sid" "${atype:-unknown}" "$lens" "$phase"
+    done
+    for wf in "$sdir"/workflows/wf_*.json; do
+      jq -c --arg session "$sid" --arg start "$start_ts" --arg end "$end_ts" --argjson incl "$incl" "$JQ_COMMON"'
+          (.timestamp | tstr) as $t
+          | select($t != null and $t <= $end and (if $incl then $t >= $start else $t > $start end))
+          | {k: "w", s: $session, rid: (.runId // $t), ag: ((.agentCount | if type == "number" then . else 0 end)),
+             ms: ((.durationMs | if type == "number" then . else 0 end))}' "$wf" >> "$recs" 2> /dev/null \
+        || warn "a workflow summary could not be read"
+    done
+    shopt -u nullglob
+  done
+
+  # Skill classes, decided here because they depend on directories.
+  local -a allowed_plugins=("${ALWAYS_NAMED_PLUGINS[@]}")
+  local plugins_json='{}' plugins_other=0 key pname pmarket plugin_keys
+  if [[ -f "$AI_LOG_PLUGINS" ]] && jq -e '.plugins | type == "object"' "$AI_LOG_PLUGINS" > /dev/null 2>&1; then
+    # Each jq runs in an assignment, not a process substitution, so a failure is exit 3 and not an empty stream.
+    plugin_keys="$(jq -r '.plugins | keys[]' "$AI_LOG_PLUGINS")"
+    while IFS= read -r key; do
+      [[ -n "$key" ]] || continue
+      pname="${key%@*}"
+      pmarket="${key#*@}"
+      if [[ " ${ANTHROPIC_MARKETPLACES[*]} " == *" $pmarket "* || " ${ALWAYS_NAMED_PLUGINS[*]} " == *" $pname "* ]]; then
+        allowed_plugins+=("$pname")
+        plugins_json="$(jq -c --arg k "$key" --arg n "$pname" --slurpfile p "$AI_LOG_PLUGINS" \
+          '. + {($n): {version: ($p[0].plugins[$k][0].version // null), sha: ($p[0].plugins[$k][0].gitCommitSha // null)}}' <<< "$plugins_json")"
+      else
+        plugins_other=$((plugins_other + 1))
+      fi
+    done <<< "$plugin_keys"
+  else
+    warn "installed_plugins.json missing or unreadable; plugin versions are null"
+    plugins_json=null
+  fi
+  local allowed_json
+  allowed_json="$(printf '%s\n' "${allowed_plugins[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')"
+
+  local skillclass='{}' name cls skill_names
+  skill_names="$(jq -r 'if .k == "a" then ((.tools[] | .sk), .attr) elif .k == "u" then .slash else empty end | select(. != null)' "$recs" | sort -u)"
+  while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    if [[ "$name" == *:* ]]; then
+      if [[ " ${allowed_plugins[*]} " == *" ${name%%:*} "* ]]; then cls=plugin; else cls=plugin_other; fi
+    elif [[ "$name" == */* || "$name" == .* ]]; then
+      cls=unknown
+    elif [[ -d "$TREE/claude/skills/synced/$name" ]]; then
+      cls=synced
+    elif [[ -d "$TREE/claude/skills/$name" ]]; then
+      cls=dotfiles
+    elif [[ -d "$root/.claude/skills/$name" ]]; then
+      cls=project
+    elif [[ " ${KNOWN_BUILTIN_SKILLS[*]} " == *" $name "* ]]; then
+      cls=builtin
+    else
+      cls=unknown
+    fi
+    if [[ "$cls" == unknown ]]; then
+      if [[ "$LEVEL" == company ]]; then cls=project; else cls=builtin; fi
+    fi
+    skillclass="$(jq -c --arg n "$name" --arg c "$cls" '. + {($n): $c}' <<< "$skillclass")"
+  done <<< "$skill_names"
+
+  # The framework at the time.
+  local fw_commit="" fw_dirty=false
+  if fw_commit="$(cd "$TREE" && git rev-parse HEAD 2> /dev/null)"; then
+    if [[ -n "$(cd "$TREE" && git status --porcelain -- claude/ 2> /dev/null)" ]]; then fw_dirty=true; fi
+  else
+    fw_commit=""
+    warn "the dotfiles tree is not a git checkout; dotfiles_commit is null"
+  fi
+
+  # Reviews.
+  local stem="${plan_path%.md}" ffiles='[]' startdate="${start_ts:0:10}" ff
+  shopt -s nullglob
+  for ff in "$stem"-review-findings-*.md; do
+    ffiles="$(jq -c --rawfile t "$ff" --arg n "${ff##*/}" '. + [{name: $n, text: $t}]' <<< "$ffiles")"
+  done
+  shopt -u nullglob
+  local plan_stem_name="${stem##*/}" rev_a keys='[]' line
+  rev_a="$(jq -n -c --rawfile plan "$plan_path" --argjson ffiles "$ffiles" --arg stem "$plan_stem_name" --arg startdate "$startdate" "$JQ_REVIEWS_A")"
+  local keysrcs
+  keysrcs="$(jq -c '.parsed[].keysrc' <<< "$rev_a")"
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    keys="$(jq -c --arg k "$(h12 "$line")" '. + [$k]' <<< "$keys")"
+  done <<< "$keysrcs"
+  local skips
+  skips="$(jq -c '[.[].reviews[]? | {key, rows}] | group_by(.key) | map({key: .[0].key, value: (map(.rows) | add)}) | from_entries' <<< "$priors")"
+  local rev_b
+  rev_b="$(jq -n -c --argjson A "$rev_a" --argjson keys "$keys" --argjson skips "$skips" --argjson headings "$headings" "$JQ_REVIEWS_B")"
+  local nbad
+  nbad="$(jq '.bad' <<< "$rev_b")"
+  if ((nbad > 0)); then warn "$nbad review-log or findings heading(s) could not be parsed"; fi
+
+  # Names hashed at company level.
+  local repo_out plan_out repo_name
+  repo_name="$(printf '%s' "$ORIGIN" | cut -d/ -f2,3)"
+  if [[ "$LEVEL" == company ]]; then
+    repo_out="$(h12 repo "$repo_name")"
+    plan_out="$(h12 plan "$bn")"
+  else
+    repo_out="$repo_name"
+    plan_out="$bn"
+  fi
+
+  local warns_json
+  local -a all_warns=("${WARNS[@]}")
+  local wl
+  if [[ -s "$TMP/warns" ]]; then
+    while IFS= read -r wl; do all_warns+=("$wl"); done < <(awk '!seen[$0]++' "$TMP/warns")
+  fi
+  warns_json="$(jq -n -c '$ARGS.positional' --args -- "${all_warns[@]}")"
+  local meta_json
+  meta_json="$(jq -n -c \
+    --arg id "$id" --arg plan_key "$plan_key" --arg level "$LEVEL" --arg repo "$repo_out" --arg plan "$plan_out" \
+    --arg commit "$sha" --arg plan_base "$plan_base" --arg start "$start_ts" --arg end "$end_ts" --arg after "$after" \
+    --arg fw_commit "$fw_commit" --argjson fw_dirty "$fw_dirty" --argjson plugins "$plugins_json" --argjson pother "$plugins_other" \
+    --argjson reviews "$(jq -c .reviews <<< "$rev_b")" --argjson findings "$(jq -c .findings <<< "$rev_b")" \
+    --argjson warnings "$warns_json" \
+    '{schema: 1, id: $id, plan_key: $plan_key, recorded_at: (now | floor | todate), level: $level, repo: $repo, plan: $plan,
+      commit: $commit, plan_base: (if $plan_base == "" then null else $plan_base end), window: {start: $start, end: $end, after: (if $after == "" then null else $after end)},
+      framework: {dotfiles_commit: (if $fw_commit == "" then null else $fw_commit end), dotfiles_dirty: $fw_dirty,
+                  plugins: $plugins, plugins_other: $pother},
+      reviews: $reviews, findings: $findings, warnings: $warnings}')"
+
+  local sessions_json
+  sessions_json="$(printf '%s\n' "${session_ids[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')"
+  local result
+  result="$(jq -n -c --slurpfile recs "$recs" --argjson meta "$meta_json" \
+    --argjson skillclass "$skillclass" --argjson allowed "$allowed_json" --arg level "$LEVEL" --argjson sessions "$sessions_json" \
+    "$JQ_AGGREGATE" 2> "$TMP/agg.err")" || {
+    echo "ai-log: internal error: could not aggregate the transcripts: $(head -c 300 "$TMP/agg.err")" >&2
+    exit 3
+  }
+  local nasst
+  nasst="$(jq '.n_assistant' <<< "$result")"
+  ((nasst > 0)) || die 1 "no assistant record parsed from the sessions in scope"
+  local w new_warns
+  new_warns="$(jq -r '.new_warnings[]' <<< "$result")"
+  while IFS= read -r w; do
+    [[ -z "$w" ]] || echo "ai-log: warning: $w" >&2
+  done <<< "$new_warns"
+  local entry
+  entry="$(jq '.entry | .warnings += ($ARGS.named.nw) ' --argjson nw "$(jq -c '.new_warnings' <<< "$result")" <<< "$result")"
+
+  refuse_customer_terms "$entry"
+  if ((dry == 1)); then
+    printf '%s\n' "$entry"
+    return 0
+  fi
+
+  mkdir -p "$entries"
+  local target="$entries/$id.json"
+  WRITTEN=1
+  # An identical entry keeps its file, so a re-run for the same commit adds no commit.
+  if [[ -f "$target" ]] && [[ "$(jq -S 'del(.recorded_at)' "$target" 2> /dev/null)" == "$(jq -S 'del(.recorded_at)' <<< "$entry")" ]]; then
+    :
+  else
+    printf '%s\n' "$entry" > "$target.tmp"
+    mv "$target.tmp" "$target"
+  fi
+  commit_and_push "entries/$id.json" "Record $id"
+
+  echo "entry: $id"
+  jq -r '"level: \(.level)",
+         "window: \(.window.start) .. \(.window.end)",
+         "sessions: \(.sessions | length), user turns: \(.totals.user_turns), interrupts: \(.totals.interrupts), questions: \(.totals.questions)",
+         "tokens: \(.totals.tokens // {} | map(.input + .output + .cache_read + .cache_write_5m + .cache_write_1h) | add // 0)",
+         "reviews: \(.reviews | length)",
+         "warnings: \(.warnings | length)"' <<< "$entry"
+  # What the plan's entries add up to, this one included, so the introspection covers the whole plan.
+  local sf summary_files=()
+  shopt -s nullglob
+  for sf in "$entries"/*.json; do
+    if jq -e 'type == "object"' "$sf" > /dev/null 2>&1; then summary_files+=("$sf"); fi
+  done
+  shopt -u nullglob
+  echo "this plan, every entry together:"
+  jq -r -s --arg k "$plan_key" --arg id "$id" "$JQ_SUMMARY" "${summary_files[@]}" | sed 's/^/  /'
+  cat <<EOT
+introspect: write a short introspection of this run under the headings "## Worked", "## Didn't" and "## Cut candidates".
+Each point ends with its evidence from the numbers above, in parentheses.
+No customer names, hostnames, paths, code or quotes from the work.
+Pipe it to: ai-log note $id
+EOT
+}
+
+# refuse_customer_terms <entry json>: exit 1 when a tool, skill, agent, model, workflow-phase or plugin name in the entry holds
+# a term from ~/.claude-customers. The names are folded field by field, but a user-scope agent or command named for a customer,
+# or a plugin's server, would otherwise reach the pushed entry; this checks the finished entry's names against the same terms
+# note redacts by (not its warnings or lens headings, which the script writes).
+function refuse_customer_terms() {
+  local line leak
+  : > "$TMP/cterms"
+  if [[ -f "$HOME/.claude-customers" && -r "$HOME/.claude-customers" ]]; then
+    TERMS_FILE="$TMP/cterms"
+    while IFS= read -r line || [[ -n "$line" ]]; do add_customer_line "$line"; done < "$HOME/.claude-customers"
+    TERMS_FILE=""
+  fi
+  [[ -s "$TMP/cterms" ]] || return 0
+  leak="$(jq -r --rawfile tfile "$TMP/cterms" "$JQ_LEAK" <<< "$1")"
+  [[ "$leak" != true ]] || die 1 "an agent, skill, tool, model, plugin or workflow-phase name in this run holds a name from ~/.claude-customers; nothing was written (the entry would carry it)"
+}
+
+function cmd_note() {
+  [[ $# -eq 1 && -n "$1" ]] || usage
+  local id="$1" h
+  command -v jq > /dev/null || die 2 "jq is required"
+  local root
+  root="$(git rev-parse --show-toplevel 2> /dev/null)" || die 2 "not inside a git repository"
+  compute_level
+  if [[ "$LEVEL" == customer ]]; then
+    echo "ai-log: customer level is deferred, nothing recorded"
+    [[ -z "$LEVEL_WHY" ]] || echo "ai-log: customer because $LEVEL_WHY" >&2
+    return 0
+  fi
+  require_clone
+  local ef="$AI_LOG_DIR/entries/$id.json"
+  [[ "$id" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9a-f]{12}$ && -f "$ef" ]] || die 1 "no entry $id in the log clone"
+  [[ ! -t 0 ]] || die 2 "the introspection is read from stdin"
+  local text
+  text="$(cat)"
+  [[ "$text" =~ [^[:space:]] ]] || die 2 "empty input: nothing to write"
+  for h in "Worked" "Didn't" "Cut candidates"; do
+    grep -Eq "^## ${h}[[:space:]]*\$" <<< "$text" || die 2 "the input has no \"## $h\" heading"
+  done
+
+  TMP="$(mktemp -d)"
+  trap cleanup EXIT
+  build_terms "$root" "$ef"
+  printf '%s\n' "$text" | jq -R -s -j --rawfile tfile "$TMP/terms" "$JQ_REDACT" > "$TMP/redacted"
+  [[ -s "$TMP/redacted" ]] || die 3 "redaction produced nothing"
+
+  WRITTEN=1
+  local target="$AI_LOG_DIR/entries/$id.md"
+  cp "$TMP/redacted" "$target.tmp"
+  mv "$target.tmp" "$target"
+  commit_and_push "entries/$id.md" "Note $id"
+  cat "$TMP/redacted"
+}
+
+TREE="$(resolve_tree)"
+readonly TREE
+ORIGIN=""
+LEVEL=""
+LEVEL_WHY=""
+
+[[ $# -ge 1 ]] || usage
+sub="$1"
+shift
+case "$sub" in
+  record) cmd_record "$@" ;;
+  note) cmd_note "$@" ;;
+  level) cmd_level "$@" ;;
+  -h | --help) usage ;;
+  *) usage ;;
+esac

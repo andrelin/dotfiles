@@ -12,11 +12,16 @@
 #   * Skill description — 300 characters, since every skill's description sits in
 #     the skill list of every session, whether or not the skill is ever used.
 #   * File length — per type <aim/hard>: a rule or project CLAUDE.md 30/50, the
-#     global CLAUDE.md 60/75, a skill 100/150, anything else 100/200. The aim is
-#     also the advisory line.
-#     Blank lines and headings never count: they cost next to no tokens and make
-#     a file easier to read, so a cap must not discourage them. Beyond those, what
-#     counts depends on who reads the file:
+#     global CLAUDE.md 60/75, anything else 100/200. The aim is also the advisory
+#     line. A skill has no aim, only a cap of 250: its first 100 counted lines hold
+#     everything needed to do the task, and the rest only non-critical detail,
+#     which no count can check. With no aim there is nothing to pin, so a pin on a
+#     skill is ignored and --update-baseline drops it.
+#     Front matter, blank lines and headings never count: they cost next to no
+#     tokens or are never shown to Claude (a rule's paths: block), or are capped
+#     on their own (a skill's description, above), and they make a file easier to
+#     read, so a cap must not discourage them. Beyond those, what counts depends
+#     on who reads the file:
 #       - Claude-loaded (CLAUDE.md, SKILL.md, claude/, .claude/): every line,
 #         because every line is tokens on every task that loads it.
 #       - Human-facing (README, tips.md, tips/, docs/, the READMEs under init/ and
@@ -38,8 +43,10 @@
 #
 # Usage: check-md-limits [--no-warn] [--] [file ...]
 #        check-md-limits --update-baseline [--] [file ...]
+#        check-md-limits --count-raw [--] file
 #   No files          check every tracked markdown file.
 #   --no-warn         errors only, for CI, where an advisory nobody can fail is noise.
+#   --count-raw       print the one file's counted lines, as a Claude-loaded file's cap sees them.
 #   --update-baseline re-pin: with no files, tighten existing pins to current
 #                     sizes; with files, pin those (refusing to loosen a pin).
 
@@ -89,6 +96,7 @@ validate_baseline() {
 
 no_warn=0
 update_baseline=0
+count_raw=0
 end_of_options=0
 requested=()
 for arg in "$@"; do
@@ -100,6 +108,7 @@ for arg in "$@"; do
     --) end_of_options=1 ;;
     --no-warn) no_warn=1 ;;
     --update-baseline) update_baseline=1 ;;
+    --count-raw) count_raw=1 ;;
     -*) echo "ERROR: unknown option $arg (use -- before a filename starting with a dash)" >&2; exit 2 ;;
     *) requested+=("$arg") ;;
   esac
@@ -147,7 +156,8 @@ baseline_for() {
     '!/^#/ && $2 == want { print $1; exit }' "$BASELINE_FILE"
 }
 
-# Per-type <warn> <hard>, the warn line being the aim. The stricter a file's
+# Per-type <warn> <hard>, the warn line being the aim; equal numbers mean no aim,
+# since nothing can pass the warn line without being over the cap. The stricter a file's
 # trigger, the tighter the bar — a rule loads on a path match, a skill on a task,
 # a CLAUDE.md on everything.
 limits_for() {
@@ -156,7 +166,7 @@ limits_for() {
     claude/CLAUDE.md | */claude/CLAUDE.md)                   echo "60 75" ;;
     CLAUDE.md | CLAUDE.local.md | */CLAUDE.md | */CLAUDE.local.md) echo "30 50" ;;
     claude/rules/*.md | .claude/rules/*.md | */rules/*.md)   echo "30 50" ;;
-    SKILL.md | */SKILL.md)                                   echo "100 150" ;;
+    SKILL.md | */SKILL.md)                                   echo "250 250" ;;
     *)                                                       echo "100 200" ;;
   esac
 }
@@ -207,19 +217,54 @@ is_claude_file() {
   esac
 }
 
-# Both modes leave out blank lines and headings; a line that only looks like a
-# heading, inside a fence or front matter, still counts.
+# One definition of front matter for both Perl programs below, so the line-length
+# check and the length cap always agree on where it ends.
+# front_matter_end(\@lines) is the index of the closing ---, or -1 when there is none.
+# A leading --- only opens front matter if something closes it, with every line
+# between reading as YAML (a key, a list item or a continuation); otherwise it is a
+# thematic break and skipping to EOF would exempt the whole file.
+# shellcheck disable=SC2016  # Perl source, not shell
+FRONT_MATTER_PERL='
+  sub front_matter_end {
+    my $lines = shift;
+    return -1 unless @$lines && $lines->[0] eq "---";
+    for my $i (1 .. $#$lines) {
+      next unless $lines->[$i] eq "---";
+      for my $j (1 .. $i - 1) {
+        # A blank line may sit inside real front matter, but one straight after
+        # the opening --- means prose between two separators.
+        if ($lines->[$j] =~ /^\s*$/) { return -1 if $j == 1; next }
+        next if $lines->[$j] =~ /^\s*#/;
+        next if $lines->[$j] =~ /^\s*[\w.-]+\s*:/;
+        next if $lines->[$j] =~ /^\s*(["\x27])[^"\x27]*\1\s*:/;
+        next if $lines->[$j] =~ /^\s*-\s+\S/;
+        next if $lines->[$j] =~ /^\s+\S/;
+        return -1;
+      }
+      return $i;
+    }
+    return -1;
+  }
+'
+readonly FRONT_MATTER_PERL
+
+# Both modes leave out front matter, blank lines and headings; a line that only
+# looks like a heading, inside a fence, still counts.
 # raw: every other line, including a last one with no trailing newline.
 # rendered: what a reader gets through — no HTML comments, no generated doctoc
 # block, and a run of badge lines counted as the one row it draws.
 count_lines() {
-  perl -e '
+  perl -e "$FRONT_MATTER_PERL"'
     my ($mode, $file) = @ARGV;
     # A real HTML comment is a few lines; a pairing that runs longer than this is
     # two unrelated markers, and masking between them would hide a whole file.
     my $MAX_COMMENT_LINES = 20;
     open my $fh, "<", $file or die "$file: $!\n";
     my @lines = map { my $l = $_; $l =~ s/\r?\n\z//; $l } <$fh>;
+
+    # Front matter is left out of both modes, so everything below sees the body only.
+    my $fm_end = front_matter_end(\@lines);
+    splice @lines, 0, $fm_end + 1 if $fm_end >= 0;
 
     # Fenced code holds example markup, not real markers, badges or headings.
     # Computed first because every region scan below has to consult it.
@@ -237,13 +282,6 @@ count_lines() {
         $fence_open = undef;
       } else {
         ($fence_open, $fence_char, $fence_len) = ($i, $char, $len);
-      }
-    }
-    if (@lines && $lines[0] eq "---") {
-      for my $j (1 .. $#lines) {
-        next unless $lines[$j] eq "---";
-        $fenced{$_} = 1 for 0 .. $j;
-        last;
       }
     }
     my $is_free = sub {
@@ -321,7 +359,7 @@ description_length() {
 # forbids wrapping. A URL is unwrappable but the prose around it isn't, so URLs are
 # subtracted from the length rather than exempting the whole line.
 long_lines() {
-  perl -CSD -e '
+  perl -CSD -e "$FRONT_MATTER_PERL"'
     my ($max, $file) = @ARGV;
     open my $fh, "<", $file or die "$file: $!\n";
     my @lines = map { my $l = $_; $l =~ s/\r?\n\z//; $l } <$fh>;
@@ -357,32 +395,7 @@ long_lines() {
       }
     }
 
-    # A leading --- only opens front matter if something closes it; otherwise it
-    # is a thematic break, and skipping to EOF would exempt the whole file.
-    my $front_matter_end = -1;
-    if (@lines && $lines[0] eq "---") {
-      for my $i (1 .. $#lines) {
-        next unless $lines[$i] eq "---";
-        # Every line between has to read as YAML — a key, a list item or a
-        # continuation. Otherwise this is a thematic break and a later separator.
-        my $looks_like_yaml = 1;
-        for my $j (1 .. $i - 1) {
-          # "Note: something" is valid YAML syntax, so shape alone cannot tell
-          # prose from front matter. Real front matter is an unbroken block.
-          if ($lines[$j] =~ /^\s*$/) { $looks_like_yaml = 0; last }
-          next if $lines[$j] =~ /^\s*#/;
-          next if $lines[$j] =~ /^\s*[\w.-]+\s*:/;
-          next if $lines[$j] =~ /^\s*(["\x27])[^"\x27]*\1\s*:/;
-          next if $lines[$j] =~ /^\s*-\s+\S/;
-          next if $lines[$j] =~ /^\s+[\w.-]+\s*:/;
-          next if $lines[$j] =~ /^\s+\S/;
-          $looks_like_yaml = 0;
-          last;
-        }
-        $front_matter_end = $i if $looks_like_yaml;
-        last;
-      }
-    }
+    my $front_matter_end = front_matter_end(\@lines);
 
     for my $i (0 .. $#lines) {
       next if $i <= $front_matter_end;
@@ -396,6 +409,15 @@ long_lines() {
     }
   ' "$MAX_LINE_CHARS" "$1"
 }
+
+if (( count_raw )); then
+  if (( ${#requested[@]} != 1 )) || [[ ! -f "${requested[0]}" ]]; then
+    echo "ERROR: --count-raw takes exactly one existing file." >&2
+    exit 2
+  fi
+  count_lines raw "${requested[0]}"
+  exit 0
+fi
 
 files=(${requested+"${requested[@]}"})
 # A baseline rewrite always walks every file, so pins outside the argument list survive.
@@ -492,7 +514,12 @@ for f in "${files[@]}"; do
     if [[ -z "$pinned" ]] && ! was_requested "$rel"; then
       continue
     fi
-    if (( lines > hard )); then
+    if (( warn == hard )); then
+      # A skill has no aim, so no pin: drop one even above the cap, where it
+      # would otherwise be kept as a ceiling the file can never use.
+      (( lines > hard )) && echo "SKIP: $rel is $lines lines, over its hard cap of $hard — split it, don't pin it." >&2
+      [[ -n "$pinned" ]] && echo "DROP: $rel is a skill with no aim, so its pin is removed." >&2
+    elif (( lines > hard )); then
       echo "SKIP: $rel is $lines lines, over its hard cap of $hard — split it, don't pin it." >&2
       # Keep any existing pin: dropping it here would raise the file's effective
       # ceiling to the hard cap, which is the one thing the ratchet must not do.
@@ -505,10 +532,13 @@ for f in "${files[@]}"; do
         new_pins+=("$lines	$rel")
       fi
     elif [[ -n "$pinned" ]]; then
-      echo "DROP: $rel is $lines lines, back under its warn line of $warn — pin removed." >&2
+      echo "DROP: $rel is $lines lines, back under its aim of $warn — pin removed." >&2
     fi
     continue
   fi
+
+  # No aim means no pin: a stale pin on such a file must not make it fail early.
+  (( warn == hard )) && pinned=""
 
   if (( lines > hard )); then
     echo "ERROR: $rel is $lines lines, over the hard cap of $hard for its type." >&2

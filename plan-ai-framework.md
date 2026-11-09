@@ -32,7 +32,7 @@ in § *The staged workflow*. No external spec.
   mode and a test, so two files could drop a constraint they already meet.
 - **Markdown limits** from `~/.claude/rules/markdown-limits.md`:
   - 150-character lines, one sentence per line
-  - a skill aims at 100 lines, hard cap 150
+  - a skill has no aim and a hard cap of 250, everything needed to do its task in its first 100 lines (Task 16)
   - a rule aims at 30, hard cap 50
   - the global `CLAUDE.md` aims at 60, hard cap 75
   - skill descriptions under 300 characters
@@ -53,6 +53,35 @@ in § *The staged workflow*. No external spec.
 Suite: `failed=; for t in test/test_*.sh; do bash "$t" > /dev/null 2>&1 || { echo "FAIL $t"; failed=1; }; done; [[ -z "$failed" ]]`
 
 ## Approvals
+
+Adopted 2026-11-09, the user: an edit another session made to `claude/CLAUDE.md` — a line "Name issues and PRs with
+their repo and a short title", the `(#53, PR #112)` example dropped from the Forgejo line — joins this run, its example
+made neutral: "the example should still be neutral, the point is to say where the issue lives … and give a short
+title"; then "Yes, referencing an issue in dotfiles is good". It is in no task's Files list; the final review covers it
+and the final commits carry it.
+Its scope, from the user after code review round 2: "That rule was just made to make it easier for me to reason with
+what issue numbers mean in Claude chats and markdown files and such. Anywhere that Github or Forgejo would make it a link
+you should make sure the link works correctly."
+Applied in code review rounds 3-4 (deviation, 2026-11-09): the skills that prescribed a bare number in a markdown file
+follow the rule — `writing-plans` (`## Task 2 · dotfiles#53: …`), `writing-follow-up-items`, `setting-up-follow-up-trackers`
+and `maintaining-follow-up-trackers` (`<repo>#412`, an older file's bare number read the same) — and the repo `CLAUDE.md`
+names dotfiles#3; the global line spells out `owner/repo#N` for linked text.
+Ruled 2026-11-09, the user, after a company Forgejo repo recorded nothing as "customer": "I though we already note that
+everything that lives at [the company Forgejo] is Uptime work", then "Also we already have a mechanism for saying what is
+personal, customer and company, ai-log shouldnt invent its own". So `ai-log`'s level is `work-context.sh level`'s, a failed
+guard counting as customer; the built-in owner list and the log clone's `allow` file go (Task 15, deviation).
+Ruled 2026-11-09, the user, on `filing-learnings`' "at most one per task": "if there are more rules that would be helpful
+we shouldnt drop them because of a random limit", then "Yes, do it on this branch, and we should absolutely have a bar
+that the new learnings needs to prove their worth before being proposed". So the skill proposes every candidate that
+clears a bar (a real cost, a recurring trigger, a line that prevents it, not already said), each with its **Earned by**
+line and its own yes. In no task's Files; it joins the final commits after the code review's last round, unreviewed.
+On reviewing-in-rounds' growth past the one line (code review R2-21, R2-30), the user: accept the three Completion
+changes, step 8's plan-deletion commit offered and run only on a yes.
+On a public repo's session-end push (code review R2-16), the user: "Check, then push" — the whole commit is read
+against the personal-public bar first, and what fails stays out and is reported.
+On the opt-in hash salt a round-1 fixer added to `ai-log` (R2-48), the user: "Remove it".
+`test/test_workflow_docs.sh`, added by the round-1 fixes to guard Tasks 17 and 15b's doc and skill text, joins
+Task 17's Files (R2-1, R2-9, R2-24).
 
 Asked in bulk, answered 2026-10-30, for the rest of this plan — all yes:
 
@@ -90,9 +119,43 @@ Asked and answered 2026-11-05, for the run started that day over the remaining t
   only for those runs, in a throwaway `HOME`, and not stored.
 - This run works on branch `ai-framework`, committed after the final code review, `main` fast-forwarded, pushed and
   CI watched, as for Task 14.
-- The user, 2026-11-05: "We should commit and ai log at the end of sessions too." At the end of each session of this
-  run, commit the work in progress on branch `ai-framework` and push it with `git push -u origin ai-framework`;
-  `main` waits for the final code review. Tasks 9 and 15b make that the session-end rule for every run (see Task 15b).
+- The user, 2026-11-05: "We should commit and ai log at the end of sessions too."
+  Asked whether to push as well, the question saying "The same choice becomes the session-end rule written into the plan for future runs",
+  they answered "Commit and push the branch".
+  So it is a standing rule for every future run at personal and company level, not only this run's sessions; Task 17 builds it,
+  and its skill line is where that yes outlives this plan.
+  How it saves is settled 2026-11-09, below.
+  It rests on this request, not on the "one line" exception above: `implementing-plans` is a second skill change.
+
+Asked and answered 2026-11-09, on how a session end saves — superseded by the block after it, kept as history,
+since a commit on the branch clashes with Completion's per-task commits and a company-level plan is untracked:
+"Normally we work in PRs that gets squashed, so in that case this shouldnt be a problem.
+Otherwise I guess a private ref is fine, if we manage to keep track of it properly."
+
+- Where the plan's `## Approvals` lands the work by a squash-merged PR, a session end commits the checkpoints on the branch and pushes the branch;
+  otherwise, as here, where `main` is fast-forwarded, it touches no branch and saves to the private ref `refs/wip/<branch>` on origin,
+  replaced by each save and deleted after the final review's commit.
+  This run's session ends before Task 17 is built follow its steps by hand.
+
+Asked and answered 2026-11-09, after plan review round 9 — these replace the private-ref design above and the
+fast-forward of `main` for this run:
+
+- "Anything that is big enough to require WIP commits, should work in PRs that gets squashed at the end."
+  A session end, at personal and company level, commits the work in progress on the plan's branch and pushes it;
+  work that has such commits lands by a squash-merged PR. No `refs/wip`, no rebuild, no force push.
+- This run lands that way: after the final code review and its commits on `ai-framework`, `ai-log record`, Task 13's
+  `git rm` commit, push; Claude opens the PR on `andrelin/dotfiles` and squash-merges it once CI is green
+  ("I open and squash-merge it"). The squash removes `d88b6fa`, so the force push approved below is not needed.
+- New tips go in a new tips file, since `tips/24_claude_code.md` is pinned full: "A new tips file".
+- This run's session ends before Task 17 is built follow Task 17's steps by hand.
+
+Asked and answered 2026-11-09, in bulk:
+
+- The 2026-11-05 work-in-progress commit `d88b6fa`: "Squash it out".
+  The rebuild from `Base:` and the force push once planned for it are not needed: the PR's squash removes it.
+- A company plan landing by "a PR" counts as squash-merged: "Any PR counts as squashed" (Task 17).
+- Task 13's issue: "Ask me then" — the run stops at Task 13 to show the draft before filing.
+- Cost per lens: "Reviewers only" — no `Lens:` line added to verifier prompts; their tokens go under no lens.
 
 Added 2026-11-05 by the iteration that detailed Task 15; asked and answered yes the same day:
 
@@ -134,12 +197,13 @@ Added 2026-11-05 by the plan-review fixes; asked and answered yes the same day:
 | 11 · Claude config on Linux and WSL | ✅ DONE | on `main` (0fa56e6, cfc47b6, b400600); Docker legs re-run in review; the manual checks pending |
 | 12 · Hidden-Unicode check on agent-loaded files | ✅ DONE | on `main` (0fa56e6, review fixes cfc47b6, b400600); the bar and deviations in Task 12 |
 | 14 · Questions to the user carry their own context | ✅ DONE | added 2026-11-05 at the user's request; baseline reproduced only after a summary, the with-rule run passed |
-| 15 · `ai-log record`, counts only | ⏳ PENDING | added 2026-11-05; re-sliced the same day after plan review round 3, personal and company level only |
-| 15b · The trigger and the short introspection | ⏳ PENDING | re-sliced 2026-11-05 |
-| 16 · `writing-code` rule loads for C# and other common languages | ⏳ PENDING | added 2026-11-05 at the user's request |
+| 15 · `ai-log record`, counts only | ✅ DONE | 2026-11-09, checkpointed; no dollars and exit 3 by the build's deviations; private log repo created |
+| 15b · The trigger and the short introspection | ✅ DONE | 2026-11-09, checkpointed; the end-to-end run is the final review's step |
+| 16 · `writing-code` rule loads for C# and other common languages | ✅ DONE | 2026-11-09, checkpointed; the user's new skill limits folded in (deviation in Task 16) |
+| 17 · Session-end save | ✅ DONE | 2026-11-09, checkpointed; steps in `claude/docs/session-end-save.md`, the skill's pointer at counted lines 99–100 |
 | M · Machine-local cleanup (untracked, by hand) | ⏳ PENDING | |
-| 13 · Fold the plan into durable docs and delete it | ⏳ PENDING | |
-| Final code review | ✅ DONE | Task 14: `Done (code):` round 2 (2026-11-05); Tasks 4, 12, 11, 7: round 12 of the closed log |
+| 13 · Fold the plan into durable docs and delete it | 🚧 PARTIAL | fold checkpointed 2026-11-09; the issue, the `git rm` and the landing follow the final review |
+| Final code review | ✅ DONE | `Done (code): round 5`, 2026-11-09, over Tasks 7's reword, 16, 15, 17, 15b and 13's fold; committed as 4940022 |
 
 Base: cdf0a77ba81eb01e0f7afe27d39bc196992f5374
 
@@ -152,7 +216,13 @@ the run drives and its by-hand steps stop it.
 15 → 15b after 14. Follow-ups 15c and 15d are not tasks of this run (plan review R4-25): both wait for real entries,
 which only 15b's step writes after a run's commit, so Task 13's issue carries them, with the Revisit's question.
 16 is independent of every task but 13, any time.
-M is by hand, any time after 3. 13 comes after every other task, M included.
+17 after 15, whose `ai-log level` and `record` it runs, and after 16, which sets the skill limits its edit fits in;
+this run builds 16, 15, 17, 15b, then 13's fold.
+M is by hand, any time after 3, and blocks nothing: an M still open at Task 13 goes into Task 13's issue.
+13's fold is the run's last task, covered by the final code review.
+This run lands by a squash-merged PR (§ *Approvals*, after plan review round 9): the final code review and its commits
+on `ai-framework`, `ai-log record`, Task 13's `git rm` commit, push, the PR on `andrelin/dotfiles` opened with its
+description from `writing-mr-descriptions`, squash-merged once CI is green, then `main` pulled (Task 13).
 
 ## Handover — where the session of 2026-11-05 stopped
 
@@ -166,12 +236,12 @@ A filed learning rides on the branch too: `writing-plans` § *Plans are temporar
 work is committed and logged (the user, 2026-11-05).
 Earlier history: the 2026-11-02 run's Tasks 4, 12, 11 and 7 and Task 14 are on `main` and pushed.
 
-**Start next session here:** `git switch ai-framework && git pull`, then `ai implement plan-ai-framework.md`, which
-resumes: first round 8 of the plan review, which also reads Task 15b's session-end rule (added after round 7, not yet
-reviewed); on `Done (plan):`, build 16, 15 and 15b, then the final code review, commit, fast-forward `main`, push, CI.
-
-0. **Decided at wrap-up, 2026-11-05, not yet reviewed:** the stage split waits for real entries (Task 15), and
-   `bin/check-md-limits` stops counting front matter (Task 16); round 8 reads both.
+**Start next session here:** `git switch ai-framework && git pull`.
+Then `ai implement plan-ai-framework.md`, which resumes: the plan review is done (round 12, 2026-11-09);
+build 16, 15, 17, 15b and 13's fold, then the final code review and its commits on `ai-framework`,
+`ai-log record`, 13's `git rm` commit, push, the PR on `andrelin/dotfiles` (`writing-mr-descriptions`), squash-merged
+once CI is green, and `main` pulled (§ *Implementation status*, Order).
+Task 13's issue still waits for the user's look ("Ask me then").
 
 1. **Rerun what 2026-10-30 left unfinished,** headless as in the paragraph below, no spending cap — each fix since has
    not been rerun: Task 5's code-review re-evaluation cases (seeded 14, 19 and 15 rows; the four that died on the
@@ -476,7 +546,8 @@ Research into Anthropic's docs and engineering posts, practitioner writing and s
 | `test/test_claude_shims.sh` (new) | 2b |
 | `bin/claude-settings-merge` (new) | 2, 3, 3b |
 | `init/52_macos_claude.sh` (renamed `init/52_claude.sh` in 11) | 2, 3, 11 |
-| `tips/24_claude_code.md` | 2, 2b, 3, 3b, 6b, 10, 11, 12, 15, 15b |
+| `tips/24_claude_code.md` | 2, 2b, 3, 3b, 6b, 10, 11, 12 |
+| `tips/25_ai_framework.md` (new) | 15, 15b |
 | `test/test_claude_settings_merge.sh` (new) | 2, 3, 3b |
 | `.github/workflows/tests.yml` | 1, 2 |
 | `.github/workflows/tests-wsl.yml` | 1 |
@@ -498,10 +569,10 @@ Research into Anthropic's docs and engineering posts, practitioner writing and s
 | `init/31_homebrew_recipes.sh` | 8 |
 | `claude/skills/writing-follow-up-items/SKILL.md` | 8 |
 | `claude/skills/maintaining-follow-up-trackers/SKILL.md` | 8 |
-| `claude/skills/implementing-plans/SKILL.md` (new) | 9 |
+| `claude/skills/implementing-plans/SKILL.md` (new), `claude/docs/implementing-plans-reference.md` | 9, 17 |
 | `bin/ai` (new), `test/test_ai.sh` (new) | 10 |
 | `tips.md` | 2, 6b, 10, 12, 15 |
-| `bin/check-md-limits`, `test/test_check_md_limits.sh`, `claude/rules/plan-files.md` | 0 |
+| `bin/check-md-limits`, `test/test_check_md_limits.sh`, `claude/rules/plan-files.md` | 0, 16 (not the rule) |
 | `claude/skills/tuning-skill-descriptions/SKILL.md` (new) | 6b |
 | `bin/skill-trigger-eval`, `test/test_skill_trigger_eval.sh` (new) | 6b |
 | `init/53_claude_plugins.sh` | 6b |
@@ -515,7 +586,7 @@ Research into Anthropic's docs and engineering posts, practitioner writing and s
 | `bin/check-hidden-unicode`, `test/test_check_hidden_unicode.sh` (new), `.github/workflows/markdown.yml`, `hooks/pre-commit` | 12 |
 | `README.md` § *Scripts* | 10, 12, 15 |
 | `claude/rules/asking-questions.md` (new); `tips/24_claude_code.md`, `writing-agent-instructions/SKILL.md` | 14 |
-| `claude/rules/writing-code.md` | 16 |
+| `claude/rules/writing-code.md`, `claude/docs/markdown-limits.md` | 16 |
 | `bin/ai-log`, `test/test_ai_log.sh`, `test/ai-log/` (new) | 15, 15b |
 | `claude/skills/reviewing-in-rounds/SKILL.md` § *Completion of a code review*; `claude/docs/work-contexts.md` | 15b |
 | `claude/docs/staged-workflow.md` (new), `claude/docs/work-contexts.md`; this plan and its findings file (deleted) | 13 |
@@ -3463,6 +3534,9 @@ User decisions, 2026-11-05:
   Uptime part, and defer the customer part?" So Tasks 15 and 15b build personal and company level only, and every
   customer-level part — folded names, stored text, the model terms pass, prose — moves to Task 15c, which the
   decisions above still govern there.
+- **No dollars, 2026-11-09, during the build:** "Since Im using a Claude subscription this whole price thing is a
+  waste of time and tokens, lets get rid of it." So no price table, `cost_usd`, `cost_estimated` or price check;
+  tokens per model, cache-write split included, are what cost is measured in.
 
 **What the transcripts hold,** inspected 2026-11-05 under Claude Code 2.1.309, field names only:
 
@@ -3475,15 +3549,16 @@ User decisions, 2026-11-05:
   A message is split into one record per content block, each repeating the whole usage: sum it once per `message.id`.
 - A user's prompt is `type: user`, `isSidechain: false`, `promptSource` one of `typed`, `queued`, `suggestion_accepted`,
   `sdk` (plan review R3-2); `interruptedMessageId` marks an interrupt; `type: system`, `subtype: turn_duration`, `durationMs`.
-- `type: cost-state` is written at exit, per process, with no `timestamp`, so dollars are priced from transcript tokens.
+- `type: cost-state` is written at exit, per process, with no `timestamp`, so it is not read.
   Transcripts go after `cleanupPeriodDays` (30), so entries hold aggregates, never pointers.
 
 **Files:**
 
 - Created: `bin/ai-log` (executable), `test/test_ai_log.sh`, `test/ai-log/` (invented fixture transcripts, a plan
   with its review log and findings file, an `installed_plugins.json`).
-- Modified: `.github/workflows/shellcheck.yml`'s `for` list (add `bin/ai-log`); `tips/24_claude_code.md` (a new tip at
-  the end, the next free number, per `writing-tips`); `tips.md`'s 24 entry (add `ai-log`); `README.md` § *Scripts*.
+- Modified: `.github/workflows/shellcheck.yml`'s `for` list (add `bin/ai-log`); `README.md` § *Scripts*.
+- A new tips file, `tips/25_ai_framework.md` (the user, 2026-11-09: "A new tips file"; plan review R9-2, R9-21), per
+  `writing-tips`: `<!-- DOCTOC SKIP -->`, `# AI framework`, Tip 25.1 for `ai-log`; `tips.md` gains a 25 entry under 2x.
 - Outside this repo: `gh repo create andrelin/ai-framework-log --private`, cloned to `$HOME/.ai-framework-log`,
   holding `entries/` and a `README.md` saying it holds counts, and later redacted introspections, nothing else.
 
@@ -3492,37 +3567,62 @@ log forms in `claude/docs/review-log.md`, its findings headings `### R<round>-<n
 (a `Fixed:` line → fixed, else `Refuted:` → refuted, else open). Produces, for Tasks 15b to 15d:
 
 - `ai-log record [--dry-run] <plan-file> [<commit>]`, run in the work repo, the plan resolved against the repo root
-  as `bin/ai` does, `<commit>` defaulting to `HEAD`.
+  as `bin/ai` does, `<commit>` defaulting to `HEAD` for the id and the entry's `commit`.
   It writes `entries/<id>.json` in the log clone, commits and pushes it, and prints `entry: <id>` as stdout's first
   line, then the summary Task 15b extends. `--dry-run` prints the entry's JSON and writes nothing.
 - `<id>`: `<commit date, YYYY-MM-DD>-<first 12 hex of sha256 over origin, plan basename and commit sha>`, the origin
   normalised to lowercase `<host>/<owner>/<repo>` with no scheme, user or `.git` (plan review R3-20).
   `plan_key`: the same hash over origin and plan basename only, the same for every run of a plan.
+- `ai-log level`, run in the work repo: prints `personal`, `company` or `customer` by the gate in *Customer level,
+  deferred* below, exit 0; Task 17 reuses it rather than `work-context.sh level` alone (plan review R9-50).
 - Env: `AI_LOG_DIR` (default `$HOME/.ai-framework-log`), `AI_LOG_PROJECTS` (default `$HOME/.claude/projects`),
   `AI_LOG_PLUGINS` (default `$HOME/.claude/plugins/installed_plugins.json`).
 - Exit 0: entry written, warnings or not, or customer level with nothing written.
-  Exit 1: no plan file, `HEAD` no newer than the window's start without `--dry-run`, no session in scope, or no
+  Exit 3, added in the build (deviation, 2026-11-09): an internal failure, a `jq` error say, prints
+  `ai-log: internal error near line N; nothing was written`, after the real-data dry run hit `jq`'s exit 5 on a
+  findings heading of an older shape (`### R12-5 · refuted`), which now only warns.
+  Exit 1: no plan file, a given `<commit>` no newer than the window's start without `--dry-run`, no session in scope, or no
   assistant record parsed. Exit 2: usage, or `AI_LOG_DIR` not a git clone, the message naming
   `gh repo clone andrelin/ai-framework-log "$HOME/.ai-framework-log"`.
+  Exit 1 grew in the code review (deviation, 2026-11-09): `record` refuses, writing nothing, when a name-carrying field
+  (tool, skill, agent, agent type, model, plugin, workflow phase, `repo`, `plan`) holds a `~/.claude-customers` name;
+  `note` at company level fails when it can't find the plan. An origin is parsed by the guard's own rules, an SSH alias
+  (`github.com-personal`) reading as its host. The entry gains `plan_base`, the plan's `Base:` sha: a different one starts a
+  new chain, since a squash-merged plan's deletion never shows. Exit 2 also when the log clone's origin isn't
+  github.com/andrelin/ai-framework-log or `AI_LOG_REMOTE`.
 - The entry, `"schema": 1`: `id`, `plan_key`, `recorded_at`, `level`, `repo` (`<owner>/<name>`), `plan` (basename),
   `commit`, `window` (`start`, `end`, `after`), `framework` (`dotfiles_commit`, `dotfiles_dirty` for `claude/`,
   `claude_code_versions`, `plugins` as name → `version`, `sha`), `skills_outside` (name → `plugin`, `synced`,
-  `project` or `builtin`), `sessions[]`, `totals`, `cost_estimated` (true, with the price table's date),
+  `project` or `builtin`), `sessions[]`, `totals`,
   `reviews[]` (kind, `key`, rows counted, `Done` round, unfixed, re-evaluations, user decisions),
   `findings` (kind → lens → severity → `fixed`, `refuted`, `open`), `warnings[]`.
   Each session and `totals`:
-  `wall_ms`, `active_ms`, `tokens` (model → `input`, `output`, `cache_read`, `cache_write_5m`, `cache_write_1h`), `cost_usd`,
+  `wall_ms`, `active_ms`, `tokens` (model → `input`, `output`, `cache_read`, `cache_write_5m`, `cache_write_1h`),
   `user_turns`, `interrupts`, `questions`, `tools`, `skills`, `agents` (`<type>/<model>` → count), `workflows`
   (`runs`, `agents`, `ms`, and tokens per `workflowPhase` from each agent's `.meta.json`), and tokens per agent type
-  and per review lens — a workflow agent's `.meta.json` `description` (`review:<lens>`, `verify:<lens>`) — so cost by
-  lens and agent type, which transcripts lose after 30 days, is kept for Task 15d's cut candidates (plan review R7-2).
+  and per review lens, so cost by lens and agent type, which transcripts lose after 30 days, is kept for Task 15d's cut
+  candidates (plan review R7-2).
+  An agent's lens is always a `###` heading of `claude/docs/review-lenses.md` or `other`, never the raw text, so
+  per-lens aggregates neither split nor carry free text (plan review R12-3, R12-12).
+  The text it is matched from: its Workflow `.meta.json` `description` after `review:` or `verify:` where present,
+  else the text after `Lens:` anywhere in its prompt, the transcript's first user record, indentation and a
+  harness preamble allowed.
+  It matches the heading it starts with, case-insensitively, else the heading whose first word it is
+  (`fit`, `tests`, `consistency`), else a short alias table in the script for the slugs real Workflow scripts use
+  (`whole`, `conformance`, `docs`, `workctx`, `decisions`, `scope`), else `other`;
+  fixtures copy a real Workflow prompt's shape, the lens mid-line and indented (plan review R10-9), and real
+  `.meta.json` descriptions, both cases of `Consistency` landing in one bucket.
+  `reviewing-in-rounds` § *A round* writes that line literally into every reviewer's prompt; a verifier's prompt is
+  not literal, so a verifier counts under its lens only when its prompt carries the line, and under no lens otherwise.
+  The prompt itself is never stored (plan review R8-5).
 
 **Change:**
 
 - **Bash 5 with `jq`,** like `bin/ai`; timestamps through `jq` and `git log --format=%cI`, never `date -d`.
   Before creating the file, confirm `type -a ai-log` finds nothing in an interactive zsh; else stop and ask for a name.
-- **The window, non-overlapping (plan review R2-3, R2-25):** it ends at `<commit>`'s committer time, or now with
-  `--dry-run` and no `<commit>` given (plan review R4-7).
+- **The window, non-overlapping (plan review R2-3, R2-25):** it ends at a given `<commit>`'s committer time, and now
+  when none is given (plan review R4-7).
+  Task 17's session end commits first, so each session end has its own `HEAD`, id and window (plan review R9-4, R9-36).
   It starts at the latest `window.end` before that among the clone's other entries with this `plan_key`, read after
   a `git pull --ff-only` (a failure warns), `after` naming that entry; with none, at the plan's first appearance —
   the earliest record of an in-scope session whose `tool_use` input names the plan's basename, never git history,
@@ -3535,10 +3635,8 @@ log forms in `claude/docs/review-log.md`, its findings headings `### R<round>-<n
   A resumed or forked session copies the earlier records, ids and timestamps kept, into a new file, so every count is
   de-duplicated across all in-scope files — assistant records by `message.id`, others by `uuid` — before `totals`,
   each copied record counted in the session that first holds it (plan review R7-1).
-- **Cost, an estimate (plan review R2-1, R2-36):** a price table in the script, per model, input, output, cache read
-  and 5-minute and 1-hour cache writes per million tokens, each priced from `usage.cache_creation`'s
-  `ephemeral_5m_input_tokens` and `ephemeral_1h_input_tokens` (plan review R5-2), dated, from Anthropic's published prices; `cost_estimated` says so.
-  A model the table lacks keeps its tokens, adds a warning and is left out of `cost_usd`.
+- **Cache writes split** into 5-minute and 1-hour from `usage.cache_creation`'s `ephemeral_5m_input_tokens` and
+  `ephemeral_1h_input_tokens` (plan review R5-2); no dollars (the user, 2026-11-09).
 - **No stage split in this slice (plan review R6-1):** `attributionSkill` lapses to null within a turn or two, review
   rounds run as Workflow agents with no args, and a nested plan review sits inside `implementing-plans`, so no rule
   over the skills invoked places work in its stage reliably. Per session, agent type, skill and workflow phase stand
@@ -3562,13 +3660,16 @@ log forms in `claude/docs/review-log.md`, its findings headings `### R<round>-<n
   is never recorded (plan review R5-1, R5-37, R5-38, R6-32) —, `record` reads no
   transcript, writes and commits nothing, `--dry-run` included, prints the one line
   `ai-log: customer level is deferred, nothing recorded` and exits 0, so the step after a commit never blocks on it.
+  Deviation, the user's ruling of 2026-11-09 (§ Approvals): the level is `work-context.sh level`'s alone, non-zero
+  counting as customer; no owner list and no `allow` file, so a customer is kept out by `~/.claude-customers`, as
+  everywhere else. The tests below that rely on the list or the file change to match.
 - **Company level, names hashed or counted (plan review R6-33):** company repos and plans are often named for an
   engagement, so at company level `repo` and `plan` are stored as hashes, like `plan_key`, and project skills, custom
   agent types and MCP tools as counts, not names; personal level keeps them.
-- **No free text:** an entry holds counts, durations, tokens, dollars, model ids, tool, skill, agent-type and lens
+- **No free text:** an entry holds counts, durations, tokens, model ids, tool, skill, agent-type and lens
   names, versions and shas; no prompt, question, message, tool input or output, path, branch, commit message or
   finding text.
-- **Drift degrades loudly:** a source the script expects and doesn't find — no `usage`, an unpriced model, an
+- **Drift degrades loudly:** a source the script expects and doesn't find — no `usage`, an
   unparseable findings heading, a line that isn't JSON — adds a `warnings` line and a stderr line, the field null, exit 0.
 - **The log clone:** git runs in a subshell `cd` into `AI_LOG_DIR`, never `git -C`, so the shims resolve it as
   personal whatever the work repo's level.
@@ -3580,17 +3681,18 @@ log forms in `claude/docs/review-log.md`, its findings headings `### R<round>-<n
 Personal origin `git@github.com:andrelin/x.git`; company, `git@github.com:uptimeconsulting/x.git`. The tests prove:
 
 - **Scope and window:** another repo's session and one never naming the plan are left out; records outside the window
-  dropped, in a subagent file too; no earlier entry → the plan's first appearance; `HEAD` no newer → exit 1; `--dry-run` with no
-  `<commit>` → a window ending now.
+  dropped, in a subagent file too; no earlier entry → the plan's first appearance; a given `<commit>` no newer → exit 1;
+  no `<commit>` → a window ending now, with `--dry-run` or not; two runs at the same `HEAD` → one entry, the later window.
   **Two runs** of a fixture plan, a plan-review log closed between them: the second starts at the first's end and names
   it in `after`, tokens and the closed log count once across both, and re-recording the first moves neither window.
 - **Counts:** tokens once per `message.id` and model, subagents included; a Workflow agent's transcript counts once
   and `wf_*.json` adds none; agents, workflow runs, skills, tools, interrupts, `AskUserQuestion` calls, and a user turn
   of each `promptSource`; the framework's commit, dirty flag, plugin versions and outside skills by source.
-  A resumed session's file repeating an earlier one's records counts them once; tokens per lens from workflow agents'
-  `.meta.json`; a plugin off the allowlist stored as `other`; at company level the plan's and branch's words redacted
+  A resumed session's file repeating an earlier one's records counts them once; tokens per lens from the `Lens:` line
+  of an `Agent` reviewer's and a Workflow agent's prompt, an unknown heading as `other`, a prompt without the line
+  under no lens, and no prompt text in the entry; a plugin off the allowlist stored as `other`;
+  at company level the plan's and branch's words redacted
   from the introspection (15b).
-- **Cost:** fixture tokens priced to the expected dollars per session and total; an unpriced model → kept, warned, left out.
 - **Reviews:** closed before the window start's date → left out, on or after → counted by lens, severity and outcome
   (`Fixed:`, `Refuted:`, neither); a log counted, then continued and closed, counts only its new rows.
 - **No free text:** markers planted in a prompt, an `AskUserQuestion`, assistant text, tool inputs and outputs, the
@@ -3600,6 +3702,7 @@ Personal origin `git@github.com:andrelin/x.git`; company, `git@github.com:uptime
   with and without `--dry-run`; a level the resolver can't settle while that file lists anything gives the same.
   So does an origin `git@github.com:example-org/app.git` with no `~/.claude-customers`, which resolves as company,
   and `git@git.example.com:uptimeconsulting/app.git` unless the clone's `allow` names `git.example.com/uptimeconsulting`.
+  `ai-log level` prints `customer` for each of these, and `personal` and `company` for the two origins above.
   At company level `repo` and `plan` are hashes and project skills, custom agent types and MCP tools only counted.
 - **Log clone:** `record` pushes to the bare origin; a commit pushed there by another clone first is rebased over;
   a same-commit re-run adds no commit; an unreachable origin → warning, exit 0, commit kept; ssh and https origins give
@@ -3608,12 +3711,26 @@ Personal origin `git@github.com:andrelin/x.git`; company, `git@github.com:uptime
 - **Files edits:** `bin/check-md-limits` passes on the tip file, `tips.md` and `README.md`; `grep -cw 'bin/ai-log'
   .github/workflows/shellcheck.yml` prints 1; the tip names `ai-log record`.
 - **Real data, last, by the session (plan review R2-9, R2-20, R2-34):** `ai-log record --dry-run plan-ai-framework.md`
-  here while `HEAD` is still the `Base:` commit, so the window runs from the plan's first appearance to now.
+  here, with no `<commit>`, so the window ends now (R9-19).
   A `grep` of the output for `$HOME`, emails and every
   `~/.claude-customers` entry finds nothing.
-  Price check: for an ended, never-resumed session, its tokens priced by the table come to no more than each model's
-  `cost-state` `costUSD`, the main model's within 10%; a bigger gap is a wrong price, fixed before going on.
   Record warnings here, never transcript content. No real `record` runs here: the first is Task 15b's end to end.
+
+**Result (2026-11-09):** `test_ai_log.sh` 137 assertions and the suite pass; the task review passed on its second
+pass, after fixes to phase names and unknown skill names stored at company level and a scan scoped to the repo's own
+project directories (about 6 minutes to 35 seconds).
+Real data, `--dry-run` here, no `<commit>`: exit 0, personal level, 7 sessions, `claude-opus-5-5` and
+`claude-sonnet-5-5`, one warning — 18 findings headings of the older `### R12-5 · refuted` shape not parsed; no
+`$HOME` or email in the output, and no `~/.claude-customers` on this machine.
+`gh repo create andrelin/ai-framework-log --private` ran, cloned to `$HOME/.ai-framework-log`, with a README and
+`entries/`, on the 2026-11-05 yes.
+Deviations in how: phases keep only Review, Verify, Fix, Implement or Plan, else `other`, at every level; a `--dry-run`
+fetches rather than pulls, so it leaves the clone as it was; a bash older than 5 exits 2.
+
+Deferred: a failing `jq` inside a `while … < <(jq …)` loop doesn't reach exit 3; model ids aren't narrowed at company
+level (a cloud ARN as an Agent `model` would be stored); an unparseable `subagent_type` counts as `general-purpose`; a
+dry run reads a stale local entry when origin re-recorded the same id; no test for the ERR trap's after-write message.
+The final code review (2026-11-09) fixes what it reaches of these; Task 13's issue carries only what is still open then.
 
 ## Task 15b · The trigger and the short introspection
 
@@ -3621,20 +3738,13 @@ Personal origin `git@github.com:andrelin/x.git`; company, `git@github.com:uptime
 Rejected: `bin/ai` `exec`s `claude`, so can't run after it; a `SessionEnd` hook doesn't know the plan or have the model.
 **Why not also `implementing-plans`,** answering "It should probably also be in the implementing-plans skill too?":
 it never commits; it ends in `reviewing-in-rounds code`, whose § *Completion* commits, so a copy would record twice.
-**And at the end of every session (added 2026-11-05 after plan review round 7, not yet reviewed):** the user's
-"We should commit and ai log at the end of sessions too", and on pushing, "Commit and push the branch".
-`implementing-plans` gains one line: a session ending before the final code review commits the work in progress on
-the plan's branch, pushes it with `git push -u origin <branch>`, and runs `ai-log record <plan-file>`; `main` still
-waits for the final review, which diffs from `Base:` and so is unchanged by these commits.
-This reverses that skill's "nothing is committed" for session ends only, so its resume checks (`Base:` an ancestor of
-`HEAD`, the index against the last checkpoint) must hold across a work-in-progress commit — the task's tests show it.
-Files gain `claude/skills/implementing-plans/SKILL.md`.
+The session-end save and its counts-only `record`, added here after plan review round 7, are Task 17's since round 8.
 
-**Files:** modified `bin/ai-log`, `test/test_ai_log.sh`, `tips/24_claude_code.md` (Task 15's tip gains `note`),
+**Files:** modified `bin/ai-log`, `test/test_ai_log.sh`, `tips/25_ai_framework.md` (Tip 25.1 gains `note`),
 `claude/skills/reviewing-in-rounds/SKILL.md` (§ *Completion of a code review*, a step after step 6, the rest
 renumbered), and `claude/docs/work-contexts.md` § *An approval covers one action, not a policy*, which gains: after a
 plan's commit, at every level, `reviewing-in-rounds` runs `ai-log`, which commits and pushes to the user's own private
-log repo on their standing yes; what leaves the machine is counts, durations, tokens, estimated dollars and versions,
+log repo on their standing yes; what leaves the machine is counts, durations, tokens and versions,
 and the introspection, mechanically redacted; at customer level nothing is recorded and nothing leaves the machine.
 
 **Interfaces:** consumes `ai-log record` (Task 15). Produces `ai-log note <id>`: reads the introspection on stdin,
@@ -3649,10 +3759,11 @@ with its evidence in parentheses.
   without asking: the user's standing yes of 2026-11-05 covers `record` and `note` writing to their private log repo,
   at every level. A failure goes in the report and never undoes the commit."
   This line is where that yes outlives this plan. A declined commit records nothing.
-- **`record` prints,** after `entry: <id>`, estimated cost and tokens per session, agents per type, workflow phases, rounds and majors per review
-  kind, user turns and questions; then: write a short introspection of this run — what worked, what didn't, what to
-  cut — under the three headings, each point with its evidence from these numbers, no customer names, hostnames,
-  paths, code or quotes from the work.
+- **`record` prints,** after `entry: <id>`, tokens per session, agents per type, workflow phases,
+  rounds and majors per review kind, user turns and questions, each summed over every entry with this `plan_key`,
+  Task 17's session-end ones included, so the introspection covers the whole plan, not only its last window (plan review R9-35).
+  Then: write a short introspection of this run — what worked, what didn't, what to cut — under the three headings,
+  each point with its evidence from these numbers, no customer names, hostnames, paths, code or quotes from the work.
   Pipe it to `ai-log note <id>`.
 - **At customer level** `record` prints only its deferral line, and nothing is introspected or stored.
 - **The mechanical redaction,** each match replaced by its kind (`[customer]`, `[repo]`, `[host]`, `[email]`, `[path]`,
@@ -3672,6 +3783,7 @@ with its evidence in parentheses.
 
 **Tests:** in `test/test_ai_log.sh`:
 
+- `record`'s printed summary after two earlier entries of the same plan sums all three windows' tokens and rounds.
 - `note` at personal level writes the `.md` and pushes it to the bare origin; a re-run replaces it; an unknown id,
   empty input and a missing heading → the exit codes above; a `record` re-run leaves the `.md` in place.
 - **Redaction:** text holding each kind above — each `~/.claude-customers` form in another case and inside a hyphenated
@@ -3681,6 +3793,28 @@ with its evidence in parentheses.
   prints 1; `bin/check-md-limits` passes on it and on `work-contexts.md`.
 - **End to end, by the session:** this plan's next final code review runs the step after its commit; an entry and an
   introspection under the three headings, each point with evidence, are pushed. Record here only that it ran, and the id.
+
+**Result (2026-11-09):** `test_ai_log.sh` 229 assertions and the suite pass; the skill step is step 7 of
+§ *Completion of a code review*, within the first 100 counted lines.
+The task review passed on its fourth pass, after redaction leaks were fixed: an unlisted subdomain of a listed host,
+IP addresses, 2-character labels, plurals, more path forms, `%40` emails, a name split across a line break (redaction
+now runs over the whole text, the headings protected), an AWS key with `/`, a JWT, a host of generic labels only.
+Two test expectations changed with the spec: a name split across a line break is now redacted, and a sample `sk-`
+token lengthened to the 20-character minimum.
+Accepted gaps, in the tip: run-together forms (`acmecorp`), an unlisted single-segment `/x`, an unlisted host whose
+TLD is a file extension, unicode lookalikes, an unlisted single-label host.
+
+Deviation from the code review (2026-11-09): step 7 also runs when there was nothing to commit, as when session-end
+commits already hold every task; `HEAD` is then the last session end's, so the entry takes that session end's id and
+replaces its entry with one merged window, the introspection attached to it.
+End to end, 2026-11-09: the first real `ai-log record` after commit 4940022 wrote entry 2026-11-09-b348e296a8ce
+(7 sessions, 0 warnings) and `ai-log note` its introspection, both pushed to the log repo.
+After `Done (code): round 5`, unreviewed: a `Done` line whose ids pass 150 characters wraps onto the lines below it
+(`review-log.md` says so), and `ai-log` counts them.
+
+Deferred: a mixed-case relative path with a digit and a 32-character run becomes `[token]`; a slashed 40-character
+secret with no digit or one case escapes; a multi-word name can merge bullets that end in its words; harmless
+over-redaction (`dead::beef`, `module.exports`, base64 padding left after `[token]`).
 
 ## Follow-ups, not tasks of this run
 
@@ -3719,12 +3853,11 @@ Notes from plan review rounds 1 to 3, for when it is detailed:
 
 Not built in this plan: it can be detailed only once real plans have left entries, so Task 13's issue carries it.
 
-Sketch: `ai-log report [--since <date>]` reads every entry and introspection in the log repo and prints trends — cost,
+Sketch: `ai-log report [--since <date>]` reads every entry and introspection in the log repo and prints trends —
 tokens, rounds and majors per plan over time, grouped by framework commit and Claude Code version — and cut
-candidates: skills, lenses, agent types or stages whose cost recurs with no findings or fixes to show for it, and
+candidates: skills, lenses, agent types or stages whose tokens recur with no findings or fixes to show for it, and
 `## Cut candidates` bullets repeated across introspections; entries with warnings flagged. Settled when detailed:
-whether a model-written cross-session introspection sits on top, and re-pricing stored entries from their tokens
-when the script's price table changes.
+whether a model-written cross-session introspection sits on top.
 
 ## Task 16 · `writing-code` rule loads for C# and other common languages
 
@@ -3732,7 +3865,20 @@ when the script's price table changes.
 desktop session, so its `paths:` may not cover C#. Their ruling the same day: cover C# plus the common languages.
 
 **Files:** modified `claude/rules/writing-code.md`, `bin/check-md-limits`, `test/test_check_md_limits.sh`,
-`claude/docs/markdown-limits.md`.
+`claude/docs/markdown-limits.md`, `claude/rules/markdown-limits.md`, `tips/24_claude_code.md`, `.md-baseline`,
+`claude/skills/writing-agent-instructions/SKILL.md` (the first-100 rule where a skill is written, the user's ask).
+
+**Deviation (2026-11-09, the user, during the build):** the rule and the tip were added to Files ("Add both"): both
+said only blank lines and headings are free, contradicting the checker.
+Asked how to handle the implementing-plans skill's pin, which front matter's exclusion leaves stale at 120 against
+116 measured, the user changed the skill limits instead: "I want to update the skills length rule. Remove the warning
+point. Set a max length of 250 lines, but add a new rule that everything important must be written in the first 100
+lines, and the next 150 must only contain additional information and clarifications that isnt critical for performing
+the task. (Still excluding front matter)".
+So a `SKILL.md` gets no aim and no note, a hard cap of 250 counted lines, and the rule and its doc say the first 100
+counted lines hold everything needed to do the task, the rest only extra detail and clarification — a judgment the
+checker can't make, left to the writer and the reviewer.
+A skill can no longer pass a warn line, so its pin is moot: `.md-baseline` drops it.
 
 **Change:** the rule's body is language-neutral (tests, comments, star imports, proving causes, formatters, mutating
 a copy), but its `paths:` lists only Kotlin, Java, TS/JS, Python and shell, and a glob that never matches fails
@@ -3755,6 +3901,129 @@ length aim and cap of every file; `claude/docs/markdown-limits.md` says why. The
 - **Loads where it should,** per `claude/docs/rule-globs.md`: headless `claude -p --model opus` in a `mktemp -d` with
   a `.cs` and a `.go` file, read-only tools, the prompt on stdin, asked after reading each file which rules loaded —
   `writing-code.md` must be named. **And not where it shouldn't:** the same for a `.md` file, which must not load it.
+
+**Result (2026-11-09):** the headless load check named `writing-code.md` for a `.cs` and a `.go` file and only
+`markdown-limits.md` for a `.md` file; `test_check_md_limits.sh` and the suite pass; the task review passed on its
+second pass, with CI's baseline step simulated green.
+Two existing assertions changed expectation, both from the spec change: a file over its aim only through front matter,
+and a 120-line skill, each from a note to clean.
+
+Deviations from the code review (2026-11-09): `writing-code.md` also globs mjs, cjs, mts, cts, razor, cshtml, cc, cxx and
+hpp, the same languages' other extensions; `bin/check-md-limits --count-raw <file>` prints one file's counted lines (exit
+2 unless exactly one file), so `test_workflow_docs.sh` and `test_ai_log.sh` measure a skill's first 100 counted lines
+without restating the counting rules; Tip 24.5 lists it.
+
+Deferred: `--update-baseline` keeps a pin on a skill over 250 and calls 250 a "warn line" in its DROP message; the tip's
+"its first 100 lines" reads as the description's and its "Nearing a cap is a note" no longer holds for a skill; the
+body-vs-front-matter test uses different lines; the front-matter test exists in both `count_lines` and `long_lines`.
+The final code review (2026-11-09) fixes what it reaches of these; Task 13's issue carries only what is still open then.
+
+## Task 17 · Session-end save
+
+**Spec:** the user, 2026-11-05: "We should commit and ai log at the end of sessions too."
+Asked whether to push as well, the question saying "The same choice becomes the session-end rule written into the plan
+for future runs", they answered "Commit and push the branch".
+On how, 2026-11-09, after plan review round 9 (§ *Approvals*): "Anything that is big enough to require WIP commits,
+should work in PRs that gets squashed at the end."
+That replaces the private ref of the earlier 2026-11-09 answer, kept in § *Approvals* as history: no `bin/plan-wip`,
+no `refs/wip`, no rebuild and no force push.
+Split out of Task 15b by plan review round 8 (R8-1, R8-2, R8-13).
+It changes `implementing-plans`, a second skill change resting on this request, not on the "one line" exception.
+
+**Files:** new `claude/docs/session-end-save.md`; modified `claude/skills/implementing-plans/SKILL.md`,
+`claude/docs/work-contexts.md` ("At every level, the workflow skills never commit on their own" and line 86's
+"`implementing-plans` checkpoints in the index and never commits" gain the session-end commit as their one exception)
+and `claude/docs/skill-precedence.md` (its line on checkpoints in the index likewise). No script, so no tip.
+
+**Interfaces:** consumes `ai-log level` and `ai-log record` (Task 15), whose id comes from `HEAD`.
+
+**Change:**
+
+- **When:** Claude can't know a session is ending, so the trigger is the user's request to wrap up, or a part-way
+  final report that asks the user nothing, such as a run limited to some tasks finishing them (plan review R8-4).
+  Every stop to ask prints the part-way report too (the skill's "every stop here stops"), and none is a session end:
+  the user said "at the end of sessions", and most questions are answered in the same session
+  (plan review R9-23, R9-27, R12-1).
+  A session killed without a turn — the terminal closed, the usage limit, a crash — saves nothing;
+  the same machine resumes from where the work is, another from the last session end's push.
+- **The level** is `ai-log level`, Task 15's gate with its origin allowlist, not `work-context.sh level` alone,
+  so a customer repo not yet in `~/.claude-customers` gets nothing committed or pushed (plan review R9-50).
+- **At personal and company level,** on the user's standing yes of 2026-11-05 and 2026-11-09:
+  `git add --` the plan file and its review files — at personal level an untracked one too, by the user's
+  "Commit it on the branch" (2026-11-09, plan review R11-15), since a tracked plan is `git rm`ed on the branch before
+  the squash merge and so never reaches `main`; at company level only where already tracked;
+  commit the index as `Work in progress: Tasks <list>` — the checkpointed tasks, never a leftover —
+  with `--allow-empty`, so every session end has its own `HEAD` and so its own log entry (plan review R9-4, R9-36);
+  delete the checkpoint refs the commit now holds; `git push -u origin <branch>`;
+  then `ai-log record <plan-file>`, counts only, skipping the introspection it prints, which comes once per plan after
+  its final commit (Task 15b).
+  A failure goes in the report.
+- **At customer level** nothing is committed or pushed; the report lists what is uncommitted, the listing and the
+  checkpoint refs.
+- **What a resume sees** (the skill's § *Before the first task*, step 1): no checkpoint ref, so the last checkpoint is
+  `HEAD^{tree}`, which equals the index after the commit — on this machine, and on another after
+  `git switch <branch> && git pull` — and `Base:` stays an ancestor of `HEAD`, the commits sitting on top of it.
+  A half-done task's leftovers are never pushed: this machine hands them to its implementer as now, another restarts
+  that task from the plan.
+  *Before staging*'s `HEAD` check is unchanged: the commit ends the run, and the next run starts at the new `HEAD`.
+- **Landing:** work that has such commits lands by a squash-merged PR, so Completion's per-task commits and readable
+  history never reach the default branch.
+  Completion commits what is left after the last session-end commit, per task as now, and `reviewing-in-rounds` is
+  unchanged; the final review diffs from `Base:`, so it covers the session-end commits too.
+- **Accepted gap:** at company level the plan is untracked (`info/exclude`), so it doesn't reach another machine,
+  and resuming there needs it copied by hand; a candidate follow-up in Task 13's issue.
+- **The doc and the skill (plan review R12-2):** the steps above — the level, the adds, the commit, the refs, the
+  push, the counts-only `record`, customer level and the landing — go in `claude/docs/session-end-save.md`.
+  The skill gets one short paragraph in § *Finish with the final review, in this run*, after the part-way sentence:
+  the trigger, a pointer to the doc named as what to follow at that point, and the landing rule — a branch holding
+  session-end commits lands by a squash-merged PR, never a fast-forward (plan review R10-1, R10-17).
+  The opening line's "nothing is committed", the review-input line's "`BASE..HEAD` is empty", "The plan file is never
+  staged" and the "A checkpoint commit is safer" red flag name the session-end commit as the one exception, in place.
+- **Line budget (plan review R9-1, R9-11, R9-21; deviation 2026-11-09):** Task 16's new skill limits replace the pin:
+  a cap of 250, everything needed to do the task in the first 100 counted lines.
+  The trigger and the pointer are needed, so they sit within those 100, the skill moving text that only clarifies
+  below them where it must; the steps live in the doc either way.
+
+**Tests:**
+
+- **Files edits:** `grep -c` on the doc prints at least 1 each for `ai-log level`, `Work in progress: Tasks` and
+  `ai-log record <plan-file>`, and on the skill 1 for `session-end-save.md`; `bin/check-md-limits` passes on both,
+  the skill within its cap (Task 16 dropped its pin).
+- **Resume across a session-end commit,** by the session: a scratch repo with a local bare repo as `origin`, a
+  `Base:` commit, two tasks checkpointed as the skill does, a third task's leftover unstaged; the session-end steps
+  run as the skill words them.
+  Then, in that repo and in a fresh clone of the bare origin switched to the branch: `git for-each-ref refs/checkpoints/`
+  prints nothing, `git write-tree` equals `git rev-parse HEAD^{tree}`, and `git merge-base --is-ancestor <Base> HEAD`
+  exits 0, so resume step 1 goes on; the leftover is still unstaged in the first repo and absent from the clone.
+  A second session end with nothing new checkpointed still makes a commit, a new `HEAD`.
+- **Customer level:** the same steps with an origin `ai-log level` prints `customer` for
+  (`git@github.com:example-org/app.git`, no `~/.claude-customers`) leave `HEAD`, the index and the bare origin's refs unchanged.
+
+**Result (2026-11-09):** the scenario passed in scratch repos — a personal origin pushed through `pushInsteadOf`
+to a local bare repo: after a session end no ref is left, `git write-tree` equals `HEAD^{tree}` and `Base:` is an
+ancestor, in the repo and a fresh clone; the unstaged leftover stayed and wasn't pushed; a second session end made
+a new commit; an `example-org` origin printed `customer` and nothing changed.
+The task review passed on its second pass, after the "Overridden in SDD 7.0.0" paragraph, first moved past counted
+line 100, went back to § *Technique* and wording elsewhere was tightened, every rule kept (checked line by line).
+Deviations in how: an empty session end commits `Work in progress: Tasks (none new)`; `ai-log record` runs after a
+failed push, the failure reported; a failed commit keeps the refs and unstages the plan files it added.
+
+Deviations from the code review (2026-11-09), in what the task delivers:
+
+- New `.github/workflows/workflow-docs.yml` joins the Files: `tests.yml` ignores pushes touching only `claude/` or
+  markdown, so it runs `test_workflow_docs.sh`, `test_ai_log.sh` and `test_check_md_limits.sh` on those (R3-8, R3-33).
+- `session-end-save.md` also adds a code review's uncommitted fixes (the leftovers not on its `Leftovers before round 1:`
+  line), marks an added plan `<!-- DOCTOC SKIP -->`, stops on a detached `HEAD` or another branch, and keeps the refs
+  when the public check unstaged a checkpointed path; `reviewing-in-rounds` gains the session-end trigger and step 1's
+  note that committed fixes are no leftovers (R3-3, R3-34, R4-21, R4-25).
+- `writing-plans` and `claude/docs/plan-file-template.md` join the Files: the up-front approvals also ask how the branch
+  lands and for the tracked plan's removal commit (R3-56).
+- Tip 24.8 gains the session-end paragraph, against "No script, so no tip", and Tip 24.7 was tightened by three lines to
+  stay under the file's pin of 125 (R3-53).
+
+Deferred: wraps not at a comma or em-dash and two-sentence lines in the skill and the doc; "holds only those" for one
+commit; the red flag "Only the session-end commit exists." reads wrong at customer level; "the commit follows the
+code review" is ambiguous now; the final report's "each task's paths" lost "reported".
 
 ## Task M · Machine-local cleanup (untracked, by hand)
 
@@ -3786,32 +4055,176 @@ The user runs every step; Claude may draft the edits, and step 2's `bin/dotfiles
 
 ## Task 13 · Fold the plan into durable docs and delete it
 
-After every other task, M included, per `writing-plans` § *Plans are temporary*: the fold is built and code-reviewed in
-the run like any task; only the delete waits, as below (plan review R5-22).
+The run's last task, per `writing-plans` § *Plans are temporary*: the fold is built and task-reviewed like any task, after every other task but M,
+which is by hand and blocks nothing; the run's one final code review covers it.
+Only the delete waits, as below (plan review R5-22, R8-14).
 Deviation (2026-11-05, the user's ruling "We delete plans after they have landed on main. We log after we commit to a PR,
 before merging it"), and on a tracked plan, "it should be removed from git before merging to the default branch":
-this plan is tracked, so the delete is a `git rm` commit on `ai-framework` after the final code review's commit and
-15b's `ai-log record`, then `main` is fast-forwarded to it — the plan still exists when the entry is written.
+this plan is tracked, so the delete is a `git rm` commit on `ai-framework` after the final code review's commits and
+15b's `ai-log record`, and before the push — the plan still exists when the entry is written.
+Then the branch is pushed, the PR opened on `andrelin/dotfiles` with its description from `writing-mr-descriptions`,
+squash-merged once CI is green, and `main` pulled: the user's yes of 2026-11-09 after plan review round 9 ("I open and
+squash-merge it"), which also covers that commit.
 
 **Files:** created `claude/docs/staged-workflow.md` (≤ 100 lines); modified `claude/docs/work-contexts.md`; deleted
-`plan-ai-framework.md`, `plan-ai-framework-review-findings-plan.md` and `plan-ai-framework-review-findings-code.md`
+`plan-ai-framework.md` and every `plan-ai-framework-review-findings-*.md`, the `-closed-` ones included (R9-13)
 (deviation, 2026-11-03, code review R9: both findings files are tracked, the plan one restored in 5984547).
+Deviation (2026-11-09, task review): the repo `CLAUDE.md` gains the main pointer to `staged-workflow.md`, read
+before changing the workflow skills, `bin/ai` or `bin/ai-log` — the user's "Repo CLAUDE.md"; the line in
+`work-contexts.md` stays as a second one.
 
 **Change:** `staged-workflow.md` holds the durable decisions of § *Findings and decisions* and § *The staged workflow*:
 the four stages with their skills, models and hand-over artifacts, why a fresh session per stage, the index
-checkpoint instead of commits, the review loop's brake, and what was declined from gstack, superpowers and the other
-frameworks, each in a line.
+checkpoint instead of commits, a session end's work-in-progress commit and the squash-merged PR it calls for,
+the review loop's brake, and what was declined from gstack, superpowers and the other frameworks, each in a line.
 `work-contexts.md` gains whatever of § *Should customer, company and personal be split further?* it doesn't already state.
 No durable file links to the plan.
 
 Deviation (2026-11-03, code review R3): before the delete, every item still open in this plan — the `Deferred:` lines,
-Task 7's conflict sent to the user, Task 11's CI-on-`main` and manual checks, and follow-ups 15c and 15d, with the Revisit's question,
+Task 7's conflict sent to the user, Task 11's CI-on-`main` and manual checks, Task M if still open,
+follow-ups 15c and 15d, with the Revisit's question,
+and Task 17's accepted gap (a company-level plan, untracked, doesn't reach another machine),
 with their sketches, as follow-ups — goes into a GitHub issue, filed with `writing-issues` on the user's yes,
 so deleting the plan loses none of them.
 
 **Tests:** `bin/check-md-limits` on both docs; `git ls-files 'plan-ai-framework*'` prints nothing after the commit;
 `git grep -n plan-ai-framework -- ':!plan-*' ':!test/skill-triggers/'` finds nothing (other plans may cross-reference it,
 and the trigger queries only name it).
+
+**Result of the fold (2026-11-09):** `claude/docs/staged-workflow.md` (77 counted lines) and the hook's why in
+`work-contexts.md`; the plan-name grep prints nothing; the task review passed on its second pass.
+
+Deferred: "anchors the human reviewer there" reads backwards; "the workflow skills" in `CLAUDE.md` is undefined;
+"The branch lands by a squash-merged PR" holds only for a branch with session-end commits; sibling docs named bare,
+not by `~/.claude/docs/…`; "any other exit" before exit 2 is named; the superpowers row lacks its reason.
+
+**Issue draft (2026-11-09), shown to the user, not yet filed:** label `enhancement`, title "Close the open follow-ups
+left after the AI workflow framework".
+The user wrapped up before answering "anything to change, or file it?"; ask again, then file with `gh issue create`.
+The body, its headings demoted one level so they stay inside this task:
+
+### Problem
+
+The AI workflow framework (staged skills, `bin/ai`, `bin/ai-log`, the session-end save, the work-context guard) lands
+with the `ai-framework` branch, but a set of items was left open and has no other home. Observed vs expected:
+
+- `ai-log` redaction has known gaps, and no cross-session report or customer-level logging exists yet.
+- The session-end save leaves a company-level plan on one machine only.
+- Some skill and doc wording is still rough, and sibling docs are named bare.
+- Several live skill runs, manual Linux and WSL checks, and two machine-local steps were never done.
+- Tests that make commits in scratch repos inherit the global `commit.gpgsign=true`. When the 1Password SSH agent
+  errors, `test/test_workflow_docs.sh` and `test/test_ai_log.sh` fail with "failed to write commit object" although
+  nothing in the code is wrong.
+
+Expected: each item is either done or consciously dropped, so nothing depends on a deleted working document.
+
+### Why it matters
+
+- Test failures that come from the signing agent hide real regressions and train people to ignore red runs.
+- The `ai-log` gaps are about leaking names or tokens into a log repo; the reports and customer-level logging are the point of keeping the log.
+- Unrun cases mean skill fixes made since 2026-10-30 have never been re-verified end to end.
+
+### Proposed direction
+
+Optional: work the groups in any order; each bullet stands alone.
+
+#### ai-log
+
+- Customer level: `record` and `note` run with `repo` as `customer`, `plan` and `commit` null, and every identifying
+  name (plugins and marketplaces off a short allowlist, their skills and agent types, project skills, custom agent
+  types, every MCP tool) folded to `other` or `mcp__other`.
+- Store the user's prompts and Claude's questions, redacted, at every level, plus the introspection's prose at
+  customer level. A prompt's `promptSource` is `typed`, `queued`, `suggestion_accepted` or `sdk`.
+- Run a model terms pass at every level, since a customer repo not yet in `~/.claude-customers` resolves as company.
+  At customer level, turn fenced and indented blocks, stack frames, timestamped log lines and dotted names of three or
+  more labels into `[code]`, and cut the rest at 500 characters.
+- Gate the introspection `.md` as well as the JSON until the terms pass has run, and test that the log clone's commit
+  and push pass the guard with `claude/shims` first on `PATH` at customer level.
+- Decide from a real entry whether it holds what an introspection needs (numbers right and sufficient), and whether a
+  per-stage split is worth building and from what signal.
+- Add `ai-log report [--since <date>]`: trends per plan over time (tokens, rounds, majors) grouped by framework commit
+  and Claude Code version, cut candidates (skills, lenses, agent types or stages whose tokens recur with nothing to
+  show for them, repeated `## Cut candidates` bullets) and flagged entries with warnings. Decide whether a
+  model-written cross-session introspection sits on top.
+- Redaction gaps in `bin/ai-log`: a mixed-case relative path with a digit and a 32-character run becomes `[token]`; a
+  slashed 40-character secret with no digit or only one case escapes; a multi-word name can merge bullets that end in
+  its words; over-redaction of `dead::beef`, `module.exports` and base64 padding left after `[token]`. Known host gaps
+  (a two-label host on md, sh, py, rs) are noted in the script header.
+
+#### Session-end save
+
+- A company-level plan is untracked (`info/exclude`), so it does not reach another machine and resuming there needs it
+  copied by hand. Decide whether to accept that permanently, add a helper, or sync it another way
+  (`claude/docs/session-end-save.md`).
+
+#### Skills and docs
+
+- Name sibling docs by `~/.claude/docs/<name>` path rather than bare in `claude/docs/staged-workflow.md`
+  (`implementing-plans-reference.md`, `session-end-save.md`, `work-contexts.md`, `review-lenses.md`,
+  `skill-precedence.md`).
+- `claude/skills/implementing-plans/SKILL.md`: "`BASE..HEAD` holds only those" reads wrong when there is one
+  session-end commit; the final report's "each task's paths" should say reported paths.
+- Wrapping nits in `claude/skills/implementing-plans/SKILL.md`, `claude/docs/session-end-save.md` and Tip 24.3 in
+  `tips/24_claude_code.md`: lines not wrapped at a comma or em-dash, two-sentence lines, an uneven rewrap.
+- Lows from the instruction-set audit: migration phrasing in `claude/docs/claude-local-md.md`, incident wording in
+  `claude/docs/skill-precedence.md`, `writing-mr-descriptions`' cut-pass heading, "no customer uses Forgejo yet",
+  best-practices docs naming Opus 5, and `.claude/docs/tips-file-sizing.md` giving 80/150 where `bin/check-md-limits`
+  uses 100/200.
+- Out-of-repo follow-up: close the fixture issue in the private test repo once the reruns below no longer read it.
+
+#### Tests
+
+- Set `commit.gpgsign=false` in the scratch repos of every test that commits (`test/test_ai_log.sh` `commit_at` and
+  log-clone commits, `test/test_workflow_docs.sh`, any other `git init` test), by `-c commit.gpgsign=false` or
+  `GIT_CONFIG_COUNT` env, so a global signing setting or a dead SSH agent cannot fail them.
+
+#### Manual checks
+
+- Rerun, headless with scoped tools: `reviewing-in-rounds` code-review re-evaluation cases (seeded 14, 19 and 15
+  rows), closed names and no plan's runs to `Done`, Completion, tests after fixes, and the remaining whose-work cases;
+  `implementing-plans` Deviation forms, Failing task on opus, the six inconclusive guard cases with the bad
+  instruction where only the implementer reads it, the toy-run variants, and `/writing-plans` stopping on a failed
+  exclude write; `writing-issues` failed fixture cases and Search match against that fixture issue.
+- `writing-issues` customer cases with a throwaway `HOME` holding a `~/.claude-customers` that lists `example--client`
+  (the `/compact` steps need an interactive session).
+- Linux and WSL: confirm CI is green on `main` for `tests.yml` (all legs) and `tests-wsl.yml` with no error-scan hit
+  from `init/52_claude.sh`; on an Ubuntu or WSL machine confirm `bin/dotfiles` shows `52_claude.sh` pre-ticked (from
+  the migrated cache and from defaults), the `work-context.sh` hook entries land in `~/.claude/settings.json`, and a
+  scratch repo with a listed customer origin blocks Claude's `git commit` (remove the listing after).
+
+#### Settings
+
+- Merge the real `~/.claude/settings.json` for the revealed-secrets deny rules (back it up first); `bin/claude-settings-merge` is the tool.
+- Make the global `autoMode` block generic: describe the machine, not one repo; move repo-specific facts and the two
+  repo-specific `soft_deny` entries into that repo's `CLAUDE.local.md` and `.claude/settings.local.json`; keep
+  `$defaults`. Re-run `init/52_claude.sh` and check `jq '.hooks.PreToolUse, .permissions.deny, .pluginConfigs'
+  ~/.claude/settings.json`; restore `caches/init/selected` afterwards.
+
+### Acceptance criteria
+
+- [ ] Customer-level `record` and `note` run, with folded names, stored redacted prompts and questions, a terms pass
+      at every level and the gate over both JSON and `.md`; a test covers each.
+- [ ] A decision is recorded on the per-stage split, from a real entry.
+- [ ] `ai-log report` exists with a test, or the item is dropped with a reason.
+- [ ] Each listed redaction gap has a test and is fixed, or is documented as an accepted gap in the script header.
+- [ ] The company-level plan gap is fixed or documented as accepted in `claude/docs/session-end-save.md`.
+- [ ] Sibling docs in `claude/docs/staged-workflow.md` are named by path; `bin/check-md-limits` passes.
+- [ ] The `implementing-plans` wording and wrap nits are fixed; `bin/check-md-limits` passes.
+- [ ] The audit Lows are fixed or dropped one by one.
+- [ ] The private test repo's fixture issue is closed.
+- [ ] `test/test_workflow_docs.sh` and `test/test_ai_log.sh` pass with the SSH agent unavailable and global
+      `commit.gpgsign=true` (for example `SSH_AUTH_SOCK=/nonexistent`); no test relies on the user's signing config.
+- [ ] The listed headless reruns and customer cases have been run, with every failure fixed or filed.
+- [ ] CI is green on `main` for the Linux and WSL legs, and the manual Ubuntu or WSL checks pass.
+- [ ] The real `~/.claude/settings.json` holds the merged deny rules and a generic `autoMode` block, and `caches/init/selected` is unchanged.
+
+### Out of scope
+
+- Windows-native Claude Code.
+- Syncing a customer tree's `## Issues` section and marker across machines (set both up per machine).
+- Filing on GitHub Enterprise or Azure DevOps hosts, or on self-hosted GitLab whose hostname lacks `gitlab`.
+- Claude filing into a tracker shared across repos.
+- A retro or session-insights skill.
 
 ## Not in this plan
 
@@ -3917,6 +4330,11 @@ Done (plan): round 1; unfixed: R1-1, R1-2, R1-3, R1-4, R1-5, R1-6, R1-7, R1-8, R
 | 5 | 5 | 0 | 5 | 23 | 7 | 5 |
 | 6 | 5 | 0 | 3 | 18 | 7 | 3 |
 | 7 | 5 | 0 | 5 | 22 | 9 | 5 |
+| 8 | 5 | 5 | 11 | 22 | 7 | 16 |
+| 9 | 5 | 0 | 17 | 21 | 10 | 17 |
+| 10 | 5 | 0 | 4 | 22 | 12 | 4 |
+| 11 | 5 | 0 | 1 | 22 | 9 | 1 |
+| 12 | 5 | 0 | 4 | 23 | 11 | 4 |
 
 Note after round 1: scoped to Tasks 15, 15b, 15c and 16 (2026-11-05), the rest read as context; the user ruled on the skill line
 and the stored text mid-round, folded into the fixes.
@@ -3927,6 +4345,18 @@ We log after we commit to a PR, before merging it. This shouldnt be an issue" �
 `record` runs.
 Re-evaluation after round 6: continue as is — majors are design (company-level gate, schema), now closed by an
 allowlist; the stage split deferred to the Revisit, reported to the user.
+Re-evaluation after round 9: user decision needed — Task 17's private ref is public on a public repo and unverified on
+Forgejo: save the session on the branch and rebuild it at completion, keep the private ref, or defer Task 17?
+User decision after round 9: "Anything that is big enough to require WIP commits, should work in PRs that gets squashed
+at the end." No private ref: a session end commits on the branch and pushes it, and the work lands by a squashed PR —
+this run included, Claude opening and squash-merging it ("I open and squash-merge it"). New tips go in a new tips file.
+Re-evaluation after round 12: user decision needed — twelve rounds, majors 4, 1, 4 over the last three, all detail
+(a trigger's wording, a line budget, lens-name matching): stop and build with the code review catching the rest, run
+one more round scoped to round 12's fixes, or continue as is?
+User decision after round 12: stop and build; the code review catches what is left.
+Done (plan): round 12; unfixed: R12-4, R12-5, R12-6, R12-7, R12-8, R12-9, R12-10, R12-11, R12-13, R12-14, R12-15, R12-16, R12-17, R12-18, R12-19,
+R12-20, R12-21, R12-22, R12-23, R12-24, R12-25, R12-26, R12-27, R12-28, R12-29, R12-30, R12-31, R12-32, R12-33, R12-34, R12-35, R12-36, R12-37,
+R12-38, R12-39, R12-40, R12-41, R12-42, R12-43, R12-44, R12-45, R12-46, R12-47
 
 ## Review log (code, closed 2026-11-05)
 
@@ -3961,7 +4391,7 @@ was deleted; `Base:` came out with it, so the next `implementing-plans` run over
 new branch.
 Done (code): round 12; unfixed: R12-4
 
-## Review log (code)
+## Review log (code, closed 2026-11-09)
 
 | Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -3971,3 +4401,16 @@ Done (code): round 12; unfixed: R12-4
 User decision after round 1: keep the lookup lines; ship the core lines, a choice also saying what each option costs
 or risks.
 Done (code): round 2; unfixed: R2-11
+
+## Review log (code)
+
+| Round | Lenses | Blocking | Major | Minor | Nit | Fixed |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 7 | 0 | 5 | 35 | 15 | 40 |
+| 2 | 7 | 0 | 5 | 20 | 25 | 23 |
+| 3 | 7 | 0 | 6 | 29 | 23 | 35 |
+| 4 | 7 | 0 | 2 | 19 | 32 | 21 |
+| 5 | 7 | 0 | 0 | 22 | 29 | 22 |
+
+Done (code): round 5; unfixed: R5-5, R5-6, R5-7, R5-11, R5-12, R5-13, R5-17, R5-21, R5-22, R5-23, R5-24, R5-28, R5-29,
+R5-30, R5-31, R5-32, R5-36, R5-37, R5-38, R5-39, R5-40, R5-41, R5-42, R5-43, R5-44, R5-49, R5-50, R5-51, R5-52

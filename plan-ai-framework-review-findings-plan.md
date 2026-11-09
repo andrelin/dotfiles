@@ -4079,3 +4079,3152 @@ yes, says entries store the prompts, questions and introspection 'at every level
 pushes after 15c are therefore within the user's yes, not a grant beyond it. Until 15c, Task 15 makes `record` exit
 before any write at customer level, and 15b's doc sentence says nothing leaves the machine there. Nothing is
 mis-granted.
+
+## Round 8
+
+### R8-1 · blocking · grounding
+
+Task 15b, 'And at the end of every session' paragraph (the new implementing-plans line); § Approvals 2026-11-05, last
+bullet ('Tasks 9 and 15b make that the session-end rule for every run'): The line Task 15b adds to
+`implementing-plans` makes every session that ends before the final code review commit the work in progress and run
+`git push -u origin <branch>`. It has no level gate. `implementing-plans` runs at every level, and at customer level
+`git commit` and `push` are forbidden writes under the global § Work contexts. Compare `reviewing-in-rounds` §
+Completion step 4, which only drafts the commit at customer level. Personal and company level are a problem too. The
+line commits and pushes without asking, but the only recorded yes is scoped to 'each session of this run'. Promoting
+it to a standing rule for every future run is not something the user was asked about, and per § Approvals an approval
+covers only what it names. Scenario: A customer repo, a plan run stopped at the end of the day. The skill tells Claude
+to commit and push the branch. The guard blocks it, so the step 'fails' every time, and the skill now tells Claude to
+attempt a forbidden write. In a later personal-level run with no session-end yes in its plan, Claude commits and
+pushes without asking.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. Its skill section runs at
+personal and company level only, on the user's standing yes, which § Approvals now records as a rule for future runs,
+quoting the question; at customer level `plan-wip save` commits and pushes nothing and prints what is uncommitted.
+
+### R8-2 · major · grounding
+
+Task 15b, session-end paragraph ('main still waits for the final review, which diffs from Base: and so is unchanged by
+these commits'); interaction with reviewing-in-rounds § Completion steps 1-4: The plan checks that work-in-progress
+commits leave the review diff intact. That part holds: the review input is the working tree against `Base:`, which I
+verified. It does not check Completion's commit step. That step builds per-task commits from `git diff --cached`, the
+index against `HEAD`, so it only sees changes made after the last work-in-progress commit. The history that reaches
+`main` then becomes one or more 'WIP' commits plus partial per-task commits. That breaks the company bar of 'a
+readable history before it reaches main' and the one-commit-per-task design. The plan file is also affected. At
+company and customer level it is in `info/exclude`, and `implementing-plans` says 'The plan file is never staged'. Yet
+the real work-in-progress commit d88b6fa carried `plan-ai-framework.md`, which is what lets another machine resume. At
+company level that commit can't carry the plan, so resuming on another machine (the user's reason for the rule) stops
+with 'branch exists but plan has no Base: line'. Scenario: A company-level run spans two days. Day 1's session-end
+commit holds Tasks 1-3. Day 2 finishes Tasks 4-5 and the code review. Completion's `git diff --cached` lists only Task
+4-5 paths, and `main` is fast-forwarded to 'Record work in progress' plus two task commits. On the second machine,
+`git pull` brings the branch but no plan file, and the run can't resume.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. Per the user's 2026-11-09
+ruling, where `main` is fast-forwarded (as here) the save goes to the private ref `refs/wip/<branch>`, so the branch,
+Completion's per-task commits and `main` are untouched; the save holds the index, the leftovers and the plan files
+even untracked, so a company-level plan reaches another machine through it. Only a squash-merged-PR run commits on the
+branch, where Completion commits what is left and the squash makes the split moot.
+
+### R8-3 · minor · grounding
+
+Task 15b, session-end paragraph ('its resume checks ... must hold across a work-in-progress commit — the task's tests
+show it'): The plan never says what a session-end commit contains, yet whether the resume check survives depends on
+it. One option is staged checkpoints only. Then an in-progress task's unstaged work stays out of the commit and never
+reaches the other machine. The other is everything (the listing, unstaged included). Then `git write-tree` (index =
+HEAD) no longer equals the last checkpoint's `<ref>^2^{tree}`, so resume step 1 stops and asks. Checkpoint refs are
+also local-only (`refs/checkpoints/...` aren't pushed), so on another machine the check falls back to `HEAD^{tree}`.
+The task asserts the checks hold without deciding which behaviour it relies on. Scenario: A session ends mid-task with
+an implementer's edits unstaged. If the commit includes them, the next day's resume on the same machine compares the
+index with checkpoint ref ^2, which differs, and stops. If the commit leaves them out, the user resumes on another
+machine and the half-done task is missing.
+Refuted: Downgraded from major by the verifier. Downgraded to minor. The gap is real: the plan never says what a
+session-end commit holds, and the resume check compares `git write-tree` with `<ref>^2^{tree}`. But this is cheap to
+settle while implementing, and a reviewer can check it in the diff and tests. The 2026-11-05 handover already shows a
+workable answer: the checkpoint ref was deleted once the commit held it, so a resume compares the index with
+HEAD^{tree}. Committing staged checkpoints and dropping their refs keeps both checks passing. The cross-machine loss
+of the plan file is finding 1's major, not this one.
+
+### R8-4 · minor · grounding
+
+Task 15b, session-end paragraph ('a session ending before the final code review commits ...'): The trigger assumes
+Claude knows when a session is ending. Nothing tells the model. The plan itself rejects a `SessionEnd` hook as having
+no model. The cases that actually end a run (the user closing the terminal, a usage-limit death, a stop to ask, a
+crash) give Claude no turn in which to act. In practice the step only runs when the user explicitly says 'wrap up'.
+The simpler, grounded approach is to name that trigger (a user's wrap-up request, or the run's own stop points such as
+a stop-and-ask or the final report of a partial run) rather than 'a session ending'. Scenario: A run dies on the usage
+limit or the user quits at 18:00. Nothing is committed, pushed or recorded, so the next day's work on another machine
+finds the branch stale. That is the failure the rule was meant to prevent.
+Refuted: Downgraded from major by the verifier. Downgraded to minor. It is true that Claude gets no turn when the user
+closes the terminal, the usage limit hits or the session crashes. No wording can fix that, and the plan already
+rejects SessionEnd hooks for having no model. The fix is to reword the trigger in one skill line: the user's wrap-up,
+a stop-and-ask, or a partial run's final report. That is cheap while implementing and easy to reverse. The approach
+does not rest on detecting every session end: the one real session end so far (2026-11-05) was a wrap-up and worked.
+
+### R8-5 · major · grounding
+
+Task 15, Interfaces/entry ('tokens ... per review lens — a workflow agent's .meta.json description (review:`<lens>`,
+verify:`<lens>`)'); Change, Framework: Cost per lens rests on a convention that nothing in the repo guarantees. I
+verified that `review:<lens>` and `verify:<lens>` labels exist in this session's workflow agents' `.meta.json`. They
+come from ad hoc Workflow scripts the session wrote (`workflows/scripts/plan-review-round-1-*.js`).
+`reviewing-in-rounds` specifies 'one fresh Agent per lens', and Agent-tool subagents' `.meta.json` `description` is
+free text such as 'Round 5: review tasks 0-3'. A review run the way the skill says produces no lens attribution, so
+Task 15d's cut candidates by lens get no data. Either the skill (or a shared workflow script) must fix the label
+format, or this field must be dropped. Scenario: A later plan review follows `reviewing-in-rounds` literally with
+Agent calls. Every lens's tokens land in an empty or 'unknown' bucket, and the cross-session report can never flag a
+lens that isn't pulling its weight.
+Fixed: Task 15 takes an agent's lens from the `Lens:` line of its prompt, which `reviewing-in-rounds` writes literally
+into every reviewer's prompt, for an `Agent` or a Workflow agent alike, matched to `review-lenses.md`'s headings; a
+verifier counts under a lens only when its prompt carries the line; the prompt is never stored. `.meta.json`
+descriptions are no longer used.
+
+### R8-6 · minor · grounding
+
+Task 15, Tests, 'Real data, last' ('while HEAD is still the Base: commit'): The premise is already false. `Base:` is
+cdf0a77, and branch `ai-framework` has four commits on top (d88b6fa ... 5b563f3), including the session-end commit
+that this very change introduced. The executor can't meet the stated condition. With `--dry-run` and no `<commit>` the
+window ends now regardless, so the condition should be dropped or restated. Scenario: The executor reads 'while HEAD
+is still the Base: commit', finds HEAD at 5b563f3, and stops to ask, or reverts HEAD to satisfy the test.
+
+### R8-7 · minor · grounding
+
+Task 15, Tests, Counts ('at company level the plan's and branch's words redacted from the introspection (15b)'): Task
+15's test list includes an assertion about the introspection's redaction. Introspection and `note` are Task 15b's, so
+Task 15 can't build or pass this test on its own. Scenario: The Task 15 implementer must either build part of `note`
+early or leave a listed test unmet, and its task review fails on a test that belongs to 15b.
+
+### R8-8 · minor · grounding
+
+Task 15b, session-end line ('runs ai-log record `<plan-file>`'); Task 15b Change, 'record prints ... write a short
+introspection ... Pipe it to ai-log note': `record` always prints the introspection prompt. The completion step says
+'do what it prints', but the session-end line only says 'runs'. It is unclear whether each session end also writes an
+introspection. The user asked for one 'after every plan'. Separately, if the session-end commit was skipped (nothing
+to commit), `record` hits exit 1, 'HEAD no newer than the window's start'. Scenario: The plan spans three sessions.
+Either it gets three introspections where the user wanted one per plan, or none for the partial sessions, depending on
+how the model reads the line. A session end with no new commit reports an ai-log failure every time.
+
+### R8-9 · minor · grounding
+
+Task 13, 2026-11-05 deviation and Files/Tests: The delete covers three named files. The tree now also tracks
+`plan-ai-framework-review-findings-code-closed-2026-11-05.md`, `...-plan-closed-2026-11-05.md` and
+`...-plan-closed-2026-11-05-2.md` (verified with `git ls-tree`). Task 13's own test, `git ls-files
+'plan-ai-framework*'` printing nothing, fails unless they go too, and the Files list doesn't say they should.
+Scenario: The executor deletes the three listed files, and the test still lists three closed logs. Either the task
+fails or the executor guesses whether closed review logs are meant to survive on `main`.
+
+### R8-10 · nit · grounding
+
+§ Approvals, 2026-11-05 session-end bullet ('Tasks 9 and 15b make that the session-end rule'): It credits Task 9, but
+only Task 15b's text changes `implementing-plans` for this. Task 9 isn't in the remaining build list ('build 16, 15
+and 15b'). Scenario: A reader looks in Task 9 for the session-end rule and finds nothing.
+
+### R8-11 · blocking · scope and slicing
+
+Task 15b, 'And at the end of every session' paragraph; § Approvals, 2026-11-05 block, last bullet ('Tasks 9 and 15b
+make that the session-end rule for every run'): The session-end line added to `implementing-plans` makes every session
+that ends before the final review `git commit` and `git push -u origin <branch>`, and nothing limits it to personal
+and company level. The approval bullet widens a yes given for this run's sessions into 'the session-end rule for every
+run'. At customer level, commit and push are forbidden writes. `reviewing-in-rounds` § Completion step 4 already
+splits this by level ('Customer: draft it for the user'), and this line drops that split. The global decision
+'Implementation checkpoints in the index at every level … the user commits at the end' is also reversed with nothing
+said about customer level. Scenario: An `implementing-plans` run on a customer repo reaches the end of a session. The
+skill tells the agent to commit and push. The guard blocks it, or, through a path the guard misses (the plan itself
+records `git -C $var` gaps), the client's history gets a work-in-progress commit pushed to their remote. Fix: make the
+line 'personal and company: commit and push; customer: draft both for the user', and limit the approval to what the
+user's words named.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. It is gated to personal and
+company level; at customer level it writes nothing and prints what is uncommitted. § Approvals scopes the yes as the
+user gave it, quoting the question that made it a rule for future runs.
+
+### R8-12 · major · scope and slicing
+
+Task 15b, session-end paragraph ('its resume checks … must hold across a work-in-progress commit — the task's tests
+show it'): The plan assumes a work-in-progress commit leaves the rest of `implementing-plans` and the code-review
+completion unchanged, and it never checks that or names a test that would. Several parts depend on 'nothing is
+committed': the skill's review input replaces `scripts/review-package` 'since nothing is committed and `BASE..HEAD` is
+empty' (SKILL.md:64). The checkpoint refs are `git stash create` against the old `HEAD`. `reviewing-in-rounds` §
+Completion step 2 builds one commit per task from `git diff --cached` file lists, and that index is empty for any task
+a work-in-progress commit already took. 'The final review diffs from `Base:` and so is unchanged' covers only one of
+these consumers. This is a change to a core rule of the skill, and it rests on a claim nobody has verified. Scenario:
+A session ends after Tasks 1 and 2 are checkpointed, and the work-in-progress commit takes them. On resume, the review
+input is no longer empty. The final completion finds nothing staged for Tasks 1 and 2, so it either makes one combined
+commit or none for them, and the per-task history is lost. The stale checkpoint refs also trip the resume check 'index
+against the last checkpoint'. Name the resume, review-input and completion behaviour as tests, or run a toy plan
+across a session end before building on this.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. Its Change states what each
+consumer sees: the branch case commits only the index, so task-review input and checkpoint refs hold; the ref case
+changes no branch; resume and the before-staging check gain one clause each; Completion is unchanged. Its tests run
+save and restore in scratch repos with a bare origin, including a fresh clone and the resume checks.
+
+### R8-13 · minor · scope and slicing
+
+Task 15b, session-end paragraph and its Files line ('Files gain `claude/skills/implementing-plans/SKILL.md`'):
+Slicing: Task 15b, the `ai-log` trigger and introspection, also carries an unrelated change to the workflow itself:
+commit and push at every session end. It was added after review round 7 and marked 'not yet reviewed', and it reverses
+`implementing-plans`' rule that nothing is committed. Nothing ties it to `ai-log` except that it also calls `record`.
+Bundled like this, it can't be reviewed, tested or reverted on its own, and if it fails, the trigger work goes down
+with it. Scenario: The session-end commit turns out to break the per-task commits at completion (see the finding
+above). Reverting it means unpicking Task 15b's diff, and with it the `note` command and the trigger step, which have
+nothing to do with it. Split it into its own task against `implementing-plans`, with its own tests, ordered before 15b
+so its `ai-log record` call has a tested command to call.
+Refuted: Downgraded from major by the verifier. Downgraded. The bundling is real: the session-end commit rule has
+nothing to do with `ai-log note` or the trigger. But it is one line in one skill. Moving it into its own task, or
+reverting it, is cheap, and the plan can settle it while implementing. Finding 1 already covers the real risk, that
+the rule breaks completion. Being bundled does not make the change costly to reverse.
+
+### R8-14 · major · scope and slicing
+
+Task 13, first paragraph and 2026-11-05 deviation; Implementation status, Order ('13 comes after every other task, M
+included'); Handover, 'Start next session here': Three passages give different orders for the end of the plan. Task 13
+says its fold is 'built and code-reviewed in the run like any task' and comes after Task M, which the user does by
+hand and which is still pending. Its deviation puts the `git rm` after the final code review's commit and 15b's
+record. The Handover runs '16, 15 and 15b, then the final code review, commit, fast-forward `main`', leaving out 13's
+fold and M entirely. An executor can't tell whether the final code review waits for the user's Task M and then covers
+the fold, or runs now and leaves the fold for a second review. Scenario: The driver follows the Handover and runs the
+final code review, its commit and 15b's `record`. Then it reaches Task 13, whose fold of `staged-workflow.md` and
+`work-contexts.md` is new, unreviewed code. Either it reopens a code review after `Done (code):`, or it fast-forwards
+`main` with unreviewed docs. The other choice stalls the run on Task M, which only the user can do. State one order:
+fold, then final review, then record, then the `git rm`, and say whether M blocks it.
+Fixed: One order now: 13's fold is the run's last task, covered by the one final code review; M is by hand and blocks
+nothing, an open M going into Task 13's issue; the `git rm` follows that review's commit and `ai-log record`, before
+`main` is fast-forwarded. Task 13, the Order line and the Handover say the same.
+
+### R8-15 · minor · scope and slicing
+
+Task 15, Tests, 'Real data, last, by the session': The approach rests on one assumption: that the token sums and
+session scoping from real transcripts match reality, which the `cost-state` price check and the in-scope detection
+test. That is checked last, after windows, review keys, company hashing, the plugin allowlist and the log-clone push
+are all built against invented fixtures. Field names do exist (`.meta.json` `description: review:<lens>` and
+`workflowPhase` were checked on a real file), but whether sums and scope come out right on real data isn't known until
+the end. Scenario: The price check shows tokens counted roughly twice, for example because forked sessions or workflow
+agents are mis-scoped. The fix reshapes the dedup and scope code that every later fixture test was written against.
+Run the `--dry-run` with the price check right after the scope, window and token core works, before the review,
+company and framework parts.
+
+### R8-16 · minor · scope and slicing
+
+Task 15, Tests, 'Counts' bullet ('at company level the plan's and branch's words redacted from the introspection
+(15b)'): Task 15's tests include behaviour that Task 15b builds. Redacting the introspection belongs to `note`, which
+doesn't exist until 15b, so as written Task 15 can't end green. Scenario: An implementer of Task 15 tries to write the
+test and finds no introspection to redact. They either stub `note` early or mark the task done with a test that fails.
+Move the assertion to 15b's Redaction tests.
+
+### R8-17 · minor · scope and slicing
+
+Task 15, Interfaces (entry `workflows` tokens per `workflowPhase`, tokens per agent type and per review lens, R7-2):
+Task 15 builds per-lens and per-phase token breakdowns for Task 15d's cut candidates. Task 15d is a sketch and not a
+task of this run, and the Revisit exists to decide from real entries what an entry needs. The reason given, that
+transcripts are lost after 30 days, is real but small, since only a few runs would go unrecorded. So the slice billed
+as 'counts only' is wider than its own requirement. Scenario: The Revisit decides cut candidates need a different
+grouping, such as per round or per verifier verdict. The per-lens fields then sit in `schema: 1` as dead weight that
+every later schema has to carry. Either keep them and state the reason as a decision, or drop them until the Revisit
+asks for them.
+Refuted: Dropped by the verifier. The plan already states the reason as a decision: '...so cost by lens and agent
+type, which transcripts lose after 30 days, is kept for Task 15d's cut candidates (plan review R7-2)'. The finding's
+own remedy, 'keep them and state the reason as a decision', is what the plan already does. The 'dead weight in schema
+1' scenario is speculative, with no requirement violated.
+
+### R8-18 · minor · scope and slicing
+
+Task 15, Tests, last bullet ('No real `record` runs here: the first is Task 15b's end to end'), against § Approvals
+2026-11-05 session-end bullet and Task 15b's session-end line: Two parts of the plan disagree about the first real
+`record`. Task 15 says it is 15b's end-to-end run at the final code review. But once Task 15 is built, the session-end
+rule runs `ai-log record <plan-file>` at every session end of this run. The session-end line also doesn't say whether
+the introspection that `record` then asks for gets written and sent to `note`. That would be one introspection per
+session, where the user asked for one 'after every plan'. Scenario: A session ends between Task 15 and 15b. The driver
+runs a real `record`, which pushes to `andrelin/ai-framework-log` before 15b's redaction exists. `record`'s output
+then asks for an introspection that `note` can't yet take. Say whether session-end records start only after 15b, and
+whether a session end writes a note.
+
+### R8-19 · minor · scope and slicing
+
+Task 16, Spec and Tests ('Loads where it should' runs headless `claude -p`): The user reported the rule failing to
+load in a desktop session. The fix assumes the cause is the missing glob, and the test checks only headless CLI
+loading. Out of scope isn't stated: other path-scoped rules that might miss the same languages, and whether the
+desktop app honours `paths:` at all. Scenario: After the change the headless test passes, but the user's next `.cs`
+file in the desktop app still runs without the rule, because the desktop host loads path rules differently. The task
+is marked done and the reported bug remains. Add the desktop check to the user's by-hand list, or record it as out of
+scope.
+Refuted: Dropped by the verifier. The cause is visible in the repo: `claude/rules/writing-code.md`'s `paths:` lists
+only kt/java/ts/tsx/js/jsx/py/sh/zsh/kts, with no `.cs`, so the missing glob is a proven cause, not an assumption. The
+claim that the desktop host loads path rules differently has no evidence behind it, so the failure scenario is
+unsupported.
+
+### R8-20 · nit · scope and slicing
+
+Task 16, Change ('Front matter leaves the line count'): A checker change for every file is bundled into a task named
+for one rule's globs. `bin/check-md-limits` stops counting front matter for all files, and the title doesn't say so.
+The narrow fix is the globs. The checker change is a separate behaviour with its own tests, and it affects every skill
+and rule. Scenario: A reviewer or a later `git log` reader looking for why skills got longer front matter never finds
+a task titled for it. A revert of the C# globs would also revert the checker. Name it in the title or split it, with
+the checker change first, since the rule's line budget depends on it.
+Refuted: Downgraded from minor by the verifier. Downgraded to nit. The checker change is not hidden. Task 16 gives it
+its own bold paragraph with the user's quoted ruling, its own Files entries (`bin/check-md-limits`,
+`test/test_check_md_limits.sh`, `claude/docs/markdown-limits.md`) and its own tests, and the Handover's item 0 flags
+it for review. Only the title fails to name it, which is a wording matter.
+
+### R8-21 · minor · scope and slicing
+
+§ Approvals, 2026-11-05 block; Task 13 deviation ('filed with `writing-issues` on the user's yes'); Handover item 6:
+The 2026-11-05 bulk approvals don't include filing Task 13's issue, which every other source says needs the user's
+yes. That is a foreseeable approval left out of the up-front batch, which the global § Approvals requires. Scenario:
+The run gets through the final review, `record` and the fold, then stops at its last step to ask about filing an
+issue. That is the per-step stop the bulk-approval rule exists to prevent. Add it to the block, or ask now.
+
+### R8-22 · nit · scope and slicing
+
+§ Approvals, 2026-11-05 block, last bullet: 'Tasks 9 and 15b make that the session-end rule' credits Task 9, but the
+change is in Task 15b. Task 15b edits `implementing-plans`, and Task 9's section doesn't mention it. Scenario: An
+executor looks for the session-end change in Task 9, finds nothing there, and wonders whether a Task 9 edit is
+missing.
+
+### R8-23 · nit · scope and slicing
+
+Task 15b, Tests, 'End to end, by the session' ('Record here only that it ran, and the id'): The result is to be
+recorded in a plan that Task 13 `git rm`s right after that same step, so the record has no reader. The Revisit that
+would use it is carried by Task 13's issue. Scenario: The id is written into the plan and deleted in the next commit.
+Record it in Task 13's issue alongside the Revisit's question instead.
+Refuted: Dropped by the verifier. The record does have a reader. Task 13's delete is a `git rm` commit, so the id
+stays in the branch's history and on `main` after the fast-forward. Task 13 also files its issue from the plan's open
+items, the Revisit included, before the delete. No failure scenario.
+
+### R8-24 · blocking · decisions
+
+Task 15b, 'And at the end of every session' paragraph (the new `implementing-plans` line); § Approvals 2026-11-05,
+last bullet of the run block: The session-end line tells `implementing-plans` to commit the work in progress and `git push -u origin <branch>`
+with no level qualifier, and the Approvals block makes it 'the session-end rule for every
+run'. `implementing-plans` runs at customer level too, where `git commit` and `push` are forbidden. The skill's own
+Completion step drafts the commit for the user there, and nothing in this line does. The executor would ask: does the
+line apply at personal and company level only, with customer drafting the commit, or does it skip customer entirely?
+Scenario: A customer-level `implementing-plans` session reaches its end. The skill tells it to commit and push to the
+client's remote, which is a forbidden write. The guard blocks it (or misses it in one of its known gaps), so the skill
+as written instructs what § Work contexts forbids.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. Its skill section applies at
+personal and company level; at customer level `plan-wip save` commits, pushes and records nothing and prints the
+uncommitted work for the user.
+
+### R8-25 · major · decisions
+
+Task 15b, session-end paragraph, versus `reviewing-in-rounds` § Completion of a code review steps 1-2 and Task 13's
+2026-11-05 deviation: Work-in-progress commits on the plan's branch are never reconciled with Completion, which builds
+one commit per task from `git diff --cached` and then fast-forwards `main` to the branch. The plan only says the final
+review 'diffs from `Base:` and so is unchanged'. Nobody decides whether the WIP commits stay in `main`'s history, get
+squashed or rewritten before the fast-forward (which needs a force push of the pushed branch), or whether Completion's
+per-task commits now cover only what changed since the last WIP commit. The executor would ask: what does `main`'s
+history look like after a run with session-end commits, and who approves rewriting a pushed branch? Scenario: A
+company plan runs over two sessions. The first ends with a WIP commit holding Tasks 1-3. At Completion, `git diff
+--cached` holds only Tasks 4-5, so 'one commit per task' yields commits for 4 and 5 only. `main` is then
+fast-forwarded to a history with a 'work in progress' commit in it, which breaks the company bar of a readable history
+before `main`, and it is costly to undo once pushed.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. A fast-forward run saves to
+`refs/wip/<branch>` and never commits on the branch, so `main` gets no WIP commit and Completion's per-task commits
+are as before; a squash-merged-PR run commits the index on the branch, Completion commits what is left, and the squash
+makes the split moot. No rewrite of a pushed branch is needed.
+
+### R8-26 · major · decisions
+
+Task 15b, session-end paragraph ('commits the work in progress on the plan's branch'): 'The work in progress' has two
+readings that build different things. One commits only the index, the checkpointed tasks. The other commits
+everything, including a half-done task's unstaged leftovers and the plan file. The skill says 'The plan file is never
+staged', and at company and customer level the plan is in `info/exclude`. So the multi-machine resume the user wanted
+works only if the plan and the leftovers travel. The executor would ask: does the session-end commit include the
+half-done task's files and the plan file, and how does a resume on another machine find the plan at company level?
+Scenario: Reading one: a half-done task's edits stay local, and the user resumes on the other machine without them.
+Reading two: the commit holds unstaged leftovers. On resume, `git write-tree` equals `HEAD^{tree}`, so the leftovers
+check no longer sees them as a starting point. At company level, the excluded plan is never pushed, so `ai implement <plan>`
+on the second machine finds no plan.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. The save holds the index (the
+checkpoints) as its second parent and, as its tree, the listing's entries unstaged and untracked plus the plan and its
+review files, force-added when excluded; a branch-case commit takes the index only. `restore` brings it to a fresh
+clone and checks it, so the plan reaches another machine at company level.
+
+### R8-27 · major · decisions
+
+Task 15b, session-end paragraph; § Approvals 2026-11-05 ('Tasks 9 and 15b make that the session-end rule for every
+run'): The user's yes ('We should commit and ai log at the end of sessions too', 'Commit and push the branch') was
+given in this run. The plan turns it into a permanent skill rule: commit and push at every session end of every future
+run, without asking. But `reviewing-in-rounds` Completion step 4 says 'offer the commit, run it only on a yes', and
+the user had approved only one skill line (in `reviewing-in-rounds`) as the exception to 'no skill changes'. The
+executor would ask: does the session-end commit and push run without asking in later runs, or does it offer as
+Completion does? And did the user approve a second skill edit, to `implementing-plans`, which the plan had earlier
+declined in 'Why not also `implementing-plans`'? Also, which task edits it: Task 9 or Task 15b? Scenario: A later
+company-level plan run ends a session. The session commits and pushes a WIP branch to the company remote without
+asking, on a standing yes that § Approvals scoped to 'this run'. That breaks the global rule that an approval covers
+what it names.
+Fixed: § Approvals now quotes the question "The same choice becomes the session-end rule written into the plan for
+future runs" with the answer, so the yes is recorded as a standing rule for future runs at personal and company level,
+and the new Task 17 (not Task 9) builds it. Saving is not offered like Completion's commit: it runs on that standing
+yes. The `implementing-plans` edit is recorded as a second skill change resting on this request.
+
+### R8-28 · minor · decisions
+
+Task 15b, session-end paragraph ('runs `ai-log record <plan-file>`') versus Change 'record prints … write a short
+introspection … Pipe it to `ai-log note <id>`': `record` always prints the instruction to write and pipe an
+introspection, and the `reviewing-in-rounds` step says 'do what it prints'. Nothing says whether a session-end record
+also writes an introspection. The user asked for one 'after every plan'. The executor would ask: does a session-end
+record write an introspection, or counts only? If counts only, how does `record` know not to ask for one (a flag, or a
+different output)? Scenario: Reading one: every session end of a multi-day plan writes an introspection on a partial
+run, so 15d's repeated `## Cut candidates` bullets are inflated by mid-run notes. Reading two: the session follows
+`record`'s printed instruction anyway, because the implementing-plans line says nothing either way.
+Refuted: Downgraded from major by the verifier. Downgraded. The ambiguity is real: the session-end line says 'runs
+`ai-log record <plan-file>`', while `record` always prints the instruction to write and pipe an introspection. But
+nothing the approach rests on depends on it, and it is cheap to settle while implementing: the line can say 'counts
+only, ignore the prompt', or `record` can take a flag. Entries in the log repo are append-only data that 15d, still a
+sketch, can filter, so it is not costly to reverse.
+
+### R8-29 · minor · decisions
+
+Task 15b, Interfaces ('`ai-log note <id>`') and Change, redaction bullet 'at company level, the words of the plan's
+basename and first heading and of the branch name': `note` takes only `<id>`, but company-level redaction needs the
+plan's basename, its first heading and the branch name. Task 15 stores `plan` as a hash at company level, so `note`
+can't recover them from the entry. It also needs the work repo's remotes and folder names, so it must run in the work
+repo. The executor would ask: does `note` take the plan file as an argument, read it from the cwd, or does `record`
+store the redaction terms somewhere `note` can read them? Scenario: At company level, `ai-log note <id>` is run from
+the log clone, or anywhere but the work repo. It has no plan basename or branch to redact, so the engagement-named
+words in the introspection are pushed unredacted.
+Refuted: Downgraded from major by the verifier. Downgraded. `note`'s argument list is an interface only `record`'s own
+printed output consumes ('Pipe it to `ai-log note <id>`'), so the executor can have `record` print
+`ai-log note <id> <plan-file>`, or have `note` read the branch and remotes from the cwd. The repo-remote and folder redaction already
+implies `note` runs in the work repo. The 15b redaction tests, plus the company-level redaction assertion that Task 15
+lists, would catch an unredacted push in the diff. It is a gap to close while implementing, not a decision the
+executor cannot make.
+
+### R8-30 · minor · decisions
+
+Task 13, 2026-11-05 deviation; Implementation status 'Order'; Handover 'Start next session here': The sequence is
+contradictory. The handover runs 16, 15, 15b, then the final code review, commit and fast-forward of `main`. Task 13
+must come after every task, M included, which is by hand and pending, and its fold is 'code-reviewed in the run like
+any task'. Its deviation puts the `git rm` commit after 'the final code review's commit and 15b's `ai-log record`'.
+The executor would ask: is there one final code review covering Task 13's fold, or two (one for 15/15b, one for Task
+13)? Does `main` get fast-forwarded before Task 13? Is the `git rm` commit, which no code review sees, covered by an
+approval? Scenario: The run fast-forwards `main` after the 15/15b review, as the handover says. A later Task 13 then
+needs a second code review, which triggers the 15b step and a second real `record`. Or the run waits for the user's
+Task M and never finishes. Either way, the 15b end-to-end test ('this plan's next final code review') and the Task 13
+deviation describe different final reviews.
+Refuted: Downgraded from major by the verifier. Downgraded. The plan does not contradict itself. Task 13 must follow
+Task M, which is by hand and pending, so the handover's next run (16, 15, 15b, final review, commit, fast-forward
+`main`) leaves 13 out. A later run does Task 13: its fold is reviewed in that run's own final code review, then its
+commit, a second `record` (whose window, by design, does not overlap the first), then the `git rm` commit and the
+fast-forward. 'The final code review' in Task 13's deviation reads naturally as that run's own review. The executor
+can start. What remains is minor: the plan could say outright that 13 is a separate later run, and that the `git rm`
+commit falls under the 2026-11-05 branch-and-fast-forward yes.
+
+### R8-31 · minor · decisions
+
+Task 15, Change 'Customer level, deferred' ('a `<host>/<owner>` line in the private clone's `allow` file'): The
+`allow` file is a data format that later work consumes (15c, and every machine). But its path in the clone, its format
+and who creates it are not decided, and it is missing from Task 15's Files list ('outside this repo': `entries/` and
+`README.md` only). The executor would ask: is it `allow` at the clone root, one `<host>/<owner>` per line, comments
+allowed, created empty by Task 15? Scenario: The executor names it `allow.txt` or puts it under `entries/`, and the
+user's Forgejo line is never read, so company Forgejo plans are silently treated as customer and never recorded.
+Refuted: Dropped by the verifier. This is covered by the out-of-scope line. The plan already fixes the content, 'a
+`<host>/<owner>` line', and the place, 'the private clone's `allow` file', meaning `allow` at the clone root. Task
+15's tests use it ('the clone's `allow` names `git.example.com/uptimeconsulting`'). The exact file format and whether
+the file starts out empty are choices the executor makes and a reviewer can check in the diff. If the file is absent,
+the code fails closed: records nothing and treats the repo as customer, so there is no harmful outcome.
+
+### R8-32 · minor · decisions
+
+Task 15, Change 'Company level, names hashed or counted': The plan doesn't say what the company-level `repo` hash is
+over. It may be the normalised origin, like `plan_key`, or `<owner>/<name>`, and it may or may not be salted. Task 15d
+groups entries by it, so changing it later splits a repo's history. Scenario: Task 15 hashes `<owner>/<name>` while
+`plan_key` hashes the normalised origin. Later 15d can't join them, or a fix changes the hash and orphans earlier
+entries.
+Refuted: Dropped by the verifier. This is covered by the out-of-scope line. The plan says company `repo` and `plan`
+are 'stored as hashes, like `plan_key`', which points at the same unsalted sha256 scheme. Whether the input is
+`<owner>/<name>` or the normalised origin is a choice the executor makes and a reviewer can check in the diff. 15d is
+a sketch with no consumer yet, so nothing is joined against this hash today.
+
+### R8-33 · nit · decisions
+
+Task 15, Tests 'Real data, last' ('while `HEAD` is still the `Base:` commit'): `HEAD` has already moved past `Base:`
+cdf0a77 through the session-end commits (d88b6fa … 5b563f3), so the condition can't hold. The executor would ask: run
+the dry run at the current `HEAD`, or check out `Base:`? Scenario: An executor who takes the condition literally
+checks out cdf0a77, detaching `HEAD` mid-run, and loses the scripts built since. One who ignores it can't tell whether
+the window is the intended one.
+Refuted: Downgraded from minor by the verifier. Downgraded to wording. The condition is stale: `HEAD` is 5b563f3, past
+Base cdf0a77. But with `--dry-run` and no `<commit>`, the window ends now regardless, and with no earlier entry it
+starts at the plan's first appearance. That is exactly the window the sentence names, so a run at the current `HEAD`
+gives the intended result. Checking out Base mid-run is not a plausible reading. The clause should simply be removed.
+
+### R8-34 · nit · decisions
+
+Task 15, Tests 'Counts' (last line: 'at company level the plan's and branch's words redacted from the introspection
+(15b)'): A Task 15 test asserts a behaviour of `note`, which Task 15b builds. Read literally, Task 15 can't pass its
+own tests. Scenario: Task 15's task review fails it for the missing redaction test, or the implementer builds part of
+`note` in Task 15, breaking the slice.
+Refuted: Downgraded from minor by the verifier. Downgraded. The assertion is explicitly tagged '(15b)' inside Task
+15's test list, which marks it as 15b's behaviour. A task reviewer can see that, and 15b's own Redaction tests cover
+it. The issue is only where the line sits.
+
+### R8-35 · minor · decisions
+
+§ Approvals 2026-11-05 ('on every machine') and Task 15 Interfaces (exit 2 when `AI_LOG_DIR` is not a clone): The
+standing yes covers every machine, but nothing sets up `$HOME/.ai-framework-log` on a machine other than the one Task
+15 runs on, such as a `bin/dotfiles` init step. The executor would ask: should an init script clone it, or does each
+machine stay unrecorded until the user clones it by hand? Scenario: On the user's second machine every run's `record`
+exits 2. The report notes a failure each time, and that machine's plans leave no entries, which skews 15d's
+cross-session report.
+
+### R8-36 · blocking · consistency
+
+Task 15b, the session-end paragraph ("`implementing-plans` gains one line ..."); § Approvals 2026-11-05, the bullet
+"Tasks 9 and 15b make that the session-end rule for every run": The new `implementing-plans` line tells every run, at
+every level, to commit the work in progress on the plan's branch and run `git push -u origin <branch>` when a session
+ends. Nothing exempts customer level. The global § Work contexts forbids `git commit` and `push` in any form there.
+The skill's own § *Checkpoint in the index, at every level* and the decision "Implementation checkpoints in the index
+at every level ... the user commits at the end" both rest on that ban. Scenario: A customer-level run ends its session
+before the final review. The skill tells Claude to commit and push, so Claude tries a forbidden write. If the guard
+misses it (an unlisted customer resolves as company, or one of the guard's `git -C`/`cd "$var"` gaps), the write lands
+in the client's history and on their remote. The line needs a level gate: personal and company commit and push;
+customer drafts the commands for the user, as Completion step 4 does.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. It carries a level gate:
+personal and company save, customer level writes nothing and lists what is uncommitted.
+
+### R8-37 · major · consistency
+
+§ Approvals (2026-11-05 block, lines 84-87 and 93-95; the 2026-11-05 standing-yes block, lines 99-104); Task 15b
+session-end paragraph: The approvals don't cover the second skill edit or the session-end log writes. The user
+approved "no skill changes" with one exception: one line in `reviewing-in-rounds`. Task 15b also edits
+`implementing-plans`. The user's quote ("commit and ai log at the end of sessions too") is recorded for *this run*.
+The sentence widening it to "every run" through Tasks 9 and 15b is plan text, not the user's answer. The standing yes
+for `ai-log` writes covers "after every plan", not mid-plan session ends, and the quoted skill step that carries that
+yes past Task 13 sits only in `reviewing-in-rounds`. An approval covers only what it names. Scenario: After Task 13
+deletes the plan, `implementing-plans` tells future runs to commit, push and `ai-log record` at every session end, on
+no recorded yes. That breaks the rule that an approval covers only what it names. It also changes how every later plan
+is committed, which is costly to reverse. Ask the user explicitly about the generalised rule and the second skill
+line, and state in the `implementing-plans` line which yes covers its `record`/`note` writes.
+Fixed: § Approvals now records the generalised rule as the user's answer to a question that said it becomes the rule
+for future runs, and that the `implementing-plans` edit rests on this request, not the "one line" exception. Task 17's
+skill section names the standing yes of 2026-11-05 and 2026-11-09 that covers its save and its counts-only `ai-log
+record`.
+
+### R8-38 · major · consistency
+
+Task 15b session-end paragraph ("`main` still waits for the final review, which diffs from `Base:` and so is unchanged
+by these commits"); `reviewing-in-rounds` § Completion of a code review steps 1-2: The plan checks only that the
+review's diff survives work-in-progress commits. Completion builds its per-task commits from `git diff --cached`, the
+index against `HEAD`, so tasks already committed at a session end drop out of that split. The work-in-progress commits
+then stay in the history that `main` is fast-forwarded to. Task 15b's tests check only the resume checks, and its
+Tests list holds no case for the session-end line at all, though the paragraph says "the task's tests show it".
+Scenario: The plan is built over two sessions. Session 1's tasks land in a commit named as work in progress, and
+Completion commits only session 2's tasks and the fixes. `main` gets a history that is neither one commit per task nor
+one commit of the whole, which misses the company bar of a readable history before `main`. Task 15b should say how
+Completion treats work-in-progress commits (squash, or per-task commits from `Base:`) and add the test it promises.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. It says how Completion treats
+a session save: a fast-forward run saves to a private ref and Completion is unchanged; a squash-merged-PR run commits
+only the index, Completion commits what is left per task, and the squash makes the split moot. Task 17 has its own
+tests for save, restore, replace, drop and the branch case.
+
+### R8-39 · minor · consistency
+
+§ Implementation status, the `Final code review` row (✅ DONE): The row reads ✅ DONE, from Task 14's and the 2026-11-02
+run's reviews, while 15, 15b, 16, M and 13 are ⏳ PENDING. The staged-workflow decision says the row stays ⏳ PENDING
+until `reviewing-in-rounds code` ends in `Done (code):`, so that a skipped final review shows in the plan. The table
+and the order (Handover: "then the final code review") disagree. Scenario: A resumed run, or a reader, sees the final
+review already done and goes from the last task straight to commit and fast-forward. Then 15b's end-to-end step, which
+happens inside the final review, and Task 13's delete, which waits for that review's commit, run against a review that
+never covered Tasks 15, 15b, 16 or 13. Reset the row to ⏳ PENDING for this run.
+Refuted: Downgraded from major by the verifier. Downgraded from major. The contradiction is real: the decision at line
+394 says the row stays ⏳ PENDING until `Done (code):`, yet the row reads ✅ DONE from earlier runs. But the Handover's
+'Start next session here' names the final code review explicitly. `implementing-plans` line 129 also says the work
+isn't finished until the final code review says `Done (code):`. So a resumed run is unlikely to skip it, and resetting
+the row is a one-line fix.
+
+### R8-40 · minor · consistency
+
+Task 15 Tests, *Counts* bullet ("at company level the plan's and branch's words redacted from the introspection
+(15b)"): Task 15's tests include a 15b feature: redacting the introspection. That needs `ai-log note` and the
+redaction, which Task 15b produces. Task 15b's own Redaction test doesn't list the company-level plan and branch
+words. Scenario: An executor building Task 15 alone can't write this test, because `note` doesn't exist yet. So it
+stops, or writes a stub, and the case is lost when 15b's tests don't name it. Move the case to Task 15b's Redaction
+bullet.
+
+### R8-41 · minor · consistency
+
+Task 15 Tests, *Real data* bullet ("while `HEAD` is still the `Base:` commit"): The bullet doesn't reflect the
+session-end commits. `HEAD` is already past `Base:` (cdf0a77): 5b563f3 and others sit on `ai-framework`, and the
+session-end rule adds more. The condition can't hold. With `--dry-run` and no `<commit>`, the window ends at now
+anyway, so the condition isn't needed. Scenario: An executor checks the precondition, finds `HEAD` != `Base:` and
+stops to ask, or resets. Drop the condition, or restate it as `--dry-run` with no commit.
+
+### R8-42 · minor · consistency
+
+Task 13, the 2026-11-03 deviation list of open items; Handover item 6: Two lists of what goes into Task 13's issue
+disagree, and one is out of date. Task 13 still lists "Task 7's conflict sent to the user", which was decided and
+reworded 2026-11-05 (status row 7, Handover item 5, § Approvals). Task 13 lacks the audit's recorded Mediums and Lows
+and R12-4, which Handover item 6 names. Handover item 6 lacks 15c, 15d and the Revisit question. Scenario: Task 13's
+executor files the issue from the Task 13 section. It reopens a settled conflict and drops the audit Mediums/Lows and
+R12-4, and then deleting the plan loses them. Merge the two lists into Task 13.
+
+### R8-43 · minor · consistency
+
+Task 13 deviation ("filed with `writing-issues` on the user's yes"); § Approvals: Filing Task 13's issue on this repo
+needs a yes the plan names but § Approvals never records. That issue write was foreseeable, so it belongs in the
+2026-11-05 bulk question. Scenario: The run reaches Task 13 and stops for a question it could have asked up front,
+which goes against "ask in bulk, up front" and the goal of a run that doesn't stop between stages.
+
+### R8-44 · minor · consistency
+
+§ Approvals 2026-11-05, "Tasks 9 and 15b make that the session-end rule"; Task 9 section; § File map rows for 15b and
+16: Several references don't match the task sections. The Approvals bullet names Task 9 as making the session-end
+rule, but Task 9's section has no such change; only Task 15b edits `implementing-plans`. The File map row for 15b
+omits `claude/skills/implementing-plans/SKILL.md`, which Task 15b's Files gains, and the existing `implementing-plans`
+row names only Task 9. Task 16's row lists only `claude/rules/writing-code.md`, not `bin/check-md-limits`,
+`test/test_check_md_limits.sh` and `claude/docs/markdown-limits.md`, which Task 16's Files names. Scenario: An
+executor deciding what can run in parallel, or what a task's commit takes, reads the File map. It misses that 15b and
+Task 0's `bin/check-md-limits` row share files with 16, and Completion's per-task pathspecs may leave the
+`implementing-plans` edit out of 15b's commit if the Files line isn't updated in step.
+
+### R8-45 · minor · consistency
+
+Task 15b session-end paragraph vs Change ("do what it prints"): The session-end line says only "runs `ai-log record <plan-file>`".
+`record` prints the prompt for an introspection piped to `ai-log note`. The step's "do what it prints,
+without asking", and the yes behind it, are only in `reviewing-in-rounds`. Whether a session end also writes an
+introspection is unstated. Scenario: At a session end, one executor writes and pushes a `note` and another doesn't.
+Entries for the same plan then differ, which affects what Task 15d's `## Cut candidates` aggregation reads.
+
+### R8-46 · nit · consistency
+
+Task 15b Files (`reviewing-in-rounds` "a step after step 6") vs Tests ("one list item after the commit step"); the
+user's "one line" exception: The skill's commit step is step 4, so Files ("after step 6") and Tests ("after the commit
+step") place the new step differently. The quoted step also runs to three sentences, more than one 150-character line
+under the one-sentence-per-line rule. The user approved "one line". Scenario: The test checks a different position
+from the one the Files line places it at. A three-line step goes beyond the user's "one line" exception. Name the
+position once, and trim the step or record that the user accepted the length.
+Refuted: Downgraded from minor by the verifier. Downgraded from minor. Step 6 of Completion is 'After the commit
+runs', the step tied to the commit. 'After step 6' and 'after the commit step' both point at roughly the same spot,
+and a reviewer can check the placement in the diff. Reading the user's 'one line is fine' as one list item rather than
+one physical line is reasonable. What is left is wording.
+
+### R8-47 · nit · consistency
+
+§ Approvals, 2026-11-05 plan-review-fixes block (customer-pass token yes): That yes now belongs to Task 15c, which
+isn't a task of this run and survives only through Task 13's issue. Task 13's list of what the issue carries doesn't
+mention the approval. Scenario: When 15c is detailed from the issue after the plan is deleted, the token approval is
+gone, and the scenario is either re-asked or run without the yes on record.
+
+### R8-48 · blocking · work context
+
+Task 15b, 'And at the end of every session' paragraph (the new `implementing-plans` line); also § Approvals
+2026-11-05, last bullet ('Tasks 9 and 15b make that the session-end rule for every run'): The session-end line added
+to `implementing-plans` tells every run to commit the work in progress on the plan's branch and push it with `git push -u origin <branch>`.
+It says nothing about level. At customer level, `git commit` and `push` in any form are forbidden
+(~/.claude/CLAUDE.md § Work contexts). Elsewhere the skills deal with this explicitly: `reviewing-in-rounds` §
+Completion step 4 says 'Customer: draft it for the user', and `implementing-plans` says 'At company and customer
+level…'. The new line needs the same split: offer at personal and company, draft at customer. Scenario: An
+`implementing-plans` run in a customer tree reaches the end of a session before the final review. The skill line tells
+the executor to commit and push. The guard blocks it, so the session ends on a refused forbidden write instead of a
+drafted commit. Where the guard has known gaps (`git -C $var`, `cd "$var"`), the write could go through. This also
+contradicts the line Task 15b adds to `work-contexts.md`: 'at customer level … nothing leaves the machine'.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. Personal and company save per
+the user's 2026-11-09 ruling; customer level writes nothing and prints the uncommitted work, so nothing leaves the
+machine.
+
+### R8-49 · major · work context
+
+Task 15b, session-end paragraph; § Approvals 2026-11-05 (session-end bullet): The yes recorded in § Approvals covers
+'each session of this run' and names `git push -u origin ai-framework`. Task 15b turns it into a skill rule for every
+run, every repo and every branch, with no wording that ties the commit and push to a yes. Task 15b's skill step says
+outright that it carries a standing yes for the ai-log writes. The session-end line has no such wording, and Task 13
+deletes this plan with its Approvals block. That leaves two outcomes. Either the rule silently assumes a standing yes
+for work-repo commits and pushes that the record doesn't show, which breaks the global 'An approval covers what it
+names' rule. Or future runs have no recorded yes, which conflicts with `reviewing-in-rounds` step 4 ('run it only on a
+yes — one recorded in the plan's `## Approvals` counts'). Scenario: A later personal or company plan has no Approvals
+entry for work-in-progress commits. At session end, `implementing-plans` commits and pushes a branch to that repo's
+origin without asking, on the strength of a yes given for one branch of one run of this plan.
+Fixed: § Approvals now quotes the question that made the yes a standing rule for future runs at personal and company
+level, and Task 17's skill section says it runs on that yes of 2026-11-05 and 2026-11-09, so the yes outlives the plan
+in the skill line, as 15b's does.
+
+### R8-50 · major · work context
+
+Task 15b, session-end paragraph ('`main` still waits for the final review…'); Task 13 deviation (git rm commit, then
+`main` fast-forwarded): The work-in-progress commits go on the plan's branch, and `main` is then fast-forwarded to
+that branch, so the WIP commits land in `main`'s history. At company level the global table requires 'a readable
+history before it reaches `main`'. A fast-forward of a branch full of 'Record … work in progress' commits breaks that
+bar. The plan argues only that the review diff is unchanged ('diffs from `Base:`'). It doesn't address history, and it
+doesn't say whether the WIP commits are squashed or rewritten before `main`. Scenario: A company-level run lasts three
+sessions. `main` is fast-forwarded to a branch holding three WIP checkpoint commits and the final commit, so the
+repo's showcase history reaches `main` unreadable. This plan already does the same on its own branch (commit d88b6fa
+'Record the ai-framework run's work in progress'), and the 2026-11-05 run will fast-forward `main` to it.
+Fixed: The session-end rule moved out of Task 15b into a new Task 17 · Session-end save. Per the user's 2026-11-09
+ruling, a run that fast-forwards `main` saves to `refs/wip/<branch>`, never the branch, so no WIP commit reaches
+`main`; only a squash-merged-PR run commits on the branch. § Approvals records that d88b6fa stays: this repo is
+personal level, with no readable-history bar.
+
+### R8-51 · minor · work context
+
+Task 15b, *Change* (introspection at company level) vs Follow-up 15c sketch ('a model terms pass … runs at every
+level, since a customer repo not yet in `~/.claude-customers` resolves as company'): Task 15b stores model-written
+introspection prose at company level, with only the mechanical redaction. The plan itself says, in 15c, that a model
+terms pass is needed at every level because an unlisted customer repo resolves as company. Task 15's origin allowlist
+(github.com/uptimeconsulting plus the `allow` file) narrows the exposure, but company repos on that org can still be
+engagement work. Words in the introspection that are not in the plan basename, the first heading, the branch or
+`~/.claude-customers` pass through. This conflicts with Task 15's 'Still free of customer details'. The log repo is
+private, so no level rule is broken, but the plan should state that this gap is accepted until 15c is built. Scenario:
+A run on `github.com/uptimeconsulting/integration` produces an introspection that names the end client mentioned in a
+review finding (e.g. 'the Acme sync lens found nothing'). 'Acme' is not in any redaction source, so it is committed
+and pushed to `andrelin/ai-framework-log`.
+Refuted: Dropped by the verifier. The gap is already recorded and accepted in the plan. § Approvals (plan lines
+105-107), answered yes on 2026-11-05, says that until 15c is built 'the introspection is stored at personal and
+company level only'. Follow-up 15c (line 3703) gives the reason a model terms pass is needed at every level. So the
+plan already states the accepted interim state and its limit. The finding agrees that the log repo is private and that
+no level rule is broken. What it asks for, an extra 'gap accepted' sentence, is wording at most, and it has no
+requirement behind it.
+
+## Round 9
+
+### R9-1 · major · grounding
+
+Task 17 § Change, The skill ("The skill is at its line cap until Task 16 stops counting front matter"); Implementation
+status, Order ("16, which frees the line budget its skill edit needs"): The budget claim is wrong.
+`claude/skills/implementing-plans/SKILL.md` is pinned in `.md-baseline` at 120 and counts exactly 120 today, and a
+pinned file may not grow by a single line. Task 16 frees only its 4 front-matter lines (`---`, `name`, `description`,
+`---`; checked with check-md-limits' own `count_lines raw`). Task 17 adds a section of about seven to ten bullets
+(branch-case commit, save and record, customer line, restore before the first task, resume step 1, before-staging HEAD
+rule, finish drop) and also edits the opening line and a red flag. Scenario: Task 17's own test that
+`bin/check-md-limits` passes on the skill fails with "a pinned file may not grow" at about 124 or more lines against a
+pin of 120. The executor then has to cut existing skill text that the plan never chose, or loosen the pin, which
+`--update-baseline` refuses to do.
+Fixed: Task 17 now names the budget: the skill counts 120, its pin, never raised; Task 16 frees 4 front-matter lines
+and Task 17's skill edit (one paragraph plus two in-place edits) must fit in them, else resume step 1's brief-rewrite
+sentence moves to `implementing-plans-reference.md`.
+
+### R9-2 · major · grounding
+
+Task 15 Files (tips/24_claude_code.md, a new tip), Task 15b Files (the tip gains `note`), Task 17 Files (a new tip):
+`tips/24_claude_code.md` is pinned in `.md-baseline` at 125 and counts exactly 125 rendered lines today.
+`.claude/docs/tips-file-sizing.md` says a pinned file "may not grow at all". Three tasks each append to this file and
+each test that check-md-limits passes on it, so all three fail. Task 16's front-matter change does not help, because
+tips files have no front matter. The way out is a split or renumber, which `writing-tips` makes the user's call.
+Scenario: The Task 15 implementer adds Tip 24.10 and the check fails with "up from its pinned 125". The run stops for
+a user ruling on splitting `24_claude_code` and renumbering. The plan could have settled this up front (for example a
+new tips file for the ai-log and plan-wip tools) in its approvals round.
+Fixed: New tips go in a new `tips/25_ai_framework.md` (the user: "A new tips file"): Task 15 adds Tip 25.1 and a
+`tips.md` 25 entry, Task 15b extends it; Task 17 has no script and no tip; the File map follows.
+
+### R9-3 · major · grounding
+
+Task 17 § Change, The skill ("Before the first task, ahead of the plan-file check: `plan-wip restore`, so a plan
+untracked at company level arrives too"): Task 17 assumes a resume reaches the skill without the plan file on disk,
+but `bin/ai` checks for it first. `require_plan_file` (`bin/ai:39-44`) dies with "no such plan file" (exit 2) before
+`claude` starts. Tip 24.8 and the handover both name `ai implement <plan-file>` as the way to resume. Task 17 does not
+change `bin/ai` and does not tell the user to run `plan-wip restore` by hand first. Scenario: A company-level run
+stops on machine A and saves to `refs/wip/<branch>`. On machine B the user runs `ai implement plan-x.md` as the tip
+says. `bin/ai` exits 2 because the untracked plan was never restored. The cross-machine resume that Task 17 exists to
+provide fails at its documented entry point.
+Fixed: Moot: Task 17 no longer has a private ref or `bin/plan-wip`; on the user's 2026-11-09 ruling after round 9 a
+session end commits the work in progress on the branch and pushes it, and the work lands by a squash-merged PR. A
+tracked plan arrives with the branch; an untracked company plan doesn't travel, an accepted gap carried to Task 13's
+issue.
+
+### R9-4 · major · grounding
+
+Task 17 (session-end `ai-log record <plan-file>` in the ref case) together with Task 15 § The window ("session-end
+runs at an unmoved HEAD share one id, the later replacing the earlier"): In the ref case `HEAD` stays at `Base:` for
+the whole run, so every session-end record of that plan, on every machine, gets the same id. Each re-run skips its own
+entry when it looks for a window start, finds no other entry for the plan, starts the window at the plan's first
+appearance in the *local* transcripts, and overwrites the shared entry. The replace-with-a-longer-window design only
+works on one machine. It loses data in exactly the multi-machine resume that Task 17 adds. Scenario: Session 1 on
+laptop A ends and records entry E (A's tokens). The run resumes on desktop B, which ends and records the same id E
+from B's transcripts only, overwriting A's counts. The final record after the commit then starts its window at E's
+end. A's whole session is gone from the log, and per-plan cost and turn totals undercount without any warning.
+Fixed: With WIP commits `HEAD` moves at each session end: Task 17 commits before `ai-log record`, with `--allow-empty`
+when nothing new was checkpointed, so every session end, on any machine, has its own id and window; Task 15 § The
+window says so, and a same-id replace is left only for a re-run at one commit.
+
+### R9-5 · major · grounding
+
+Task 17 § Tests, By the session ("showing GitHub keeps a ref outside `refs/heads`"); § Change, The ref case ("At
+company level the plan reaches another machine only this way"): The ref case depends on the origin accepting and
+keeping `refs/wip/*`. That is checked only on GitHub, and only as the last step after the script is built. Company
+work in this setup is on Forgejo (global CLAUDE.md § Forgejo work), and the plan never checks that Forgejo, GitLab or
+a customer's host accepts a push outside `refs/heads` and `refs/tags`, or keeps it through gc. The local git mechanics
+hold: I ran save, push, fetch into a fresh clone and `read-tree -u --reset` plus `read-tree <save>^2` in a scratch
+repo, and the leftovers, staged checkpoint, deletion and excluded plan came back correctly. Scenario: On a company
+Forgejo repo the server rejects the push to `refs/wip/<branch>`. `save` exits 1 at every session end, and the
+untracked company plan never reaches another machine, which is the only reason given for the ref case at company
+level. Check this with a first spike against GitHub and the company forge before building `plan-wip`, not as its final
+test.
+Fixed: Moot: Task 17 no longer has a private ref or `bin/plan-wip`; on the user's 2026-11-09 ruling after round 9 a
+session end commits the work in progress on the branch and pushes it, and the work lands by a squash-merged PR.
+Nothing outside `refs/heads` is pushed.
+
+### R9-6 · minor · grounding
+
+Task 15 § Interfaces ("An agent's lens comes from the `Lens:` line of its prompt... the `###` heading ... the line
+starts with"): I checked a real Workflow reviewer transcript (this run's agents). `Lens:` is not on a line of its own
+and does not start a line. It sits mid-line after "read the rest of the plan as context.", inside a harness-wrapped
+and indented prompt. A parser that looks for a line starting with `Lens:` files every such agent under no lens. Each
+agent's `.meta.json` already carries the lens: `description: "review:Work context"` next to `workflowPhase`. That is a
+simpler and more reliable source for Workflow agents. Scenario: `record` over a Workflow-driven plan review reports
+zero tokens for every lens, so Task 15d's cut-candidates-by-lens has no data. The fixture test passes only because it
+was built with the line at line start.
+
+### R9-7 · minor · grounding
+
+Approvals, 2026-11-09 bulk ("the final review's commit step rebuilds the branch from `Base:` so no work-in-progress
+commit reaches `main`"): No task or skill step owns this rebuild. `reviewing-in-rounds` § Completion commits `git diff
+--cached` on top of `HEAD`. There are four commits since `Base:` (cdf0a77): `d88b6fa` (the WIP commit) plus `06f51fa`,
+`0433f08` and `5b563f3`. Two of those are legitimate skill changes (filed learnings). A literal rebuild from `Base:`
+drops them or folds them into a task commit. The approval names only `d88b6fa`. Scenario: At the final commit the
+executor resets to `Base:` and recommits per task. The `writing-plans` learning (06f51fa) and the `implementing-plans`
+git-mv rule (5b563f3) either disappear from `main` or land inside an unrelated task's commit, because their paths fall
+in no task's Files list and go with the last task.
+
+### R9-8 · minor · grounding
+
+Task 15 § Change, The window ("with none, at the plan's first appearance") and § Tests, Real data: `ai-log` will
+undercount this plan's first real entry without saying so. Transcripts are cleaned up after 30 days
+(`cleanupPeriodDays` is unset here, so the default applies). The oldest dotfiles transcript is from Oct 13 and this
+plan began Oct 16, so its earliest sessions are already near expiry. Nothing warns when the window start comes from
+the oldest surviving transcript rather than the plan's real start. Scenario: The first real `record` for
+`plan-ai-framework.md` (or any long plan) silently omits sessions older than 30 days. The per-plan cost and turns look
+complete but are not, and the Revisit judges each stage on partial numbers.
+
+### R9-9 · minor · grounding
+
+Task 16 § Spec and § Tests: The user's report was about a *desktop* session. The fix (adding globs) clearly targets
+the cause, since `.cs` is not in `paths:`. But the load test runs only headless CLI `claude -p`, so it never confirms
+the reported environment now loads the rule. Scenario: The globs are added and the CLI test passes. If the desktop app
+handles user `~/.claude/rules` path triggers differently, the user's `.cs` case still fails and the task is marked
+done.
+Refuted: Dropped by the verifier. Out of scope. Which environment the load test runs in is a test-case choice, which
+the out-of-scope line leaves to the code. The finding agrees the cause is clear: `.cs` is missing from `paths:`, and
+adding the glob addresses exactly that. Its failure scenario depends on the desktop app handling user-rule path
+triggers differently from the CLI, which it gives no evidence for. The desktop app runs the same Claude Code engine.
+
+### R9-10 · minor · grounding
+
+Task 17 § Change, When ("the run's own stop: a stop to ask"): Treating every stop-to-ask as a session end goes beyond
+the user's request ("at the end of sessions"). `implementing-plans` stops for many in-session questions, and each
+would then make a branch commit and push in the branch case, plus a wip push and an `ai-log` entry. Scenario: A
+company PR-based run stops three times for user rulings in one sitting. It makes three `Work in progress` commits and
+pushes, and three entries that fragment the plan's windows, though the session never ended. The squash hides the
+commits, but the log gets noise entries.
+Refuted: Dropped by the verifier. The plan made this choice deliberately and says why: 'Claude can't know a session is
+ending' (plan review R8-4), so a stop to ask is when the user may walk away. The harm claimed does not follow. In the
+ref case `HEAD` does not move, so repeated session-end records share one id and replace each other rather than piling
+up. In the branch case, windows are non-overlapping, so per-plan totals still sum correctly. The extra commits are
+squashed by the PR merge, which the user ruled makes them harmless ('this shouldnt be a problem'). No concrete failure
+remains.
+
+### R9-11 · major · scope and slicing
+
+Task 17 · Change, *The skill* ("The skill is at its line cap until Task 16 stops counting front matter … the skill
+gains only these lines"); Task 16 · Files; Order ("after 16, which frees the line budget its skill edit needs"): The
+budget the plan relies on doesn't exist. What binds `claude/skills/implementing-plans/SKILL.md` is not the 150-line
+cap but its pin in `.md-baseline`, which is 120 counted lines, and the file is at exactly 120 today (blank lines and
+headings aside). Task 16 dropping the 4-line front matter frees 4 lines, bringing it to 116. Task 17's new section and
+its added lines come to roughly 8 to 12 counted lines: the standing-yes line, the branch-case commit and push, save
+and record, failure, customer level, restore before the first task, resume step 1, before staging, finish and drop.
+That lands at about 124 to 128, past the pin. `--update-baseline` only ever lowers a pin, and neither task lists
+`.md-baseline` in its Files. Scenario: The executor builds Task 17's skill lines and `bin/check-md-limits` fails on
+the skill, which Task 17's own *Files edits* test requires to pass. They can't raise the pin with the tool, and no
+task says whether to hand-edit `.md-baseline` (overriding the ratchet) or cut existing skill lines, so the task stops
+for the user mid-run. The fix: count the real headroom now, then either add `.md-baseline` to Task 17's Files with the
+user's yes to raise the pin, or name the skill lines Task 17 moves into `bin/plan-wip`'s usage text or a doc.
+Fixed: Task 17 now names the budget: the skill counts 120, its pin, never raised; Task 16 frees 4 front-matter lines
+and Task 17's skill edit (one paragraph plus two in-place edits) must fit in them, else resume step 1's brief-rewrite
+sentence moves to `implementing-plans-reference.md`. The Order line says 16 frees the 4 lines the edit fits in.
+
+### R9-12 · major · scope and slicing
+
+§ Approvals, 2026-11-09 bulk ("the final review's commit step rebuilds the branch from `Base:`") together with Task
+13's 2026-11-05 deviation and Task 17 *Finish*: No task owns the rebuild of `ai-framework` from `Base:` that squashes
+out the work-in-progress commit `d88b6fa`. The plan never says where in the closing sequence it runs, relative to
+Completion's per-task commits, `ai-log record`, `plan-wip drop`, Task 13's `git rm` commit, the one force-push and the
+fast-forward. It also never says what happens to the real commits on the branch past `Base:`. `06f51fa`
+(writing-plans) and `5b563f3` (implementing-plans) change skills that appear in no task's Files list of this run.
+`reviewing-in-rounds` § *Completion* has no rebuild step, so an executor following the skills keeps `d88b6fa`.
+Scenario: At the final review the executor runs Completion as the skill says and commits per task on top of `d88b6fa`,
+so the work-in-progress commit reaches `main` against the user's "Squash it out". Or the executor does a `git reset
+--soft cdf0a77` by guess, and Completion's pathspec rule then puts the two learnings commits' skill edits, along with
+d88b6fa's `claude/CLAUDE.md` change, into whichever task commit comes last. Either way the readable history the
+company and showcase bar asks for is lost. A short step list in Task 13 would settle it: when the rebuild runs, how
+the learnings commits are kept, and where the force-push falls.
+Fixed: Moot: no rebuild and no force push; on the user's 2026-11-09 ruling after round 9 this run lands by a
+squash-merged PR, which removes `d88b6fa`, and the Order line, the handover and Task 13 now list the tail: the final
+review's commits on `ai-framework`, `ai-log record`, Task 13's `git rm` commit, push, the PR, squash-merged on green
+CI, `main` pulled.
+
+### R9-13 · minor · scope and slicing
+
+Task 13 · Files and Tests: The delete is narrower than its own test. Task 13 deletes three files, but `git ls-files
+'plan-ai-framework*'` already lists six. Three closed review logs are tracked:
+`plan-ai-framework-review-findings-code-closed-2026-11-05.md`, `…-plan-closed-2026-11-05.md` and
+`…-plan-closed-2026-11-05-2.md`, the last added in `d88b6fa`. Scenario: After the `git rm` commit, the test `git
+ls-files 'plan-ai-framework*'` still prints three files and fails, so the task doesn't end in something that passes.
+The Files list should name the closed logs, or use a glob. They must still exist when `ai-log record` runs, since Task
+15 counts closed logs, which the existing order already allows.
+
+### R9-14 · minor · scope and slicing
+
+Task 15 · Tests, *Counts* ("at company level the plan's and branch's words redacted from the introspection (15b)"): A
+test of Task 15b's behaviour sits in Task 15's test list. Task 15 builds no `note` and no redaction, so an executor
+working on Task 15 alone can't write or pass it. Task 15b's own *Redaction* test list leaves out the company-level
+words case. Scenario: The Task 15 implementer either builds part of 15b's redaction early, which widens the slice, or
+leaves a listed test unwritten, and the task review flags it as missing. Meanwhile 15b's tests never prove that the
+plan's and branch's words are redacted at company level. The bullet belongs in Task 15b's *Redaction* tests.
+
+### R9-15 · minor · scope and slicing
+
+Task 17 · Tests, *By the session* (last): The assumption every part of `save`, `restore` and `drop` rests on is tested
+last, after the script is built. That assumption is that this repo's origin accepts, keeps and deletes a ref outside
+`refs/heads` (`refs/wip/ai-framework`) through a force refspec, past the guard and the push hooks (the Handover
+already notes a spurious "pushed to main, watch CI" hook). `git ls-remote origin 'refs/wip/*'` shows none today, so no
+session has exercised it. Scenario: GitHub, a hook or the guard refuses or mangles a `+refs/wip/…` push. Then the
+save, restore and drop design and its tests are rebuilt after the fact, and the § Approvals rule that this run's
+session ends save to the ref by hand had nothing under it. A one-off push, `ls-remote` and delete before the script is
+written would settle it.
+Refuted: Dropped by the verifier. The assumption is low-risk and already has a gate. GitHub accepts pushes to refs
+outside refs/heads (only refs/pull is reserved). `claude/hooks/work-context.sh` forbids push only at customer level,
+and this repo is personal public. Task 17 already makes the real save, ls-remote and drop a by-session test, and "a
+refusal stops the task for the user". When to run that check within the task is an ordering choice for the executor,
+which is out of scope.
+
+### R9-16 · minor · scope and slicing
+
+Task 16 · Spec and Tests (*Loads where it should*): The cause is assumed, not proven. The report came from a desktop
+session ("may not cover C#"), but the test checks only headless CLI loading after the change. It never shows that
+`.cs` failed to load before the change while `.kt` loaded, and never covers the desktop surface where the symptom was
+seen. Scenario: The desktop app doesn't apply `paths:` rules the way the CLI does, so the new globs pass the headless
+test while the user's reported symptom remains, and the task is marked done. Running the headless probe once before
+the edit, with a `.cs` file and a `.kt` file, would prove the cause, and the report could note that the desktop
+surface is untested.
+Refuted: Dropped by the verifier. The cause is proven by reading the file. The `paths:` list in
+`claude/rules/writing-code.md` has kt, java, ts, tsx, js, jsx, py, sh, zsh, kts, bin/ and hooks/, and no `.cs` glob,
+so a `.cs` file can't match it. A before-the-edit probe is an exact-test-case choice, which is out of scope. Whether
+the desktop app applies `paths:` the same way is not a scoping defect of this plan.
+
+### R9-17 · minor · scope and slicing
+
+Task 15b · Files, `claude/docs/work-contexts.md` addition; Task 17: The work-contexts doc text that Task 15b writes
+describes only the per-plan `record` and `note` after a commit. But Task 17, built before 15b, also has
+`implementing-plans` run `ai-log record` at every personal- or company-level session end, and push a
+`refs/wip/<branch>` ref. Neither task updates `work-contexts.md` § *An approval covers one action* for those writes,
+so the docs-ship-with-the-change constraint is broken for Task 17. Scenario: A later reader of `work-contexts.md`
+learns of a per-plan entry only, and doesn't know that each session end also commits and pushes to the log repo and
+the origin. That is exactly the standing-yes scope the doc exists to state. Task 17's Files should include
+`claude/docs/work-contexts.md`.
+
+### R9-18 · nit · scope and slicing
+
+Task 15 · Change, *Customer level, deferred* (the private clone's `allow` file); Task 15 · Files: `record` reads an
+`allow` file in the log clone, but no task creates it or documents its format in the log repo's `README.md`. Without
+an entry there, every company repo off `github.com/uptimeconsulting`, such as the company Forgejo the global
+instructions name, records nothing at all. Scenario: After the run, company Forgejo plans silently log nothing because
+`allow` doesn't exist. Nobody notices until a cross-session report (15d) finds them missing. The file is built for a
+case nothing in this run exercises, so either drop it from this slice or add its creation, with its format, to Task
+15's *Outside this repo* bullet.
+Refuted: Downgraded from minor by the verifier. Downgraded. An absent `allow` file is the designed safe default: an
+origin it doesn't list is never recorded, so an unlisted customer repo that resolves as company leaks nothing (R5-1,
+R5-37). Nothing in this run needs a Forgejo entry. The real gap is documenting the file's `<host>/<owner>` format in
+the log repo's README, which is wording.
+
+### R9-19 · minor · scope and slicing
+
+Task 15 · Tests, *Real data, last* ("while `HEAD` is still the `Base:` commit"): The precondition is already false.
+`HEAD` is `5b563f3`, four commits past `Base:` `cdf0a77` (`d88b6fa`, `06f51fa`, `0433f08`, `5b563f3`), and it stays
+there through Task 15 because checkpoints sit in the index. Scenario: The executor checks the stated precondition,
+finds it false and stops to ask, or guesses at a `<commit>` argument and so gets a window it didn't intend. The test
+should say "before the final review's commit" instead.
+
+### R9-20 · nit · scope and slicing
+
+Follow-up 15c ("if this plan ends first, Task 13's issue carries it"); Task 15b · Tests, *End to end* ("Record here
+only that it ran, and the id"): Both conditions are settled by the order. The Revisit needs 15b's first real entry,
+which is written only after the final review's commit, right before Task 13's `git rm`. So the plan always ends first,
+and the 15b result recorded "here" is deleted in the very next commit. Scenario: Wording only. Say outright that Task
+13's issue carries 15c, 15d and the Revisit, and record the end-to-end id in that issue or the final report rather
+than in the plan.
+
+### R9-21 · major · decisions
+
+Task 15 Files (tips/24_claude_code.md), Task 17 Files (tips/24_claude_code.md,
+claude/skills/implementing-plans/SKILL.md) and both tasks' Files-edits tests: Both target files are already pinned at
+their current size in `.md-baseline`: `tips/24_claude_code.md` at 125 and `implementing-plans/SKILL.md` at 120. Both
+pass `bin/check-md-limits` today only because neither has room left. A pin "may not grow past the size recorded", and
+`--update-baseline` refuses to raise one. Task 15 adds a tip, Task 17 adds another, and Task 15b extends Task 15's.
+Task 16 removes about 4 front-matter lines from the skill, but Task 17 adds a new section, a restore step, a
+resume-step change and a finish line, which is likely 8 or more counted lines. The plan says "the skill gains only
+these lines" without checking them against the pin. The executor would ask: may I raise the pins in `.md-baseline` by
+hand, should the new tips go in a new tips file, or what gets cut or moved to `implementing-plans-reference.md`?
+Moving session-end steps into the reference doc changes when they load. Scenario: After Task 15's tip,
+`bin/check-md-limits tips/24_claude_code.md` fails on the pin, so the task's required test can't pass. Task 17's skill
+edit fails the same way on the 120 pin. The executor must either edit a pin the user set deliberately or move skill
+text into a doc that isn't loaded when the session ends. Both are the user's call.
+Fixed: Task 17 now names the budget: the skill counts 120, its pin, never raised; Task 16 frees 4 front-matter lines
+and Task 17's skill edit (one paragraph plus two in-place edits) must fit in them, else resume step 1's brief-rewrite
+sentence moves to `implementing-plans-reference.md`. New tips go in a new `tips/25_ai_framework.md` (the user: "A new
+tips file"): Task 15 adds Tip 25.1 and a `tips.md` 25 entry, Task 15b extends it; Task 17 has no script and no tip;
+the File map follows.
+
+### R9-22 · major · decisions
+
+Task 17 Change, `restore` ("a present plan file identical to the save's; otherwise exit 1"); 2026-11-09 Approvals;
+Handover "Start next session here": The rule has two readings: any plan file on disk must equal the save's copy, or
+only an untracked or locally changed one. In the ref case with a tracked plan (this repo), the plan's edits during the
+run are never committed, so the save holds an edited plan. On another machine, `git switch ai-framework && git pull`
+checks out the plan from `HEAD`, which differs from the save, so `restore` exits 1 and stops the run every time. The
+round-trip test only covers an untracked plan, so it won't catch this. The executor would ask: when the plan is
+tracked and its only difference is the save's own edits, should restore overwrite it, or refuse? Scenario: Session on
+machine A ends, and the save holds `plan-ai-framework.md` with its status table updated. On machine B, the next
+session pulls the branch and runs `plan-wip restore plan-ai-framework.md`. The present plan is the committed version,
+not the save's, so restore exits 1 and the cross-machine resume Task 17 exists for never works for this plan.
+Fixed: Moot: Task 17 no longer has a private ref or `bin/plan-wip`; on the user's 2026-11-09 ruling after round 9 a
+session end commits the work in progress on the branch and pushes it, and the work lands by a squash-merged PR. No
+`restore` exists to compare plan files.
+
+### R9-23 · major · decisions
+
+Task 17 Change, *When* ("the same machine then resumes from where the work is") and `restore`'s refusal; the skill's
+"Before the first task: plan-wip restore … a non-zero exit stops the run": "A stop to ask" counts as a save trigger,
+and after the user answers, the run carries on in the same session. Any later work, such as more checkpoints and
+leftovers before a kill, makes the local state differ from the save. The next start on the same machine then runs
+`restore`, which finds a non-empty listing or an index unlike the save's `^2` and exits 1. That stops the run,
+contradicting "the same machine resumes from where the work is". The executor would ask: when the local state is newer
+than the save (`HEAD` the same, checkpoint refs past the save), should restore keep local work and exit 0, or refuse?
+Scenario: The run stops to ask at Task 15, so it saves. The user answers, Task 15 and part of Task 17 get
+checkpointed, then the usage limit kills the session. The next `ai implement` on the same machine stops at restore
+with exit 1, and the user must work out by hand which state wins and drop the ref.
+Fixed: Task 17's trigger is now the user's wrap-up request or the run's part-way final report, not a stop to ask; with
+no `restore`, a later same-machine start just resumes from the index and leftovers.
+
+### R9-24 · minor · decisions
+
+Task 17 Change, `save` (`git push origin +refs/wip/<branch>:refs/wip/<branch>`, "one per branch"); 2026-11-09
+Approvals ("if we manage to keep track of it properly"): There is one ref per branch, force-pushed by every save from
+any machine, with no check that origin's ref is the one this machine last restored or saved. The user made the private
+ref conditional on keeping track of it properly. Letting one machine silently overwrite another's newer save is a
+data-loss behaviour the user should decide. The executor would ask: should `save` refuse, or warn, when origin's
+`refs/wip/<branch>` is neither this machine's last save nor the one it restored, or is last-writer-wins acceptable?
+Scenario: Machine A saves on Friday. On Monday, machine B starts without restoring (for example, the branch was
+already checked out with stale local work), works, and saves. B's `+` push replaces A's save on origin, and A's
+work-in-progress is gone without any message.
+Refuted: Downgraded from major by the verifier. Downgraded. The skill runs `plan-wip restore` before the first task
+and stops the run on a non-zero exit. Restore refuses when HEAD isn't the save's parent or the listing isn't empty, so
+machine B can't start on stale local work and then overwrite A's save without the user settling it by hand first.
+Last-writer-wins remains only for two machines running at the same time, or after a manual override. That's real but
+cheap to add, for example as a lease check on the push.
+
+### R9-25 · minor · decisions
+
+Task 15b Interfaces (`ai-log note <id>`) and Change, *The mechanical redaction* (company-level plan basename, first
+heading and branch words; the work repo's remotes and folder names): `note` takes only an id and stdin, yet its
+redaction needs the work repo's remotes, folder path, branch name, and the plan's basename and first heading. At
+company level the entry stores `repo` and `plan` as hashes, so `note` can't recover those terms from the entry. The
+interface is consumed by the line `record` prints ("Pipe it to `ai-log note <id>`"), so the executor would ask: must
+`note` run in the work repo and take the plan file, or should `record` keep the redaction terms somewhere (and where,
+given entries hold no free text)? Scenario: One executor builds `note <id>` to read the cwd's origin and branch but
+has no plan file, so the plan's first-heading words go unredacted at company level. Another adds a `<plan-file>`
+argument, which breaks the printed instruction and the Tests' `note` calls. Either way the redaction tests for company
+level don't match the interface.
+Refuted: Downgraded from major by the verifier. Downgraded. `note` runs from the same skill step, in the work repo, so
+the cwd gives the remotes, folder and branch. At company level the entry's `plan` is a hash over origin and basename,
+so `note` can hash each `plan-*.md` at the repo root to find the plan file and read its first heading, with no
+interface change. An executor can choose this and a reviewer can check it in the diff, so it's cheap to settle while
+implementing.
+
+### R9-26 · minor · decisions
+
+Task 15 Change, *The window* with Task 17's session-end `ai-log record`, and Task 15b's printed introspection prompt:
+Session-end records are new in Task 17, and each one ends a window. The final `record` after the plan's commit then
+starts at the last session-end entry's end. So the numbers 15b prints for "a short introspection of this run" cover
+only the final session, not the plan. The spec asks for "After every plan … a short introspection of how well the
+ai-framework handled it". Two readings build different outputs: the introspection judges the last window, or `record`
+prints totals over every entry with this `plan_key`. The executor would ask which. Scenario: A three-session run:
+sessions 1 and 2 each end with a counts-only record, and session 3 commits and records. The printed summary shows only
+session 3's cost, rounds and majors, and the per-plan introspection cites evidence that leaves out most of the plan's
+review rounds.
+Refuted: Downgraded from major by the verifier. Downgraded. The mechanics are right: session-end entries close
+windows, and review rows already counted are skipped, so the final `record` prints only the last window's numbers. But
+changing what `record` prints, for example to totals over the `plan_key`, is a small change confined to that output.
+The plan's Revisit exists precisely to judge whether the printed numbers are right and enough after the first real
+entry. It's real, but not costly to reverse.
+
+### R9-27 · major · decisions
+
+Task 17 Change, *When* ("a stop to ask") and *The skill* (branch case: commit `Work in progress: Tasks <list>` and
+push): The user asked to "commit and ai log at the end of sessions". The plan widens that to every stop to ask, and
+most stops are answered in the same session. In the branch case, each question then makes a work-in-progress commit
+pushed to the PR branch (starting CI, visible to colleagues at company level), plus a log entry pushed to the log
+repo. Those effects reach other people, and the user hasn't confirmed this widening. The executor would ask: is a stop
+to ask a session end, or only a wrap-up request and a part-way final report? Scenario: In a company run landing by PR,
+a run stops to ask four times. The PR branch gets four `Work in progress` commits and four CI runs that colleagues
+see, though the user never ended a session.
+Fixed: A stop to ask is no longer a session end: Task 17 triggers on the user's wrap-up request or a part-way final
+report, the user having said "at the end of sessions".
+
+### R9-28 · major · decisions
+
+Task 17 Tests, *By the session* (the real `save`, `ls-remote` and `drop` of `refs/wip/ai-framework`); 2026-11-09
+Approvals: The ref case rests on two things that are checked only after the script and skill are built: that the
+remote host accepts and keeps a ref outside `refs/heads`, and that auto mode and the guard let a session run the force
+push (`+refs/...`) and the delete push (`:refs/...`). Auto mode already blocks some git operations as destructive (the
+plan's own note about `git mv`). If either assumption fails, the design must change after it's built. The executor
+would ask: is this spiked first, and if auto mode refuses the `+` push, which fallback (for example, delete then
+push)? Scenario: Task 17 is built and reviewed. Then the session's real `save` is refused by auto mode as a force
+push, or a company Forgejo rejects `refs/wip/*`. The skill's session-end path doesn't work, and the stop comes at the
+end of the task rather than before the work.
+Fixed: Moot: Task 17 no longer has a private ref or `bin/plan-wip`; on the user's 2026-11-09 ruling after round 9 a
+session end commits the work in progress on the branch and pushes it, and the work lands by a squash-merged PR. The
+only pushes are `git push -u origin <branch>` and the log clone's, no force or delete push.
+
+### R9-29 · minor · decisions
+
+Task 13 Files and Tests; deviation of 2026-11-03 / 2026-11-05: The Files list deletes three plan files, but `git
+ls-files 'plan-ai-framework*'` also lists the closed logs
+`plan-ai-framework-review-findings-code-closed-2026-11-05.md`, `…-plan-closed-2026-11-05.md` and
+`…-plan-closed-2026-11-05-2.md`. The test demands they go too. The executor would ask: delete the closed review logs
+as well, or narrow the test? Task 15's `record` also reads closed logs, so they must outlive the record step either
+way. Scenario: The executor deletes only the three listed files, and Task 13's test fails on the closed logs. Or it
+deletes them too, outside its Files list, and Completion's per-task pathspecs miss the deletions.
+
+### R9-30 · nit · decisions
+
+Task 15 Tests, *Real data* ("while `HEAD` is still the `Base:` commit"): `HEAD` is already past `Base:` (cdf0a77):
+commits d88b6fa through 5b563f3 sit on top, and the 2026-11-09 rebuild doesn't happen until the final review. Two
+readings give different windows. Pass `Base:` as `<commit>`, which ends the window before the run's work, or pass no
+commit, which ends it now, as the stated intent says. Scenario: An executor passes `cdf0a77` to honour the condition
+and gets a window that ends before the 2026-11-05 work. The price check and the warnings audit then run over the wrong
+data.
+Refuted: Downgraded from minor by the verifier. Downgraded to wording. HEAD is past `Base:` (5b563f3 vs cdf0a77), but
+the command given has no `<commit>`, and the sentence states the intent: 'so the window runs from the plan's first
+appearance to now'. With no commit the window ends now whatever HEAD is. The 'while HEAD is still Base' clause is
+stale wording, and the command an executor would actually run isn't ambiguous.
+
+### R9-31 · nit · decisions
+
+Follow-ups section, `### Revisit · Does a real entry hold what an introspection needs?`: `implementing-plans` iterates
+the plan in the run "at a `## Revisit` heading". This heading is `###`, under "Follow-ups, not tasks of this run". An
+executor might read it as the skill's Revisit trigger and stop to iterate after Task 15's dry run, or skip it as the
+plan intends. The two readings differ in whether the run halts there. Scenario: After Task 15, the session sees
+"Revisit" and launches a plan-iteration agent and a plan review in the middle of the run, though the Revisit needs
+15b's first real entry, which only exists after the final commit.
+Refuted: Downgraded from minor by the verifier. Downgraded. The skill's trigger is literally a `## Revisit` heading
+(SKILL.md:113). This one is `###`, under 'Follow-ups, not tasks of this run', and it says it needs Task 15b's first
+real entry, which exists only after the final commit. A literal reading doesn't trigger the in-run iteration. At most
+it's a wording risk.
+
+### R9-32 · minor · decisions
+
+Task 15 Change, *Customer level, deferred* (the clone's `allow` file): The plan doesn't say whether Task 15 creates
+and seeds `allow` in the private log repo, or what its committed format and initial contents are. The user's company
+work runs on Forgejo (global `CLAUDE.md`), so without a line for that host every company run prints "customer level is
+deferred, nothing recorded". The executor would ask: is the company Forgejo's `<host>/<owner>` added now, by the user
+and by hand, and does `allow` live committed in the log repo so every machine shares it? Scenario: Task 15 ships with
+no `allow` file. Every Uptime run on Forgejo silently records nothing, and the message wrongly calls it customer
+level.
+
+### R9-33 · minor · decisions
+
+2026-11-05 Approvals ("after every plan, at every level and on every machine") and Task 15 exit 2: The plan doesn't
+say how the log clone `$HOME/.ai-framework-log` gets onto each machine: an init script, or by hand. Without a clone,
+`record` exits 2, and the skill step only reports it, so entries quietly go missing on other machines. The executor
+would ask: does a `bin/dotfiles` init script clone it, or is it a manual step recorded in docs? Scenario: On the
+user's second machine, the first plan's completion runs `ai-log record` and exits 2. The report notes the failure, but
+that plan's entry and introspection are never written.
+
+### R9-34 · major · consistency
+
+§ Approvals, 2026-11-09 bulk answers (d88b6fa "Squash it out"); Task 13's 2026-11-05 deviation; Order (lines 183-184);
+Handover "Start next session here" (line 202): The approved rebuild of `ai-framework` from `Base:` and the one `git
+push --force-with-lease origin ai-framework` appear only in § Approvals. No task, the Order paragraph, Task 13's
+delete sequence, or the Handover's resume line includes them. Those three all list the run's tail as: final review
+commit, `ai-log record`, 13's `git rm`, fast-forward `main`, push. Nothing says who rebuilds, when, or what happens to
+the non-WIP commits since Base (06f51fa, 0433f08, 5b563f3) and to d88b6fa's content, which includes Task 7's
+task-reviewed `CLAUDE.md` reword. Scenario: An executor following the Order or the Handover line runs the final
+commit, record, `git rm`, then fast-forwards `main`. The WIP commit d88b6fa reaches `main`, against the user's "Squash
+it out". If the executor rebuilds after `ai-log record` instead, the recorded entry's `commit`/id names a sha the
+force-push discards.
+Fixed: Moot: no rebuild and no force push; on the user's 2026-11-09 ruling after round 9 this run lands by a
+squash-merged PR, which removes `d88b6fa`, and the Order line, the handover and Task 13 now list the tail: the final
+review's commits on `ai-framework`, `ai-log record`, Task 13's `git rm` commit, push, the PR, squash-merged on green
+CI, `main` pulled. The squash happens after `ai-log record`, whose entry names the pre-squash commit, as any PR's
+would.
+
+### R9-35 · major · consistency
+
+Task 17 § The skill (session-end `ai-log record`) vs Task 15b § Change (`record` prints, then the introspection) and
+Task 15 § The window: Task 17 adds a counts-only `record` at every session end, and each entry ends the next one's
+window. Task 15b's per-plan introspection is still written from the numbers the final `record` prints, and those cover
+only the window since the last session-end entry. Task 15b was not updated to sum the plan's entries by `plan_key`.
+Scenario: A plan built over three sessions: sessions 1 and 2 end with session-end records. The final commit's `record`
+prints cost, rounds and majors for session 3 only. The "short introspection of how well the ai-framework handled it"
+after every plan (Task 15's spec) judges the whole plan from a fraction of its data, e.g. missing the plan-review
+rounds that ran in session 1.
+Fixed: Task 15b's `record` now prints each number summed over every entry with the plan's `plan_key`, session-end ones
+included, so the introspection covers the whole plan; a test proves the sum over three windows.
+
+### R9-36 · major · consistency
+
+Task 15 § The window ("session-end runs at an unmoved HEAD share one id, the later replacing the earlier with the
+longer window") vs Task 15 § What the transcripts hold (`cleanupPeriodDays` 30) and Task 17's ref case: In the ref
+case `HEAD` never moves between sessions, so every session-end `record` recomputes the same entry from the plan's
+first appearance and replaces it. That assumes every transcript since the first appearance still exists. Task 15
+itself notes transcripts are deleted after 30 days and that this is why entries hold aggregates. Scenario: This plan
+first appeared around 2026-10-13. A session-end record after 2026-11-12 recomputes the entry with the October
+transcripts gone and overwrites the earlier, fuller entry. Tokens, cost and the review counts already captured are
+lost for good.
+Fixed: Each session end now commits before `record`, so it gets its own id and a window starting at the previous
+entry's end; nothing recomputes an older entry from the plan's first appearance, so expired transcripts can't
+overwrite one (Task 15 § The window, Task 17).
+
+### R9-37 · minor · consistency
+
+Task 17 § The skill ("The skill is at its line cap until Task 16 stops counting front matter"); Order line 180:
+`implementing-plans/SKILL.md` is pinned at 120 counted lines in `.md-baseline`, a ratchet. It is far below the 150
+hard cap. Not counting front matter frees only its 4 lines (116 of 120). Task 17 adds more than that: a new section,
+the restore line, edits to resume step 1, Before staging and Finish, and the opening line and red flag. The
+16-before-17 ordering rests on a budget that wasn't measured. Scenario: After Task 16, Task 17's implementer adds
+about 8-10 lines. `bin/check-md-limits` fails on the pin, and the task stops. The executor must either deliberately
+raise a pin the plan never mentions or move text to `implementing-plans-reference.md`, which the plan does not say.
+Refuted: Downgraded from major by the verifier. The budget problem is real. .md-baseline pins
+implementing-plans/SKILL.md at 120, and the skill counts 120 now (non-blank, non-heading lines). Dropping the 4
+front-matter lines frees only 4, and Task 17's listed additions run to roughly 8-12 lines. Downgraded because
+claude/docs/implementing-plans-reference.md already exists (14 lines) and can take the overflow. Only the three
+trigger lines the tests grep for must stay in the skill. That is cheap to settle while implementing and checkable in
+the diff, and it needs no rework of the ordering.
+
+### R9-38 · minor · consistency
+
+Task 17 § Change, `save` (`':(exclude)plan-*' ':(exclude)/00-follow-ups-*'`) vs "Follow-up trackers stay out, as from
+the listing": The save's pathspec is not the listing's. The listing uses `:(top,glob,exclude)`, but the save uses
+plain `:(exclude)`. Without `glob` magic, `/00-follow-ups-*` needs a literal slash, so a root-level tracker is not
+excluded. I checked this in a scratch repo: `00-follow-ups-me.md` at the root was added and `sub/00-follow-ups-x.md`
+was excluded. Without `top`, the patterns are also relative to the cwd. Scenario: A repo with `00-follow-ups-me.md` at
+its root: `plan-wip save` puts the user's private tracker into `refs/wip/<branch>` and pushes it to origin, which may
+be a shared company remote. Follow-up items are meant to be "the user's own and never shared".
+
+### R9-39 · minor · consistency
+
+Task 17 § The skill ("Resume step 1 … the restored save's `^2`"; "Before staging: `HEAD` must equal …") vs
+implementing-plans § Checkpoint, Before staging ("the index's tree the last checkpoint's (`HEAD^{tree}` before the
+first)"): Task 17 updates resume step 1's notion of the last checkpoint and the `HEAD` half of the Before-staging
+check. It leaves that check's index half as `HEAD^{tree}` before the first checkpoint, which no longer holds after a
+restore on another machine. Scenario: On a second machine, `restore` puts the index at the save's `^2`, which holds
+checkpointed tasks, with no `refs/checkpoints/*`. Before the run's first staging, the session compares the index with
+`HEAD^{tree}`, finds them different, and stops with "a subagent ran git".
+
+### R9-40 · minor · consistency
+
+Task 13's 2026-11-05 deviation and Deviation (2026-11-03) open-item list; Handover item 6; status table rows 5, 8, 9:
+Task 13's issue list is stale and incomplete. It still lists "Task 7's conflict sent to the user", which was ruled
+2026-11-05 (Approvals, Handover item 5). It omits what Handover item 6 names (the audit's Mediums and Lows, R12-4). It
+also omits the reruns that keep Tasks 5, 8 and 9 🚧 PARTIAL (Handover items 1-2), the unfiled learnings, and #73.
+Scenario: The plan is `git rm`'d after an issue built from Task 13's list. The pending reruns for Tasks 5, 8 and 9 and
+the unfiled learnings exist nowhere else and are lost, defeating "so deleting the plan loses none of them".
+
+### R9-41 · nit · consistency
+
+Implementation status, `Final code review` row (✅ DONE); Task 13 ("the run's one final code review covers it"): The
+status table shows the final code review ✅ DONE from earlier runs while Tasks 15, 15b, 16, 17 and 13's fold are
+pending. The workflow says this row stays ⏳ PENDING until `Done (code):`. Scenario: An executor or the user reading
+the table believes the final review for this run's tasks is already done, and a skipped final review stops being
+visible in the plan, which is the row's whole purpose.
+Refuted: Downgraded from minor by the verifier. Downgraded. reviewing-in-rounds flips the row to DONE on `Done
+(code):`, and no rule explicitly resets it. More to the point, the Handover's resume line, the Order and Task 13 all
+name this run's final code review as still to come. No executor would skip it because of the table, so this is a stale
+status label, not a real risk.
+
+### R9-42 · minor · consistency
+
+Task 15 § Tests, Real data ("while `HEAD` is still the `Base:` commit") and "No real `record` runs here: the first is
+Task 15b's end to end": Both statements are stale. `ai-framework` already has four commits past `Base:` cdf0a77
+(d88b6fa, 06f51fa, 0433f08, 5b563f3). Also, the run builds 17 before 15b, so Task 17's session-end `record` runs a
+real record, and pushes to the log repo, before Task 15b exists. Scenario: The executor reaching the real-data step
+finds `HEAD` ≠ `Base:` and either stops or misreads the window. A session ending between Tasks 17 and 15b writes the
+first real entry, contradicting Task 15. It is also outside the "From Task 15b on" wording of the log-repo approval.
+
+### R9-43 · minor · consistency
+
+Task 17 § Files; Task 15b § Files (`claude/docs/work-contexts.md` line): Task 15b's `work-contexts.md` text says only
+that `reviewing-in-rounds` runs `ai-log` after a plan's commit. Task 17 adds standing-yes writes at every session end:
+a WIP commit and `git push -u` in the branch case, a push of `refs/wip/<branch>` to origin, and a session-end `ai-log
+record`. Task 17 does not update `work-contexts.md` § *An approval covers one action, not a policy*. Scenario: The
+durable doc says the only standing-yes write is the post-commit log step. A reader or agent checking what may be
+pushed without asking finds no basis for session-end pushes once Task 13 deletes the plan.
+
+### R9-44 · nit · consistency
+
+Task 15b § Tests, End to end ("Record here only that it ran, and the id"): The run happens after the final code
+review's commit, and Task 13's `git rm` deletes this plan right after. So the evidence is recorded in a file that is
+never committed and is deleted immediately, and Task 13's issue was already filed by then. Scenario: The id and the
+fact that the step ran are lost with the plan. Nothing durable shows that Task 15b's end-to-end test passed.
+Refuted: Downgraded from minor by the verifier. Downgraded. The step's evidence lives durably elsewhere: the entry and
+its introspection are committed and pushed to andrelin/ai-framework-log under that id, and the run's final report
+names it. Losing the plan's one-line note costs nothing that matters.
+
+### R9-45 · nit · consistency
+
+File map: Task 16's files (`bin/check-md-limits`, `test/test_check_md_limits.sh`, `claude/docs/markdown-limits.md`)
+are missing from the file map. The `bin/check-md-limits` row lists only Task 0. Scenario: A parallel-safety check
+against the file map would miss that Task 16 shares `bin/check-md-limits` and its test with any other task touching
+them.
+Refuted: Downgraded from minor by the verifier. Downgraded. The file map indeed lists bin/check-md-limits and its test
+only for Task 0, and omits claude/docs/markdown-limits.md. But this run builds 16, 15, 17 and 15b one after another,
+and Task 0 is done, so no parallel-safety decision depends on the omission. It is bookkeeping.
+
+### R9-46 · nit · consistency
+
+§ Global constraints, Markdown limits: The limits are not updated for Task 16's decision that front matter no longer
+counts toward a file's aim and cap. Scenario: After Task 16, a reader of the constraints would count front matter
+against a skill's 100/150.
+
+### R9-47 · nit · consistency
+
+§ Approvals, 2026-11-09 bullet (line 110): A comma is missing: "This run's session ends before Task 17 is built follow
+its steps by hand." Scenario: The sentence reads as "Task 17 is built follow…", which obscures that it is an
+instruction to follow Task 17's steps by hand.
+
+### R9-48 · major · work context
+
+Task 17, Change: `save` and the ref case; the 2026-11-09 Approvals block ("a private ref is fine"); Tests: By the
+session: The 'private ref' `refs/wip/<branch>` is only private where the repo is. On a personal public repo such as
+this one (and on any public company repo), every pushed ref is listed by `git ls-remote` and anyone can fetch it.
+GitHub also keeps the objects reachable by SHA after `drop` deletes the ref. The save's tree is `git add -A` over
+every unstaged and untracked file that isn't ignored, plus plan and review files, "tracked or not". So scratch files,
+drafts, and company plans kept untracked on purpose get published world-readable forever. The level check is only
+`work-context.sh level`, which prints `personal`/`company` and never consults `gh repo view --json visibility`. The
+user's ruling rests on the ref being private, and the plan never checks that. Scenario: A session on this public
+dotfiles repo stops part-way while an untracked scratch note sits in the work tree, for example a draft that names a
+customer for a Task M edit or a token pasted while debugging. `plan-wip save` commits it into `refs/wip/ai-framework`
+and runs `git push origin +refs/wip/...`. The content is now public, which breaks the personal-public bar
+("world-readable forever: no customer names, hostnames, internal tooling, secrets"). The same applies at company level
+when an untracked plan named for an engagement is pushed to a public `uptimeconsulting` repo. Fix: resolve visibility
+and refuse, or save only the plan and checkpoint files, on a public origin.
+Fixed: Moot: Task 17 no longer has a private ref or `bin/plan-wip`; on the user's 2026-11-09 ruling after round 9 a
+session end commits the work in progress on the branch and pushes it, and the work lands by a squash-merged PR. Only
+checkpointed tasks and the tracked plan files are committed, so no untracked scratch file is published.
+
+### R9-49 · minor · work context
+
+Task 17, Change: `save` (the tree is "the index plus every entry of the skill's listing, unstaged and untracked"); the
+2026-10-30 Approvals first bullet: `save` sweeps the user's own uncommitted edits into a commit and pushes it to
+origin. The standing approvals say the opposite: commit "keeping the user's own uncommitted edits out". An approval
+also covers only what it names, and the 2026-11-09 yes named the run's checkpoints, half-done task and plan. Nothing
+in `save` tells a leftover from the run's half-done task apart from an edit the user made by hand. Scenario: The
+gitStatus at this session's start shows the user's own uncommitted edits to `plan-ai-framework.md` and the findings
+file. The plan files are included on purpose. But an unrelated edit the user is making in `source/` or `claude/` at
+the same time gets pushed to origin under `refs/wip/ai-framework` without the user's yes. A later `restore` on another
+machine then lays it down with `read-tree -u --reset`.
+Refuted: Downgraded from major by the verifier. Downgraded. The 2026-10-30 'keeping the user's own uncommitted edits
+out' bullet governs commits to main, and later bullets replaced it for these runs. The save is a non-branch ref that
+each save replaces and `drop` deletes. `restore` refuses unless the target's listing is empty, so it never overwrites
+local work. Part of the concern is real: the yes named the run's checkpoints, half-done task and plan, and
+implementing-plans already separates run leftovers (paths in a task's Files list) from everything else. Limiting the
+save to Files-list leftovers plus the plan files is a pathspec change that is cheap to make while implementing. Where
+it matters most, on a public origin, finding 0 already covers it.
+
+### R9-50 · major · work context
+
+Task 17, Interfaces and `save` (level from `PLAN_WIP_LEVEL` = `work-context.sh level` only), compared with Task 15's
+Customer level, deferred: Task 15 deliberately stops trusting `work-context.sh level` alone (R5-37, R5-38, R6-32). A
+customer repo not yet in `~/.claude-customers` resolves as `company` (guard lines 639-662, and 15c's note says the
+same), so `ai-log` also requires the origin to be `github.com/andrelin`, `github.com/uptimeconsulting` or an `allow`
+entry. `plan-wip` has no such check. In the branch case its skill section commits and runs `git push -u origin <branch>`
+and in both cases it pushes a `refs/wip/` ref, including untracked plan files, to whatever origin resolves
+as company. Scenario: The user starts work in a new customer's GitHub org and hasn't added the org to
+`~/.claude-customers` yet. The guard resolves it as company, the session stops part-way, and `plan-wip save` pushes
+`refs/wip/<branch>` into the client's remote. If the plan's Approvals mention a PR, the skill also commits a `Work in
+progress` commit there and pushes it. Both are customer-level writes ("push in any form") that the user never made.
+Task 15 already closed this gap for the log, which only reads transcripts.
+Fixed: Task 17's level is now `ai-log level`, a new Task 15 subcommand printing the level by Task 15's gate with its
+origin allowlist, so an unlisted customer repo gets no commit or push; tests in both tasks.
+
+### R9-51 · minor · work context
+
+Task 17, Change: `drop` and `restore`; the skill's Finish step: Only `save` checks the level. `drop` always runs `git push origin :refs/wip/<branch>`
+and `restore` fetches and runs `git switch -c`/`read-tree`, with no customer check.
+The skill's Finish step ("once the code review's commit has run, `plan-wip drop`") isn't limited to personal and
+company level either. Inside the script the push is caught only if the `git` shim is first on `PATH`, not by the
+PreToolUse hook, which sees just `plan-wip drop`. Scenario: A customer-level run ends: the user makes the commit, and
+the skill then runs `plan-wip drop`. If "none present" only means locally absent, the script still issues `git push origin :refs/wip/<branch>`
+against the customer's remote. That is a push in a form the level forbids, and it is
+blocked only by luck of `PATH`. Fix: make `drop` (and `restore`'s writes) exit 0 at customer level as `save` does, and
+say so in the skill line.
+
+### R9-52 · nit · work context
+
+Task 15b, Change: the mechanical redaction; the 2026-11-05 Approvals ("at every level ... the introspection"): At
+company level the introspection's prose goes to a repo on the personal account. Redaction folds only names listed in
+`~/.claude-customers`, the work repo's remotes and folders, and the plan's and branch's words. The client named inside
+a company engagement's plan body or tasks is not in any of those sources until 15c's model pass. The plan relies only
+on the prompt's "no customer names". Scenario: An `uptimeconsulting/<engagement>` repo whose plan's tasks name the end
+client, with the client not listed because the repo is company. The model's introspection says "the `<client>` SSO
+migration review took 9 rounds". The redaction misses it, and `ai-log note` commits and pushes it. Within the user's
+private repo this is acceptable at personal-private level, but the gap should be stated in the `work-contexts.md` text
+Task 15b adds, which currently promises the prose is "mechanically redacted".
+Refuted: Downgraded from minor by the verifier. Downgraded to nit. The destination is the user's own private log repo,
+and the 2026-11-05 Approvals explicitly cover the introspection at company level. The prompt forbids customer names.
+Follow-up 15c already records the model terms pass 'at every level, since a customer repo not yet in
+~/.claude-customers resolves as company', so the gap is known and deferred. The work-contexts.md text says
+'mechanically redacted', which is accurate; it doesn't promise the result is complete. What's left is an optional
+caveat in the doc's wording.
+
+### R9-53 · nit · work context
+
+Task 13, Deviation (2026-11-03): the issue that carries open items: The issue goes on this public repo. The plan
+doesn't say that what it carries meets the personal-public bar, for example that Task M's items name no customer or
+repo-specific facts (its own text says those stay in the private repo). Scenario: While drafting, the executor expands
+Task M's "that repo's confidentiality, its external mirror folder" into the actual repo and folder names to make the
+item actionable, and files that on the public dotfiles issue tracker. One line saying the issue keeps to the plan's
+wording, with no names added, would settle it.
+Refuted: Dropped by the verifier. Dropped. The 2026-11-09 Approvals record Task 13's issue as 'Ask me then — the run
+stops at Task 13 to show the draft before filing', so the user reads the draft before anything reaches the public
+tracker. Task M also keeps customer names in the private repo by its own text. The scenario where names creep in
+during drafting is caught at that user checkpoint, so it isn't an unguarded failure, and it is a drafting choice left
+to the executor.
+
+## Round 10
+
+### R10-1 · major · grounding
+
+Task 17, Change, *Landing* and *The skill*; Approvals 2026-11-09 ("work that has such commits lands by a squash-merged
+PR"): The rule that makes WIP commits acceptable, that such work lands only by a squash-merged PR, is not written
+anywhere an executor loads. Task 17's skill paragraph holds only "the trigger, the level, the steps and customer
+level", and `reviewing-in-rounds` stays "unchanged", which means its Completion still only offers per-task commits and
+says nothing about how the branch lands. The rule would exist only in the plan, which Task 13 deletes, and in
+`staged-workflow.md`, a reference doc no skill loads. Simpler fix: put one clause in the same `implementing-plans`
+paragraph, or in Completion: "a branch holding session-end commits lands by a squash-merged PR, never a fast-forward".
+Scenario: A future personal plan whose `## Approvals` says "fast-forward `main`, push", as this plan's own 2026-11-02
+run did, has two session ends. Its `Work in progress: Tasks …` commits, empty ones included, are fast-forwarded onto
+`main` and pushed to a public repo. At company level the same thing breaks the "readable history before `main`" bar
+that the user's ruling was meant to protect.
+Fixed: Task 17's skill paragraph carries the landing rule: a branch holding session-end commits lands by a
+squash-merged PR, never a fast-forward.
+
+### R10-2 · minor · grounding
+
+Task 17, Change, *The level* ("`ai-log level`, Task 15's gate with its origin allowlist"); Task 15, *Customer level,
+deferred*: The session-end commit and push are gated on the analytics allowlist: `github.com/andrelin`,
+`github.com/uptimeconsulting`, or a line in the private log clone's `allow` file. Any other origin counts as customer.
+That makes a git-safety decision depend on a data repo's config. Nothing in the plan populates `allow` or says who
+does, and it does not say what `ai-log level` prints when `AI_LOG_DIR` is missing, as on a fresh machine. The stated
+reason (R9-50: an unlisted customer repo gets nothing committed) is also inconsistent: the same unlisted repo resolves
+as company for `reviewing-in-rounds` Completion, which commits on `work-context.sh level`, and for the guard. The
+simpler approach is the level every other commit step already uses, `work-context.sh level`, which the guard enforces
+anyway. Scenario: Company work on the company's Forgejo host (the global `CLAUDE.md`'s *Forgejo work*; the plan itself
+names "a company Forgejo") resolves as company, but `ai-log level` prints `customer`. Every session end there commits
+and pushes nothing. That silently breaks the user's standing rule, "Commit and push the branch" at personal and
+company level, and work done on one machine never reaches another. The same happens on any machine where the log repo
+isn't cloned yet, if `ai-log level` fails or defaults to customer.
+Refuted: Downgraded from major by the verifier. Downgraded. The gate is a deliberate, recorded decision (R9-50), and
+Task 15 already names the `allow` file as the remedy for "a company Forgejo, say". Its failure is fail-safe: at
+customer level nothing is committed, and the report lists the uncommitted work and checkpoint refs, so nothing is lost
+or wrongly written. The real gaps are cheap to settle while implementing: what `ai-log level` prints when `AI_LOG_DIR`
+is missing, and who adds the Forgejo line to `allow`. Switching to `work-context.sh level` would also not be costly to
+reverse once built.
+
+### R10-3 · minor · grounding
+
+Task 17, Change, *When*: The trigger contradicts itself. It names "the run's part-way final report, the one that
+prints `ai implement <plan-file>`" as a trigger, and says "a stop to ask is not one". But `implementing-plans` prints
+exactly that part-way report on every stop, a stop for a user decision included ("every stop here stops"; § *Finish*:
+"A run that stopped part-way … prints `ai implement <plan-file>`"). The executor can't tell which stops should save.
+Scenario: A run stops to ask about a deviation and prints the part-way report. Under one reading it makes an
+`--allow-empty` WIP commit, pushes, and writes a log entry on every question. Under the other reading the part-way
+report never triggers, and only an explicit "wrap up" saves.
+
+### R10-4 · minor · grounding
+
+Task 15, Interfaces, the entry ("An agent's lens comes from the `Lens:` line of its prompt … the `###` heading … the
+line starts with"): The plan assumes the reviewer prompt holds a line that starts with `Lens:`. I checked this
+session's real Workflow agent transcripts (`subagents/workflows/wf_*/agent-*.jsonl`): the harness indents every line
+of the computed task text, so the line reads `Lens: Security and work context — …`, with leading spaces after a
+harness preamble. In the skill's template the `Lens:` text also sits mid-line after a sentence. Fixtures invented from
+the template would pass, while real Workflow reviewers land under no lens. The real-data dry run only greps for leaks
+and checks prices, so nothing would catch it. Scenario: Task 15's real dry run on this plan writes `tokens per review
+lens` with every Workflow reviewer's tokens under no lens. Follow-up 15d's cut candidates by lens are then built on
+empty data.
+
+### R10-5 · nit · grounding
+
+Task 17, Change, *The skill* (only the opening line and the red flag are edited);
+`claude/skills/implementing-plans/SKILL.md:64`: The skill's review-input rationale, "since nothing is committed and
+`BASE..HEAD` is empty", becomes false after a session-end commit, but Task 17 doesn't list it among the in-place
+edits. The per-task input (the unstaged diff) is still right, but the stated reason now misleads a reader into
+thinking `Base..HEAD` is always empty. Scenario: After a resume across a session-end commit, a session reasons from
+line 64 that `HEAD` equals `Base:`, then misreads the moved `HEAD` as a subagent having run git, or picks the wrong
+review input.
+Refuted: Downgraded from minor by the verifier. Downgraded. Behaviour is unaffected. The per-task review input stays
+`git diff -- <paths>` on the unstaged diff, which is still right, and the *Before staging* moved-`HEAD` check
+(SKILL.md:91) compares against the run's starting `HEAD`. Task 17 says explicitly that the check is unchanged and that
+the next run starts at the new `HEAD`. Only the stated reason ("`BASE..HEAD` is empty") becomes inaccurate, so this is
+wording.
+
+### R10-6 · nit · grounding
+
+Follow-up 15c, Sketch ("a model terms pass … runs at every level, since a customer repo not yet in
+`~/.claude-customers` resolves as company"): This rationale is out of date against Task 15's origin allowlist. Any
+origin outside `github.com/andrelin` and `github.com/uptimeconsulting` and not in `allow` is already deferred as
+customer, so an unlisted customer repo is not recorded as company. Task 13's issue would carry the stale reasoning.
+Scenario: Whoever details 15c from the issue builds a model pass at personal and company level for a risk the
+allowlist already closed, paying a model call on every entry.
+Refuted: Downgraded from minor by the verifier. Downgraded. The rationale is stale: Task 15's origin allowlist already
+treats an unlisted customer repo as customer. But 15c is a Sketch, which by its own text is detailed only after the
+Revisit has seen real entries, and it is re-decided then. A stale reason in a sketch is wording and costs nothing to
+fix now. Whether to build the model pass at personal and company level gets settled when 15c is detailed.
+
+### R10-7 · nit · grounding
+
+Task 15b, *Why not also `implementing-plans`* ("it never commits"): Once Task 17 is built, `implementing-plans` does
+commit (the session-end commit) and runs `ai-log record`, so this justification is wrong. The outcome is still right,
+since the 15b introspection step belongs only in Completion. Scenario: A reader of the folded `staged-workflow.md` or
+of Task 13's issue sees "implementing-plans never commits" next to a skill that does.
+
+### R10-8 · nit · grounding
+
+Task 16, Change (glob list): "The common languages" is the user's ruling, but the list leaves out several common
+source extensions that the language-neutral rule would apply to: `.mjs`, `.cjs`, `.vue`, `.dart`, `.sql`,
+`.cs`-adjacent `.csx`/`.razor`, `.m`. I verified the problem is real: the current `paths:` holds no `/*.cs`. Scenario:
+The next report says the rule didn't load for an `.mjs` or `.razor` file, which is the same silent failure
+`rule-globs.md` warns about.
+
+### R10-9 · major · scope and slicing
+
+Task 15, Interfaces (the entry: tokens per review lens from the `Lens:` line) and Tests (Counts); order of the Real
+data step: Per-lens cost rests on an unverified assumption: that a reviewer's prompt has a line that *starts* with
+`Lens:`. Workflow-computed prompts break that. In this very review's prompt, `Lens: Scope and slicing — …` sits in the
+middle of one long line. Meanwhile each Workflow agent's `.meta.json` already carries the lens in `description`
+(`"review:Scope and slicing"`, checked in ~/.claude/projects/-Users-andrelin--dotfiles/*/subagents/*.meta.json), and
+Task 15 reads that file only for `workflowPhase`. The fixtures are invented to match the assumption, so the tests
+pass. The one check against real transcripts is the dry run, which comes last and greps only for leaks, never for
+per-lens totals. Scenario: Task 15 ships green. Every plan review run as a Workflow puts its reviewer tokens under no
+lens, and no warning fires. Task 15d's cut candidates by lens (the reason R7-2 added the field) then rest on empty
+data, and the stored entries can't be re-derived once transcripts expire after 30 days. Two fixes: check per-lens
+totals in the real-data dry run, and move that check up as a first spike so a missing field is caught before the
+schema is built on it. Or take the lens from `.meta.json` `description`.
+Fixed: the lens comes from a Workflow agent's `.meta.json` `description` where present, else from `Lens:` anywhere
+in the prompt, indented or mid-line; a fixture copies a real prompt's shape.
+
+### R10-10 · minor · scope and slicing
+
+Task 17, Tests (Resume across a session-end commit) against Task 15's `ai-log level` gate: The resume test calls for
+'a scratch repo with a local bare repo as `origin`'. Task 15's gate prints `customer` for any origin that is not
+`github.com/andrelin/…`, `github.com/uptimeconsulting/…` or a host/owner in the clone's `allow` file. A local path
+origin fails that gate, so the session-end steps 'as the skill words them' commit and push nothing, and the test
+cannot pass as written. The plan says neither how to make that origin resolve as personal (for example a
+`github.com:andrelin/…` url with a `pushurl` to the bare repo, or an `allow` entry) nor that `AI_LOG_DIR` must point
+at a throwaway clone. Scenario: An executor runs the test as written, sees no commit, and either loosens the gate or
+points origin at a real `github.com:andrelin/…` url. In the second case the steps' `ai-log record` writes to and
+pushes the user's real `$HOME/.ai-framework-log`, a write this test was never approved for.
+Refuted: Downgraded from major by the verifier. Downgraded. The gap is real: a local-path origin fails `ai-log
+level`'s origin allowlist, so the session-end steps commit and push nothing and the test as written cannot pass. But
+it is a test-setup choice the executor can settle cheaply (a github.com:andrelin/… url with a `pushurl` to the bare
+repo, or an `allow` entry), and a reviewer can check it in the diff. The feared write to the real log is also
+unlikely. The session's cwd is the dotfiles repo, not the scratch repo, so `ai-log record` there finds no session in
+scope and exits 1 without writing.
+
+### R10-11 · minor · scope and slicing
+
+Task 17, Change: Landing vs The skill: Work-in-progress commits are only safe because 'work that has such commits
+lands by a squash-merged PR'. But the skill paragraph Task 17 writes holds only 'the trigger, the level, the steps and
+customer level', not the landing rule. The rule applies to every future run at personal and company level, but it
+would live in this plan alone, and Task 13 deletes the plan. Scenario: A later plan's `## Approvals` says 'commit to
+`main`' or 'fast-forward `main`', as this plan's own 2026-10-30 and 2026-11-02 blocks did. Its session ends make `Work
+in progress: Tasks …` commits, some of them empty, and the fast-forward lands them on the default branch. At company
+level that breaks the readable-history bar. Fix: put the landing rule in the skill line, or have the session end stop
+when the plan's Approvals land by anything other than a PR.
+Refuted: Downgraded from major by the verifier. Downgraded. 'It would live in this plan alone' is refuted: Task 13's
+fold writes 'a session end's work-in-progress commit and the squash-merged PR it calls for' into
+claude/docs/staged-workflow.md. What remains is that the skill, which is the point where the commits are made, does
+not carry the landing rule. A future run reading only implementing-plans could still fast-forward WIP commits onto
+main. Adding one clause to the skill paragraph is cheap while implementing.
+
+### R10-12 · minor · scope and slicing
+
+Task 17, Change: `--allow-empty` (R9-4, R9-36): The forced empty commit adds a mechanism nothing needs. Task 15
+already handles a re-run at the same `HEAD`: same id, it skips its own entry when searching and replaces it with a
+window from the previous other entry to now (Task 15's test: 'two runs at the same `HEAD` → one entry, the later
+window'). So a second session end with no new checkpoint loses no counts without an empty commit. Scenario: Every
+session end with nothing new still adds an empty commit to the branch and the PR. The test 'A second session end …
+still makes a commit' then locks in behaviour no requirement asks for. Dropping `--allow-empty` and that test makes
+the task smaller.
+Refuted: Dropped by the verifier. The empty commit does something Task 15's same-HEAD replace cannot. Suppose a
+session end on machine A records id(X) at HEAD X. Machine B then pulls and ends a session that checkpointed nothing
+new. Without an empty commit, B's record replaces entry id(X) from B's transcripts alone, and A's sessions are lost,
+because B cannot see A's transcripts. A new HEAD per session end avoids that. The empty commits vanish in the squash
+merge, so they cost little.
+
+### R10-13 · minor · scope and slicing
+
+Task 15, Tests: Counts ('at company level the plan's and branch's words redacted from the introspection (15b)'): Task
+15's test list includes a behaviour of Task 15b: redacting the introspection through `ai-log note`. That subcommand
+doesn't exist until 15b is built. Scenario: The Task 15 executor can't write or pass this test, and either stubs
+`note` early (building part of 15b inside 15) or leaves a test unmet and stops. Move the line to Task 15b's Redaction
+tests.
+
+### R10-14 · minor · scope and slicing
+
+Task 15, Interfaces (`commit`, `framework.dotfiles_commit`) vs the 2026-11-09 squash-merge landing: Task 15's schema
+was designed before the switch to squash-merged PRs. Under that landing, every run built on a branch records branch
+shas, and the squash plus branch deletion makes those shas unreachable. Nobody re-checked whether `commit` and
+`dotfiles_commit` still identify anything once the run lands. Scenario: This run's own entries, and every later run
+built on a branch, name a `dotfiles_commit` that `main` does not contain. Task 15d's 'grouped by framework commit'
+then groups by dead shas, and the stored entries are costly to repair once many exist. Settle what to store (for
+example the merge-base with the default branch as well) before the first real entry.
+Refuted: Dropped by the verifier. Weak failure scenario. GitHub keeps every PR's head under refs/pull/`<n>`/head after a
+squash merge and branch deletion, so the shas remain fetchable. `dotfiles_commit` is a branch sha only when the plan
+being run is in the dotfiles repo itself. Other runs read the dotfiles checkout, normally on main. Grouping by sha
+works whether or not the sha is on main. Task 15d is an explicit sketch to be settled once real entries exist.
+
+### R10-15 · minor · scope and slicing
+
+Approvals, 2026-11-09 bulk block: 'A company plan landing by "a PR" counts as squash-merged … (Task 17)': This ruling
+only mattered for the superseded private-ref design, which picked a branch commit or a private ref depending on how
+the work landed. Task 17 as rewritten no longer has that branch, yet the Approvals line still points to Task 17, and
+Task 17 says nothing of it. Scenario: An executor following the pointer looks for a 'squash-merged vs not' branch in
+Task 17 and may rebuild one. Mark the line as moot under the later ruling, or drop the '(Task 17)' pointer.
+Refuted: Dropped by the verifier. Not moot. Task 17's Landing still requires 'work that has such commits lands by a
+squash-merged PR'. The ruling 'Any PR counts as squashed' settles that a plan whose Approvals say 'a PR' meets that
+requirement. It sits in the bulk block answered after the redesign, so its pointer to Task 17 is correct and does not
+invite a squash-or-not branch.
+
+### R10-16 · nit · scope and slicing
+
+Task 15b, 'Why not also `implementing-plans`': The rationale says `implementing-plans` 'never commits'. That has been
+stale since Task 17, which adds session-end commits to `implementing-plans`. The conclusion still holds, because the
+session end skips the introspection, but the stated reason no longer does. Scenario: A reader of the folded doc or the
+skill history sees a reason that contradicts Task 17. Reword to: its only commits are session-end checkpoints, which
+record counts but no introspection.
+
+### R10-17 · major · decisions
+
+Task 17, Change, Landing and The skill (with § Approvals 2026-11-09, second block): The rule that work with
+session-end commits must land by a squash-merged PR is not placed anywhere an executor of a future plan will read it.
+The Skill bullet puts only the trigger, the level, the steps and customer level into `implementing-plans`.
+`reviewing-in-rounds` is "unchanged", and `staged-workflow.md` (Task 13) is a reference doc, not a step. The plan also
+leaves open what a session end does when the plan's own `## Approvals` says to fast-forward `main`, as the 2026-10-30
+and 2026-11-02 blocks did. Question the executor would ask: "Does the session-end paragraph also tell the run to land
+by a squash-merged PR and override an Approvals block that says fast-forward, or does the Approvals block win?"
+Scenario: A later personal plan records "commit to main / fast-forward main" in its Approvals. Its session ends write
+`Work in progress: Tasks …` commits on the branch, and Completion then fast-forwards `main`. Those WIP commits reach
+`main`, which the 2026-11-09 ruling ("should work in PRs that gets squashed") and the company bar of a readable
+history before `main` forbid.
+Fixed: with R10-1.
+
+### R10-18 · major · decisions
+
+Task 17, Change, At personal and company level: Nothing says what a session end does when the run's branch is the
+default branch. The 2026-10-30 Approvals and earlier runs committed straight to `main`, and the step pushes `<branch>`
+on a standing yes. Question the executor would ask: "On `main` or `master`, does the session end refuse, create a
+branch first, or commit and push to the default branch?" Scenario: A personal plan run on `main` reaches a wrap-up.
+The skill commits `Work in progress: Tasks 3, 4` with `--allow-empty` and runs `git push -u origin main`. Unreviewed
+WIP commits, empty ones included, are now on the published default branch, and no squashing PR can remove them. This
+is a remote write the user never approved in that form.
+Refuted: Dropped by the verifier. implementing-plans step 4 always runs `git switch -c <name>`, with the name taken
+from the plan file's name minus `plan-` and `.md`, and resume switches to that same branch. A run's branch is
+therefore never the default branch, and `git push -u origin <branch>` pushes the plan branch. The 2026-10-30 commits
+to main came before the skill existed and are not a session-end path.
+
+### R10-19 · minor · decisions
+
+Task 17, Tests, Resume across a session-end commit (with Task 15, Customer level deferred / `ai-log level`): The
+resume test uses "a local bare repo as `origin`". Task 15's gate prints `customer` for any origin that is not
+`github.com/andrelin/…`, not `github.com/uptimeconsulting/…`, and not in the clone's `allow` file. So by the skill's
+own wording the session-end steps commit and push nothing in that test, while the test expects a commit, a push and a
+clone that sees it. Question the executor would ask: "Does the test set a personal-looking origin URL with a separate
+pushurl or `insteadOf` to the bare repo, add an `allow` line, or does the gate treat local-path origins differently?"
+The last option changes a gate other tasks consume. Scenario: The executor follows the test literally, and `ai-log
+level` prints `customer`. Either the test fails, or the executor quietly weakens the gate (for example, local paths
+count as personal) to make it pass. That widens what `record` and the session end treat as non-customer.
+Refuted: Downgraded from major by the verifier. Downgraded. The gate would print `customer` for a local-path origin,
+so the test can't be run literally. The executor can fix this inside the test without changing the gate: set origin's
+URL to `git@github.com:andrelin/x.git` and give it a `pushurl` (or `pushInsteadOf`) pointing at the bare repo, which
+`git remote get-url origin` does not show. If the gate were weakened instead, a reviewer would see it in the diff.
+Cheap to settle while implementing.
+
+### R10-20 · minor · decisions
+
+Task 15, Interfaces `ai-log level` / Exit 2; Task 17, The level: It is not decided whether `ai-log level` needs the
+log clone. The gate reads an `allow` file in the private clone, and exit 2 is defined for "`AI_LOG_DIR` not a git
+clone". Task 17 makes the session-end save of the user's work depend on that command. Question the executor would ask:
+"On a machine without `~/.ai-framework-log`, does `ai-log level` fall back to the built-in allowlist, print
+`customer`, or exit 2? And does the session end then skip the commit and push?" Scenario: On a second machine where
+the log repo was never cloned (the Approvals say "on every machine", but nothing clones it), `ai-log level` exits 2.
+Every session end there saves nothing, so the work-in-progress commit and push the user asked for ("Commit and push
+the branch") never happen, and the cause is a missing analytics clone.
+Refuted: Downgraded from major by the verifier. Downgraded. The gap is real: Task 15 defines exit 2 for "AI_LOG_DIR
+not a git clone" without saying whether that applies to `level`. But treating the `allow` file as optional, so `level`
+falls back to the built-in allowlist and the commit and push run before `record`, is a one-line choice a reviewer can
+check in the diff. No built thing is costly to reverse.
+
+### R10-21 · minor · decisions
+
+Task 15b, The trigger / Files / Change, The skill step (with § Approvals 2026-11-05 "Yes, one line is fine"): The user
+approved "one line" in `reviewing-in-rounds`. The quoted step is three sentences, about 300 characters, which under
+the 150-character, one-sentence-per-line limit is at least three physical lines. The plan also renumbers steps 7 and
+8. Question the executor would ask: "Does the user's 'one line' mean one list item, or one physical line? If one line,
+which of the three sentences may be cut or moved into the printed output of `ai-log record`?" Scenario: The executor
+writes the three-line step and renumbers the list. That edit exceeds the user's exception as worded, and an approval
+covers only what it names (global § Approvals). Or the executor squeezes it into one line and drops "never undoes the
+commit" or the standing-yes clause the plan relies on for the yes to outlive the plan.
+Refuted: Downgraded from major by the verifier. Downgraded. The plan quotes the step's exact text, and its test fixes
+the shape as "one list item after the commit step", so the executor is not left to decide anything. The open point is
+whether the user's "one line" covers a three-sentence list item. That is cheap to confirm, or to trim by moving text
+into `record`'s printed output, and the edit is easy to reverse.
+
+### R10-22 · minor · decisions
+
+Task 15, Interfaces `<id>` / entry `commit`, `framework.dotfiles_commit` (with Task 13's 2026-11-05 deviation and the
+squash-merge landing): Entries store `commit` and `dotfiles_commit` as branch shas, recorded "after we commit to a PR,
+before merging it". Every run now lands by a squash-merged PR (2026-11-09), so those shas are never on the default
+branch and stop resolving once the branch is deleted. Task 15d groups trends "by framework commit". Question the
+executor would ask: "Should an entry record something that survives the squash (the PR number, the merge-base with the
+default branch, or a later back-fill of the squash sha), or are branch shas accepted as opaque?" Scenario: This run's
+entries and every session-end entry carry `dotfiles_commit` values from `ai-framework`. After the squash and branch
+deletion, `git show <sha>` fails, and 15d cannot tell which framework version an entry ran on. The entries are already
+pushed, so fixing the format later means migrating stored data.
+Refuted: Downgraded from major by the verifier. Downgraded. The user ruled "We log after we commit to a PR, before
+merging it", so storing a pre-merge sha was a deliberate choice. Shas still work as opaque keys for the id hash and
+for 15d's grouping, since equal shas group together even when they no longer resolve. In normal use `dotfiles_commit`
+comes from main on installed machines. 15d is only a sketch, so a PR-number field can be added when it is detailed.
+
+### R10-23 · minor · decisions
+
+Task 17, Change, At personal and company level (`plan-<branch>-review-*`): The pattern for the review files has two
+readings: the branch name, as written, or the plan's basename, which is how the findings files are actually named
+(`plan-ai-framework-review-findings-*.md` for `plan-ai-framework.md`). The two coincide only in this run. Question the
+executor would ask: "Is the glob built from the branch name or the plan basename?" Scenario: In a later run the plan
+is `plan-auth.md` on branch `fix-login`. `git add -u -- plan-fix-login-review-*` matches nothing, so the tracked
+review logs are never checkpointed and another machine resumes with stale review logs.
+Refuted: Dropped by the verifier. The two readings can't differ. implementing-plans step 4 always names the branch
+after the plan file minus `plan-` and `.md`, and review-log.md names the findings files
+`plan-<stem>-review-findings-<kind>.md`. So `plan-<branch>-review-*` is `plan-<stem>-review-*` by construction. The
+scenario's `plan-auth.md` on branch `fix-login` cannot arise under the skill.
+
+### R10-24 · minor · decisions
+
+Task 17, Change, the commit message `Work in progress: Tasks <list>` with `--allow-empty`: Two message questions are
+left open. First, `<list>` is undefined for an empty session-end commit with nothing new checkpointed, which the test
+requires. Second, at company level on Forgejo the global rule says to name work by issue and PR numbers, never a
+plan's task numbers. Question the executor would ask: "What does the message say when no task was checkpointed, and do
+Forgejo or company runs use issue numbers instead?" Scenario: An empty session end produces `Work in progress: Tasks …`
+or an invented filler. On a company Forgejo branch the commit names plan task numbers colleagues cannot map, against
+the global § Working on code. The squash hides it on `main`, but it stays in the open PR's history.
+
+### R10-25 · minor · decisions
+
+Task 17, Change, the `ai-log record` step ("counts only, skipping the introspection it prints") vs Task 15b's skill
+step ("do what it prints, without asking"): `record` prints an instruction to write and pipe an introspection, and one
+skill says to obey it while the other says to ignore it. It is not decided whether "counts only" means a flag on
+`record` (an interface change Task 15 would need) or prose in the session-end paragraph. Question the executor would
+ask: "Does `record` get an option that suppresses the introspection prompt, or does the session end rely on Claude
+ignoring printed instructions?" Scenario: A session end runs `record` under the 15b habit of doing what it prints.
+Claude writes and pushes an introspection for every session, and 15d's cut-candidate counts are inflated by mid-plan
+introspections.
+Refuted: Dropped by the verifier. The plan does decide this. The session-end paragraph in implementing-plans says
+outright "counts only, skipping the introspection it prints". 15b's "do what it prints" step sits in
+reviewing-in-rounds Completion, which runs only at the end of a plan, not at a session end. The two instructions live
+in different skills and fire in different situations. Whether to add a flag is out of scope as a command-flag choice.
+
+### R10-26 · nit · decisions
+
+Task 17, Change, When ("the run's part-way final report" vs "A stop to ask is not one"): Some planned stops are both:
+the run stopping at Task 13 to show the issue draft ("Ask me then"), or a usage-limit wrap-up that prints `ai
+implement`. The plan does not say which triggers apply when a stop to ask is also the run's part-way final report.
+Question the executor would ask: "If the run stops to ask and prints the resume command, is that a session end?"
+Scenario: At the Task 13 stop, one reading commits WIP and runs `record` before the user answers, and the other saves
+nothing. If the user then closes the terminal, the work is either pushed or left local, depending on which reading the
+executor wrote into the skill.
+Refuted: Downgraded from minor by the verifier. Downgraded. implementing-plans prints `ai implement <plan-file>` only
+in the final report of a run that stopped part-way, and Task 17 defines the trigger as "the one that prints `ai implement <plan-file>`".
+A stop to ask, such as the Task 13 draft, does not print that command, and a wrap-up that
+does is a session end. At most a clarifying word is missing.
+
+### R10-27 · minor · decisions
+
+Task 15, Files (outside this repo) / § Approvals 2026-11-05 "on every machine": The yes covers every machine, but
+nothing decides who creates `$HOME/.ai-framework-log` on a new machine. The plan does not say whether a `bin/dotfiles`
+init step clones it or the user does it by hand. Question the executor would ask: "Should the Claude init script clone
+the log repo, or is a manual clone the documented setup?" Scenario: On a fresh WSL machine every `record` and `note`
+exits 2 with the clone hint. The 15b step reports a failure after every plan and no data is collected there, so the
+'every machine' requirement silently fails.
+
+### R10-28 · minor · decisions
+
+Task 13, 2026-11-05 deviation and issue paragraph: The plan says "a GitHub issue" but never names the repo. On
+`andrelin/dotfiles` it is public, and the carried items include Task M's sketch (a private repo's confidentiality,
+mirror folder and push soft-deny) and 15c's customer-redaction notes. Question the executor would ask: "Is the issue
+filed on the public `andrelin/dotfiles`, and if so, is Task M's sketch reduced to a generic line?" The user's "Ask me
+then" covers the filing, but not which sketches are fit to publish. Scenario: The draft copies Task M step 1 verbatim
+into a public issue and describes a private, customer-bearing repo's setup in world-readable text, against the
+personal-public bar.
+Refuted: Dropped by the verifier. The plan file itself is tracked in the public `andrelin/dotfiles` and already
+contains Task M's sketch and 15c's notes in generic words, with no names. An issue repeating them reveals nothing new.
+The 2026-11-09 "Ask me then" also makes the run stop and show the user the draft before anything is filed.
+
+### R10-29 · nit · decisions
+
+Task 15, Tests, Counts ("at company level the plan's and branch's words redacted from the introspection (15b)"): A
+Task 15b behaviour (`note`'s redaction) is listed among Task 15's tests, though Task 15 has no `note` and no
+introspection. Scenario: A Task 15 implementer must either build part of 15b early or leave a listed test unwritten,
+and the task review flags whichever choice they make.
+
+### R10-30 · major · consistency
+
+Task 17, Files / The skill; claude/docs/work-contexts.md:85-86; claude/docs/skill-precedence.md:45;
+claude/skills/implementing-plans/SKILL.md:64 and :103: Task 17 makes `implementing-plans` commit and push without
+asking at a session end, and stage the plan file. Its Files list only the skill and the reference doc, and its
+in-place edits name only the opening line and the red flag. Several statements that say the opposite are left
+standing: work-contexts.md "At every level, the workflow skills never commit on their own. `implementing-plans`
+checkpoints in the index and never commits"; skill-precedence.md "the commit waits for the user"; the skill's own
+"since nothing is committed and `BASE..HEAD` is empty" (line 64) and "The plan file is never staged" (line 103). Task
+15b's later work-contexts.md edit covers only `ai-log`, not the session-end commit. Scenario: After Task 17 is built,
+a session ending at personal level reads the skill paragraph saying commit, stage the plan and push. The same skill
+and work-contexts.md (which it loads for policy) say it never commits and never stages the plan. The session either
+stops to ask or skips the save. This also breaks the global constraint "Docs ship with the change": claude/docs/* must
+be updated in the task that changes behaviour.
+Fixed: Task 17's Files gain `work-contexts.md` and `skill-precedence.md`, and its in-place edits the review-input
+line, each naming the session-end commit as the one exception.
+
+### R10-31 · minor · consistency
+
+Task 17, Change: When / What a resume sees: The session-end save commits only the index (checkpointed tasks) plus the
+plan and its review files. That leaves out the final code review stage, which runs inside `implementing-plans` (§
+Finish with the final review) and can span sessions: its fixes stay unstaged leftovers until reviewing-in-rounds
+Completion step 1. Its findings file (tracked here) records rounds as fixed. The plan assumes all work in progress
+lives in the index, and nothing checks that assumption. Scenario: The user asks to wrap up after code-review round 4.
+The session end commits the findings file showing R4 fixes as `Fixed:` but not the unstaged fix edits, and pushes. On
+another machine `git pull` resumes round 5 against a tree without those fixes. The log says they are fixed, so nobody
+re-applies them.
+Refuted: Downgraded from major by the verifier. Partly stands, downgraded. The gap is real: reviewing-in-rounds
+Completion step 1 is the only place that stages review fixes, and the final code review runs inside implementing-plans
+and can span sessions (this plan's code review ran 12 rounds). A wrap-up request mid-review would push a findings file
+marked `Fixed:` without the fixes. On the same machine nothing is lost, because the fixes stay unstaged. The failure
+needs both a mid-review wrap-up and a resume on another machine. It is also cheap to settle while implementing, with
+one sentence that either stages fix leftovers at a session end during the review or leaves the findings file out. It
+is neither a load-bearing assumption nor costly to reverse.
+
+### R10-32 · minor · consistency
+
+Task 15, Tests (Counts bullet), and Task 15b, Tests (Redaction): Task 15's test list holds "at company level the
+plan's and branch's words redacted from the introspection (15b)". The redaction and `note` are only built in Task 15b,
+and 15b's own Redaction test does not list the company-level plan, heading or branch words. Scenario: The Task 15
+implementer cannot write this test because `note` and the redaction don't exist yet. The Task 15b implementer follows
+15b's Tests and never adds it. So the company-level word redaction (R7-3, R7-40) ships untested.
+
+### R10-33 · minor · consistency
+
+Task 17, The skill; § Approvals 2026-11-05 ("its skill line is where that yes outlives this plan"): Approvals says
+Task 17's skill line is where the user's standing yes to commit and push at session end outlives the plan. Task 17's
+skill paragraph lists only trigger, level, steps and customer level: no mention of the standing yes. The landing rule
+("work that has such commits lands by a squash-merged PR") also goes into no skill, only into Task 13's
+staged-workflow.md. Scenario: After Task 13 deletes the plan, a future personal-level run hits the session-end
+paragraph. Under the global "An approval covers what it names" it asks before committing and pushing. Or it finishes
+and fast-forwards `main` with the `Work in progress:` commits, which the user's 2026-11-09 ruling forbids.
+
+### R10-34 · nit · consistency
+
+§ Approvals 2026-11-05 ("From Task 15b on…"), Approvals 2026-11-09 ("session ends before Task 17 is built follow Task
+17's steps by hand"), Task 15 Tests ("No real record runs here: the first is Task 15b's end to end"), Order (16, 15,
+17, 15b): The build order puts 17 before 15b, and the by-hand session-end rule applies once Task 15 exists. So real
+`ai-log record` runs, each committing and pushing to the log repo, happen before 15b. That contradicts Task 15's "the
+first is Task 15b's end to end" and the log-repo yes scoped "From Task 15b on, after every plan". Scenario: A session
+ends after Task 15 is built and before 15b. Task 17's steps (by hand or built) run a real `record` that pushes an
+entry, while the plan says no real record runs yet and the push approval starts at 15b. The executor has to choose
+which line to break.
+Refuted: Downgraded from minor by the verifier. Downgraded. The approval conflict is refuted: Approvals line 85
+(2026-11-05) already approves "push to it as Task 15 builds". Task 17's session-end `ai-log record` also rests on the
+user's own request, "We should commit and ai log at the end of sessions too", which Task 17 cites as its standing yes.
+What is left is a stale factual line in Task 15's Tests, "the first is Task 15b's end to end", which the Order (16,
+15, 17, 15b) makes untrue. That is a wording fix and leaves the executor no real dilemma.
+
+### R10-35 · minor · consistency
+
+Task 15b, Files (claude/docs/work-contexts.md addition): The added text says `ai-log` commits and pushes "after a
+plan's commit" by `reviewing-in-rounds`. Task 17, built before 15b, also runs `ai-log record` (commit and push to the
+log repo) at every session end. The doc describing what leaves the machine and on which standing yes omits it.
+Scenario: A reader checking work-contexts.md for what is pushed without asking is told it happens once per plan after
+the final commit. In fact every session end pushes an entry, and also pushes the work branch.
+
+### R10-36 · minor · consistency
+
+Task 13, the 2026-11-03 deviation (list of open items for the issue): The enumerated open items do not match the rest
+of the plan. They omit what Handover item 6 lists ("the audit's recorded Mediums and Lows, R12-4"), the pending reruns
+behind the 🚧 PARTIAL rows of Tasks 5, 8 and 9 (Handover items 1-2), Task 3b's real-settings merge, closing
+planechaser#73, and the unfiled learnings. They still include "Task 7's conflict sent to the user", which the status
+table and Handover item 5 record as decided and reworded 2026-11-05. Scenario: Task 13 files the issue from its own
+list and `git rm`s the plan. The PARTIAL tasks' unrun tests and R12-4 survive only in squashed-away history, and the
+issue carries a resolved item.
+
+### R10-37 · minor · consistency
+
+Task 16, Files: Task 16 makes `bin/check-md-limits` stop counting front matter, and updates
+claude/docs/markdown-limits.md. The always-loaded rule claude/rules/markdown-limits.md:26 still says "every line of an
+agent-loaded file … counts, because it is loaded whole", and it is not in the Files list. Scenario: After Task 16, the
+rule Claude loads when editing Markdown contradicts the checker. A session trims front matter to meet an aim the
+checker no longer applies, or reports the checker as wrong.
+
+### R10-38 · minor · consistency
+
+Task 17, Line budget: The budget is the 4 front-matter lines Task 16 frees, plus the single named fallback cut (about
+2 lines). That has to hold a new paragraph (trigger, level, add/commit/allow-empty/ref delete/push/record steps,
+customer level) and the in-place edits. Finding 1's in-place edits (lines 64 and 103) are not in the budget, and if
+the edits don't fit there is no path after the one fallback. Scenario: The executor writes the paragraph, finds the
+skill at 123 against the 120 pin, makes the one allowed cut, is still over, and has to stop: the pin is "never raised"
+and no other cut is sanctioned.
+
+### R10-39 · nit · consistency
+
+Task 16, Interfaces: It says "none", but Task 17 (and the Order line "after 16, which frees the 4 lines its skill edit
+fits in") consumes Task 16's checker change. Scenario: An implementer reading only Task 16 sees no consumer and might
+reorder or narrow the front-matter exemption (for example, to rules only), which would break Task 17's budget.
+
+### R10-40 · nit · consistency
+
+§ Follow-ups, not tasks of this run (first line): "neither can be built before real entries exist" refers to two
+items, but the section holds three (Revisit, 15c, 15d). Scenario: A reader isn't sure whether the Revisit is also
+carried into Task 13's issue. Order and Task 13 say it is.
+
+### R10-41 · nit · consistency
+
+Task 17, Change: At personal and company level (`plan-<branch>-review-*`): claude/docs/review-log.md names findings
+files `plan-<stem>-review-findings-<kind>.md`. Task 17 uses `<branch>`. They coincide only because implementing-plans
+step 4 derives the branch from the stem. Scenario: If the branch was created by hand or renamed, the pathspec misses
+the findings file, and the review state isn't pushed for another machine.
+Refuted: Dropped by the verifier. Refuted by the repo. implementing-plans SKILL.md step 4 names the branch as "the
+plan file's name minus `plan-` and `.md`", and resume step 1 requires the branch "named as in 4", stopping otherwise.
+Within implementing-plans, where Task 17's paragraph lives, `<branch>` always equals `<stem>`. A hand-made or renamed
+branch makes resume stop before any session end, so the pathspec can't miss the findings file.
+
+### R10-42 · nit · consistency
+
+§ Approvals, 2026-11-05 block, bullet "This run works on branch `ai-framework`… `main` fast-forwarded, pushed and CI
+watched": The 2026-11-09 block supersedes this bullet (squash-merged PR instead of fast-forward), but the bullet isn't
+marked as superseded where it stands. Scenario: A resuming executor that reads the Approvals top-down acts on the
+fast-forward yes before reaching the later block.
+
+### R10-43 · minor · work context
+
+Task 17, Files and Change (the standing commit and push); claude/docs/work-contexts.md § An approval covers one
+action, not a policy: Task 17 makes `implementing-plans` commit and push at every personal and company session end on
+a standing yes, but its Files list leaves out `claude/docs/work-contexts.md`. That doc says "At every level, the
+workflow skills never commit on their own. `implementing-plans` checkpoints in the index and never commits" and "Ask
+again, every time". Task 15b adds an exception to that section for `ai-log` only. The global `CLAUDE.md` § Approvals
+("An approval covers what it names") gets no pointer either. Scenario: After Task 13 deletes the plan, a future
+session at company level reaches a session end. The skill says to commit and push without asking. The work-contexts
+doc, which the global CLAUDE.md points to for how a level applies, says the skill never commits and every write needs
+a fresh yes. The session either stops to ask, which defeats the rule, or commits against the documented policy. The
+user's yes is then recorded only in a skill line that contradicts the reference doc. This also breaks the plan's own
+constraint "Docs ship with the change". Fix: add the session-end commit and push to work-contexts.md in Task 17, next
+to 15b's `ai-log` exception.
+Refuted: Downgraded from major by the verifier. Stands, but downgraded. claude/docs/work-contexts.md:85-86 does say
+"At every level, the workflow skills never commit on their own. `implementing-plans` checkpoints in the index and
+never commits". Task 17's Files list names only the skill and implementing-plans-reference.md. The plan's file map
+(line 566) gives 15b the only work-contexts.md edit in that section, and Task 13 folds in only the split-further
+findings. So once Task 17 lands, the reference doc contradicts the skill. Not major: nothing the approach rests on is
+unverified and nothing is costly to reverse. The fix is one line in that section beside 15b's ai-log exception, which
+is cheap to add while implementing. No forbidden write follows either, because commits are allowed at personal and
+company level.
+
+### R10-44 · minor · work context
+
+Task 17, Tests: Resume across a session-end commit: The test's scratch repo has a local bare repo as `origin`. The
+session-end steps first run `ai-log level`, whose gate prints `customer` for any origin other than
+`github.com/andrelin/…` or `github.com/uptimeconsulting/…` or an `allow` line. So the steps take the customer branch:
+no commit, no push. Checked in a mktemp repo: with a local-path origin, `work-context.sh level` prints `company`, so
+`ai-log level`'s allowlist rejects it. With `url.insteadOf`, `git remote get-url origin` returns the rewritten local
+path too. Only an origin URL of `git@github.com:andrelin/x.git` with `remote.origin.pushurl` pointing at the bare repo
+resolves `personal` and still pushes locally. The plan names none of this. Scenario: The executor builds the scratch
+repo as the test says and runs the session-end steps "as the skill words them". `ai-log level` prints customer,
+nothing is committed, and the assertions fail: "A second session end … still makes a commit" and "the leftover …
+absent from the clone" after a push. Or the executor bypasses the level check, and then the personal-level path is
+never exercised through its real gate. Fix: specify a personal origin URL with a local `pushurl`, or an `AI_LOG_DIR`
+`allow` line for the scratch origin.
+Refuted: Downgraded from major by the verifier. Real but downgraded. Task 15's gate (plan lines ~3612-3617) prints
+customer for any origin outside github.com/andrelin/… or github.com/uptimeconsulting/… unless an `allow` line names
+it. A scratch repo whose origin is a local bare path therefore takes the customer branch, and the personal-level test
+as worded commits nothing. But this is test setup: the executor sees the failure on the first run and fixes it by
+giving origin a github.com/andrelin URL with a local pushurl, or by adding an allow line. That is cheap to settle
+while implementing and checkable in the diff, close to the out-of-scope line on exact test cases. It does not decide
+what gets built.
+
+### R10-45 · minor · work context
+
+Task 17, Interfaces / Change: The level: Task 17 gates every commit and push on `ai-log level`, but Task 15 doesn't
+say what `level` does when `AI_LOG_DIR` is missing or isn't a git clone. Its `allow` file lives in that clone.
+`record` exits 2 in that case; `level` is only specified as "exit 0". Scenario: On a second machine without
+`~/.ai-framework-log` cloned, a session end in a company repo on a company Forgejo runs `ai-log level`. It may exit 2
+with nothing on stdout, or print `customer` because the `allow` file is missing. Task 17 doesn't say whether that
+means skip the save (safe) or carry on. An executor who reads a non-`customer` result as permission to commit could
+push from a repo the gate meant to exclude. State that `level` prints `customer` (or that Task 17 treats any failure
+as customer) when the clone or `allow` file is unavailable.
+Refuted: Dropped by the verifier. Out of scope as error handling, and the scenario doesn't hold. A missing `allow`
+file only makes the gate stricter: a company Forgejo origin falls back to `customer` and nothing is committed, which
+is the safe direction. A `level` that exits non-zero with empty stdout prints neither `personal` nor `company`, and
+Task 17 runs its commit and push only "At personal and company level". So no plausible reading pushes from an excluded
+repo. What a failed `level` should report is an error-handling choice for the executor, checkable in the diff.
+
+### R10-46 · minor · work context
+
+Task 17, Change: At personal and company level (`git add -u --` the plan file); implementing-plans SKILL.md:104: The
+skill states "The plan file is never staged." Task 17's session end stages the plan file and its review files, but the
+edits Task 17 lists in place cover only the opening line and the "A checkpoint commit is safer" red flag. The
+never-staged rule is left unedited, so the skill contradicts itself. Scenario: A future run reaches a session end on a
+personal repo with a tracked plan. One line of the skill says never stage the plan, another says `git add -u --` it.
+An executor who follows line 104 commits without the plan's status updates. On another machine, `git pull` then brings
+code whose plan table still shows the tasks as pending, and resume step 1 redoes them.
+
+### R10-47 · nit · work context
+
+Task 15, Tests: Real data, last, by the session ("Record warnings here"): Warnings from the real dry run are written
+into this tracked plan in a personal public repo. Task 15 doesn't limit warning text to non-identifying content: a
+warning about an unparseable findings heading, or about a line that isn't JSON, could quote a heading or file path.
+The Task 15b session-end commit then pushes the plan to the public branch. Scenario: A warning quotes an unparseable
+review-log heading or a transcript path under `~/.claude/projects/<dir>`. That path encodes another repo's cwd,
+possibly a customer folder. It is pasted into the plan's Task 15 notes, committed at the session end and pushed to the
+public `andrelin/dotfiles`. Say to record warnings by kind and count only.
+
+## Round 11
+
+### R11-1 · minor · grounding
+
+Task 17, Change: "The level" (and Task 15 Interfaces, `ai-log level`): The session-end commit and push are gated on
+`ai-log level`, which is the log repo's telemetry allowlist (`github.com/andrelin/…`, `github.com/uptimeconsulting/…`,
+or a `<host>/<owner>` line in the private log clone's `allow` file), not on `work-context.sh level`. That makes saving
+your work depend on a telemetry repo's config and on that clone being present on the machine. The plan never says what
+`ai-log level` does when `AI_LOG_DIR` is not a clone: Task 15 only defines exit 2 for `record` in that case. Every
+other commit the framework makes, including Completion's step 4 commits at company level, uses `work-context.sh
+level`, so only the session-end save gets the stricter gate. The simpler approach is to gate the commit and push on
+`work-context.sh level`, as Completion does, and keep `ai-log level` for the `ai-log record` call only. Scenario:
+First case: a company plan on the company Forgejo, the setting the global CLAUDE.md's 'Forgejo work' rule describes,
+on a machine whose log clone has no `allow` line for that host. `ai-log level` prints `customer`, so at session end
+nothing is committed or pushed. That breaks the user's standing rule ("Commit and push the branch", for every future
+run at personal and company level), and another machine can't resume. Second case: a fresh machine without
+`~/.ai-framework-log`. `ai-log level` has no defined output there, so the save either errors or silently skips.
+Refuted: Downgraded from major by the verifier. Downgraded. The stricter gate was chosen on purpose: Task 15
+Interfaces and Task 17's 'The level' both cite plan review R9-50, and the reason is stated. An unlisted customer repo
+resolves as company under `work-context.sh level`, so gating on it would commit and push a customer's history. The
+company-Forgejo case is also covered by design: Task 15's 'Customer level, deferred' names the clone's `allow` file
+"for a company Forgejo, say". Adding the host there is the documented fix, so the first scenario is the intended
+fail-safe, not wrong behaviour. One part of the finding is real: the plan never says what `ai-log level` prints or
+returns when `AI_LOG_DIR` is not a clone and so has no `allow` file. Exit 2 is defined only for `record`. That gap is
+cheap to close while implementing (fail safe to `customer` and say so in the report), and Task 17's 'A failure goes in
+the report' already covers surfacing it. So it is minor, not major.
+
+### R11-2 · minor · grounding
+
+Task 17, Change: "Line budget" and "The skill": I measured the budget, and it is unlikely to hold the content.
+`claude/skills/implementing-plans/SKILL.md` counts exactly 120, its pin in `.md-baseline`, and the 4 lines Task 16
+frees are its front matter. The new paragraph has to carry the trigger and its exclusion, the level gate, five steps
+(`add -u`, the `--allow-empty` commit, deleting refs, `push -u`, `record` without the introspection), the failure
+report, the customer-level listing and the squash-only landing rule. At one sentence per line and 150 characters that
+is about 7 to 9 lines. Three in-place edits come on top: line 9 (109 characters), line 64 (111 characters) and the
+red-flag row at line 144 (106 characters), and each is likely to wrap once the exception is added. The fallback cut
+(resume step 1's last sentence, lines 37 and 38) frees at most about 1.5 lines. Moving the procedure to
+`implementing-plans-reference.md` doesn't work either: that file loads only before the approvals step, before a
+dispatch or before a by-hand task, and a session end is none of those. The simpler design is a one-line pointer in the
+skill to a doc that holds the procedure, with its own read trigger at session end. Scenario: The executor writes the
+paragraph and edits, `bin/check-md-limits` reports more than 120 against a pin that is "never raised", and the
+fallback cut doesn't close the gap. The run stops mid-task for a ruling the plan should have made.
+Refuted: Downgraded from major by the verifier. Downgraded. I confirmed the numbers: `bin/check-md-limits` counts 120,
+which excludes blank lines and headings, `.md-baseline` pins it at 120, and the front matter is 4 lines. But the
+checker allows 150 characters per line, while the skill's counted lines average about 100 characters, and line 9 is
+109 and line 64 about 111. Rewrapping § *Finish with the final review* and the edited bullets toward 150 characters
+recovers lines on top of the 4 freed ones and the named fallback cut. A dense draft of the paragraph (trigger and
+exclusion, level, the five steps, failure, customer listing, landing rule) comes to about 6 lines at 150 characters.
+The red-flag row is a table row, which is exempt from the length check, so it costs no extra line. The plan says the
+edits must fit and names a fallback, and `bin/check-md-limits` catches an overrun mechanically, so the shortfall is
+cheap to settle in implementation through wording and rewrapping. It is not an approach-level assumption.
+
+### R11-3 · minor · grounding
+
+Task 17, Change: "When": The trigger counts the run's part-way final report, but excludes "a stop to ask". In
+`implementing-plans`, almost every part-way stop is a stop to ask: a deviation, a failing baseline, a resume mismatch,
+leftovers. So it is unclear which reports trigger the save. Scenario: A run stops on a task deviation and prints `ai implement <plan-file>`,
+and the user closes the terminal overnight. One executor reads this as a stop to ask and saves
+nothing. Another reads it as the part-way final report and commits and pushes. The two readings give different
+behaviour on the very case the save exists for.
+
+### R11-4 · minor · grounding
+
+Task 15b, Files: `claude/docs/work-contexts.md` addition; Task 17, Files: Task 15b's text for work-contexts.md says
+that after a plan's commit, `reviewing-in-rounds` runs `ai-log`, which commits and pushes to the private log. Task 17
+adds a second writer to that log: `implementing-plans`, at every session end. Task 17 edits a different sentence of
+work-contexts.md and never updates the 'what leaves the machine' statement, so the durable doc understates when data
+leaves the machine. Scenario: A reader of work-contexts.md concludes that log writes happen only after a plan's final
+commit. In fact every wrap-up at personal and company level also pushes an entry.
+
+### R11-5 · nit · grounding
+
+Task 15b, "Why not also `implementing-plans`": This section justifies leaving `implementing-plans` out with "it never
+commits". Task 17 makes it commit, and run `ai-log record`, at session end, so the stated reason is stale. The real
+reason is that the per-plan introspection belongs after the final commit. Scenario: A later reader of the folded docs
+sees "implementing-plans never commits" next to the session-end commit and can't tell which is true.
+
+### R11-6 · minor · scope and slicing
+
+Task 16 (front matter leaves the line count) and Task 17 § Line budget: Task 17's budget assumes Task 16 leaves
+`implementing-plans/SKILL.md` 4 lines under its unchanged 120 pin, but the plan never says to keep the pin at 120
+between the two tasks. The checker works against that. Once front matter stops counting, `bin/check-md-limits` prints
+`NOTE: ... under its pinned 120 — re-pin it: bin/check-md-limits --update-baseline`. CI's markdown job
+(`.github/workflows/markdown.yml`, step '.md-baseline matches what the tool would write') regenerates the baseline and
+fails when the result differs, so a stale 120 pin fails CI. Scenario: An executor builds Task 16 and follows the
+checker's NOTE, or keeps CI green on a session-end push between Tasks 16 and 17 (the order is 16, 15, 17). Either way
+they re-pin to 116. Task 17 then has zero free lines, because 'the pin is never raised'. It is pushed onto the cut
+fallback, or the executor raises the pin against the rule. If they leave the pin at 120 instead, every session-end
+push between Tasks 16 and 17 has a red markdown leg. Task 16 should say to leave the pin alone until Task 17 refills
+it, and accept or avoid the stale-pin failure on intermediate pushes. Alternatively, build 16 and 17's skill edit
+together.
+Refuted: Downgraded from major by the verifier. The mechanism is confirmed. `bin/check-md-limits` prints 'NOTE: ...
+under its pinned N — re-pin it'. With no files, `--update-baseline` tightens pins to their current sizes. The CI step
+`.md-baseline matches what the tool would write` regenerates the baseline and fails on any diff, and the markdown
+workflow runs on every push touching `.md`, which a session-end push does because it carries the plan file. So a pin
+left at 120 between Task 16 and Task 17 turns that leg red, and re-pinning to 116 leaves Task 17 no budget. Downgraded
+from major because the plan already has a fallback: Task 17 § Line budget names the cut (resume step 1's last
+sentence, moved to the reference doc). The worst outcome is that fallback being taken, or a red leg on an intermediate
+branch push. Neither builds the wrong thing or is costly to reverse, and one sentence in Task 16 settles it (hold the
+pin until 17, or build 16 and 17's skill edit together).
+
+### R11-7 · minor · scope and slicing
+
+Task 15 § Tests, Counts bullet: Task 15's test list includes 'at company level the plan's and branch's words redacted
+from the introspection (15b)'. Task 15 has no introspection, no `note` and no redaction. That behaviour is built in
+Task 15b, so Task 15 cannot pass this test. Scenario: The Task 15 implementer either fails the task review on a test
+it cannot write, or builds part of 15b's redaction early to satisfy it. That widens a task that was already re-sliced
+for being too big to review to a finish. Move the test to Task 15b's Redaction tests.
+
+### R11-8 · minor · scope and slicing
+
+Task 15 § Tests, Real data ("No real record runs here: the first is Task 15b's end to end"), with Order (16, 15, 17,
+15b) and § Approvals ("session ends before Task 17 is built follow Task 17's steps by hand"): The build order puts
+Task 17 before Task 15b, and Task 17's session end runs a real counts-only `ai-log record`. Any session that ends
+after Task 15 is built, whether Task 17's steps run by hand or as the skill, therefore writes and pushes real entries
+before 15b's end-to-end run. This contradicts 'the first is Task 15b's end to end'. The Revisit's 'Task 15b's first
+real entry' is also not the first real entry. A session that ends before Task 15 exists cannot run the by-hand step's
+`ai-log record` at all, and the plan does not say to skip it. Scenario: The session ends after Task 15 is built. The
+executor reads the Task 15 line and either skips the session-end `record` that Task 17's steps require, or runs it and
+pushes an entry the plan said would not exist yet. A session that ends before Task 15 hits a missing command in the
+by-hand steps. State which real entries come first, and that the by-hand session end skips `record` until Task 15 is
+built.
+
+### R11-9 · minor · scope and slicing
+
+Task 15b § Change (record prints the introspection instruction) and Task 17 § Change ("skipping the introspection it
+prints"): After Task 15b, `record` always prints 'write a short introspection ... Pipe it to ai-log note `<id>`', and
+the `reviewing-in-rounds` step says 'do what it prints, without asking'. Task 17's session end calls the same command
+and relies on prose telling the model to ignore half of what it prints. No test covers the session-end path once 15b
+changes the output. Scenario: A session-end save after Task 15b obeys the printed instruction. It writes and pushes a
+per-session introspection `.md` that the user ruled should come once per plan, and repeated session ends each add one.
+A `--counts-only` flag or a separate summary mode, and a test that the session-end path prints no introspection
+request, would make the boundary mechanical. Both are cheap to decide while implementing 15b.
+Refuted: Dropped by the verifier. Task 17 § Change states the boundary outright: 'then `ai-log record <plan-file>`,
+counts only, skipping the introspection it prints, which comes once per plan after its final commit (Task 15b)'. That
+sentence goes into the skill paragraph. Task 15b's 'do what it prints' is a step in `reviewing-in-rounds` § Completion
+of a code review, not in the session-end path. What remains, a `--counts-only` flag and a test that no introspection
+request is printed, are command flags and exact test cases, which the out-of-scope line leaves to the code.
+
+### R11-10 · minor · scope and slicing
+
+Task 15 § Tests (Real data, last) and Follow-up Revisit: The riskiest assumptions of the Task 15/15b/17 stack are
+checked against real transcripts only at the end of Task 15, after the whole script is built. These are: that real
+transcripts resolve lens attribution from the `Lens:` line, that resumed or forked files dedupe by `message.id` and
+`uuid`, and that the price table matches `cost-state`. The 2026-11-05 inspection recorded field names only. Scenario:
+The final dry run shows that real Workflow prompts carry no usable `Lens:` line, or that forked files repeat records
+under new ids. The window chaining, per-lens tokens and keyed review counting are then reworked after all their tests
+are written. Running a thin dry-run spike over this session's transcripts as Task 15's first step would surface this
+before the rest is built on it.
+Refuted: Dropped by the verifier. The plan does not rest on unverified shapes in the way described. Lens attribution
+reads the Workflow `.meta.json` `description` first, and the `Lens:` fixture 'copies a real Workflow prompt's shape,
+the lens mid-line and indented (plan review R10-9)'. The copying of resumed or forked records with ids kept is stated
+as observed (R7-1). A price-table mismatch is 'fixed before going on', which is a table edit, not a rework. When to
+run a dry run within Task 15 is the executor's choice and checkable in the work, so the out-of-scope line covers it.
+The scenario of 'no usable `Lens:` line' is contradicted by the plan's own source for the fixture.
+
+### R11-11 · minor · scope and slicing
+
+Task 17 § When / § The skill: The user asked to 'commit and ai log at the end of sessions'. Task 17 hooks the save
+only into `implementing-plans` § Finish. The plan never says that sessions outside an `implementing-plans` run are out
+of scope, such as a standalone `ai review` or `writing-plans` stage, or an ad-hoc session on a plan branch. Scenario:
+An executor or reviewer reads 'end of sessions' literally. They add the save to `reviewing-in-rounds` or
+`writing-plans` too, which are skill changes the user has not approved. Or they flag Task 17 as incomplete. One line
+naming the excluded sessions settles it.
+
+### R11-12 · nit · scope and slicing
+
+Task 17 § Change (`--allow-empty`): The empty commit exists only so that Task 15's id, which is keyed on the commit,
+differs per session end. That is a log-id convenience paid for with no-content commits on the pushed branch. The
+squash removes them in the end, but on the branch it is a commit nothing but the log asks for. Scenario: A session end
+with nothing new checkpointed pushes an empty 'Work in progress: Tasks ' commit, possibly with an empty task list. An
+alternative is to skip the commit and push when the index equals `HEAD^{tree}` and still record against the existing
+`HEAD`. That needs Task 15's same-id replace rule weighed, so the plan should state which way it goes and why.
+Refuted: Dropped by the verifier. The plan already states which way it goes and why. Task 17 § Change says to commit
+'with `--allow-empty`, so every session end has its own `HEAD` and so its own log entry (plan review R9-4, R9-36)'.
+Task 15 § Change ties the non-overlapping window to that ('Task 17's session end commits first, so each session end
+has its own `HEAD`, id and window'). Task 17 § Tests asserts that a second session end with nothing new still makes a
+commit. The squash-merged PR removes the empty commits, so nothing reaches `main`. What the finding asks for is
+already in the plan.
+
+### R11-13 · minor · decisions
+
+§ Approvals, 2026-11-09 block ("Claude opens the PR ... and squash-merges it"); Task 13 deviation; Task 17 *Landing*:
+Nothing says what the squash commit on `main` holds: its subject, and its body (the PR description from
+`writing-mr-descriptions`, or GitHub's default). The executor would ask: "When I squash-merge, what goes in the commit
+message?" I checked `andrelin/dotfiles` with `gh api`: `squash_merge_commit_message` is `COMMIT_MESSAGES`, so a bare
+`gh pr merge --squash` writes every branch commit message into the body. That includes `d88b6fa`'s, each `Work in
+progress: Tasks …` and the per-task Completion commits. Scenario: The executor runs `gh pr merge --squash` without
+`--subject`/`--body`. The commit pushed to public `main`, which can't be rewritten, lists every work-in-progress and
+checkpoint message. That defeats the reason given for squashing ("readable history"). The same gap carries into the
+landing rule Task 17 writes into `implementing-plans` for every future run.
+Refuted: Downgraded from major by the verifier. Downgraded. The gap is real: the plan says the PR description comes
+from `writing-mr-descriptions` but not what the squash commit's subject and body are. It is a choice of `gh pr merge`
+flags, though, settled in one line at merge time. The worst case is a long body of commit subjects on `main`. Those
+messages are already public on the pushed branch and hold nothing sensitive, so it hurts readability only. It builds
+nothing wrong and is cheap to settle while implementing, so it is not major.
+
+### R11-14 · minor · decisions
+
+Task 15 *Customer level, deferred* (the private clone's `allow` file) and *Files* (outside this repo); consumed by
+Task 17 *The level*: The gate records only `github.com/andrelin/…`, `github.com/uptimeconsulting/…` and the
+`<host>/<owner>` lines in the clone's `allow` file. But *Files* never creates `allow`, and no task says what goes in
+it. The global `CLAUDE.md` runs company work on Forgejo ("every task has a Forgejo issue"), so a company Forgejo
+origin resolves as customer under this gate. The open question: "Which company hosts and owners go into `allow` when
+the log repo is created, and who adds them on each machine's clone?" The hostname is private, so only the user can
+answer. Scenario: The repo is created with only `entries/` and `README.md`. On a company repo hosted on the company's
+Forgejo, `ai-log level` prints `customer`. Task 17's session end then commits and pushes nothing, and `record` prints
+"customer level is deferred" for work that is company level. Most company work is never logged or saved across
+machines, and the message points the wrong way, so nobody notices.
+Refuted: Downgraded from major by the verifier. Downgraded. It is true that nothing creates or documents the `allow`
+file (Files lists only `entries/` and `README.md`). But the gate is opt-in on purpose ("for a company Forgejo, say"),
+and an absent file fails safe: nothing is recorded and nothing is pushed. Fixing it means adding one line to `allow`
+and, if wanted, a sentence in the log repo's README saying how to add one. Nothing has to be rebuilt. The hostname is
+the user's to supply whenever they first log Forgejo work, so this is cheap to settle and not an assumption the
+approach rests on. The misleading "customer level is deferred" message is part of the same small fix.
+
+### R11-15 · major · decisions
+
+Task 17 *At personal and company level* (`git add -u --` the plan file ... "where tracked") and *Accepted gap*: `git
+add -u` never adds an untracked file. At personal level `implementing-plans` doesn't add the plan to `info/exclude`,
+but it also never stages or commits it ("The plan file is never staged"). So a newly written personal plan stays
+untracked, and the session-end push leaves it on this machine. *Accepted gap* names only company level. The undecided
+question is the user's: "At personal level, should the session-end commit add an untracked plan (and its review files)
+so another machine can resume, or is that gap accepted too?" On a personal public repo, adding it publishes the plan
+on a pushed branch. Scenario: A personal plan is started on machine A and the session ends. The work-in-progress
+commit is pushed without the plan. On machine B, `git switch <branch> && git pull` then `ai implement plan-x.md` stops
+because there's no plan file. This breaks the cross-machine resume that the user's "Commit and push the branch" was
+meant to give, at a level the plan never lists as a gap.
+Fixed: the user ruled "Commit it on the branch": at personal level the save adds an untracked plan and its review
+files; company level unchanged.
+
+### R11-16 · minor · decisions
+
+Task 15 *The entry* `framework.dotfiles_commit` and *Framework*; Follow-up 15d ("grouped by framework commit"); the
+2026-11-09 squash-merge landing: `dotfiles_commit` is the HEAD of `bin/ai-log`'s own tree when it runs. Since
+2026-11-09, framework work lands by a squash-merged PR, so any entry recorded while the dotfiles checkout is on a
+framework branch stores a sha that never reaches `main` (this run's 15b entry and every session-end entry included).
+The stored format was designed before the squash decision and wasn't re-checked. Entries are pushed and permanent, so
+this is costly to fix later. The open question: "Should an entry also record the merge-base with the default branch,
+or should a branch checkout be flagged, so 15d can still place it?" Scenario: After the PR is squash-merged and the
+branch deleted, Follow-up 15d groups entries by `dotfiles_commit`. Every entry from a framework-development run points
+to an unreachable sha, so the runs that changed the framework can't be tied to any framework version, which is the
+comparison 15d exists to make.
+Refuted: Downgraded from major by the verifier. Downgraded. The sha is not lost after the squash. GitHub keeps
+`refs/pull/<n>/head` for every PR after the branch is deleted, so the commit stays fetchable and maps to its PR and
+squash commit (`gh api repos/.../commits/<sha>/pulls`). The local clone may also still hold it. The issue only affects
+entries recorded while the dotfiles checkout is on a framework branch, not runs in other repos with dotfiles on
+`main`. 15d is a Sketch that is detailed later, and it can resolve these shas then. Nothing is costly to reverse,
+though recording the merge-base would make 15d simpler.
+
+### R11-17 · minor · decisions
+
+Task 15b *The mechanical redaction*, second bullet ("the work repo's remotes' hosts, owners and names, and its
+folder's name and those above it"): Only the third bullet is scoped ("at company level"). The repo-name, owner and
+folder bullet has no level, so it can be read as applying at personal level too. The two readings build different
+redaction rules and different tests. Executor's question: "At personal level, are the repo's own name, owner and
+folder redacted from the introspection?" Scenario: At personal level in this repo, every "dotfiles" and "andrelin" in
+the introspection becomes `[repo]`/`[customer]`-style placeholders ("[repo] skills cost most"). Introspections become
+harder to read for no privacy gain. Under the other reading they stay; a reviewer can't tell which one was meant.
+Refuted: Dropped by the verifier. Not ambiguous. The bullets form a list in which only the third carries a level ("at
+company level"), so the others apply at every level where `note` runs. `note` never runs at customer level, so that
+means personal and company. 15b's own *Redaction* test confirms this: it is set beside "`note` at personal level" and
+expects "the origin owner" replaced with a placeholder. The executor can resolve this from the plan.
+
+### R11-18 · minor · decisions
+
+Task 17 *The skill* (landing rule "a branch holding session-end commits lands by a squash-merged PR, never a
+fast-forward"): The rule is written into `implementing-plans` for every future run, but it doesn't say who opens and
+merges the PR, or under which approval. The global § *Approvals* says opening or merging a PR is a platform write
+needing its own yes. The rule also doesn't say which wins when a plan's `## Approvals` says to fast-forward `main`, as
+this plan's 2026-10-30 and 2026-11-05 bullets did. Executor's question: "Does the skill open and merge the PR itself
+on a recorded yes, ask for one in the up-front approvals, or only tell the user the branch must land by PR?" Scenario:
+A later plan's Approvals say "fast-forward `main`" and its run has session-end commits. One executor writes the skill
+line as a hard override and stops; another fast-forwards because the plan's yes says so. That pushes work-in-progress
+commits to `main`, which is what the rule forbids.
+
+### R11-19 · minor · decisions
+
+Task 16 *Change* (front matter leaves the line count) with Task 17 *Line budget*: Excluding front matter from the
+count drops `implementing-plans/SKILL.md` below its 120 pin, and Task 17 spends that headroom. But
+`bin/check-md-limits --update-baseline` with no files "tighten[s] existing pins to current". The plan doesn't say
+whether Task 16 re-pins. If it does, the 4 freed lines are gone before Task 17 starts. Executor's question: "Does Task
+16 run `--update-baseline` after the change, or leave the pins as they are?" Scenario: The Task 16 implementer
+tightens pins to tidy up after changing the counting rule. The skill's pin falls to 116, and Task 17 has no room for
+its paragraph without the fallback cut, or it fails `check-md-limits`. That contradicts the plan's premise that 16
+frees 4 lines for 17.
+
+### R11-20 · minor · decisions
+
+Task 17 *When*: The trigger is "the user's request to wrap up" or the part-way final report. The plan doesn't say
+whether a stop inside the final code review counts. There, `reviewing-in-rounds` drives fixes that stay unstaged until
+Completion, and Task 17 says that skill is unchanged. Executor's question: "Does the session-end save run when the
+session ends during `reviewing-in-rounds code`, and if so, are its unstaged fixes committed or left behind?" Scenario:
+A session ends at round 5 of the code review. The session-end commit takes only the index, so another machine resumes
+without the review's fixes, which are still unstaged. Or the step is skipped because the paragraph sits in
+`implementing-plans`'s *Finish* section. The two readings give different saves.
+
+### R11-21 · nit · decisions
+
+Task 15 *Tests*, *Counts* bullet ("at company level the plan's and branch's words redacted from the introspection
+(15b)"): Task 15's tests include a Task 15b behaviour (the introspection's redaction), which Task 15 doesn't build.
+The same case is not listed in Task 15b's *Redaction* tests. Scenario: The Task 15 implementer can't make that
+assertion pass, because `note` doesn't exist yet. Task 15b's implementer may skip the company-level word redaction
+test, since it isn't in their task's list.
+
+### R11-22 · nit · decisions
+
+§ Approvals, 2026-11-05 run block, fourth bullet ("`main` fast-forwarded, pushed and CI watched"): The bullet still
+reads as a live yes for fast-forwarding `main`. It is superseded only by a later block's preamble. Unlike the earlier
+2026-11-09 private-ref block, it isn't marked inline as superseded. Scenario: An executor reading § Approvals top-down
+for "a recorded yes" (as `implementing-plans` instructs) finds a yes to fast-forward `main` for this run before
+reaching the block that replaces it.
+
+### R11-23 · nit · consistency
+
+Task 17, Change, 'At personal and company level' (`git add -u --` the plan file and its `plan-<branch>-review-*`
+files): Task 17 names the review files by the branch, but `claude/docs/review-log.md:11` produces them as
+`plan-<stem>-review-findings-<kind>.md`, named by the plan's stem. Task 13 and Task 15 (`-review-findings-*.md`) both
+use the stem form. Scenario: Take a plan `plan-foo.md` worked on branch `issue-42`. The session-end skill text stages
+`plan-issue-42-review-*`, which matches nothing, so the WIP commit leaves out the tracked findings and review-log
+files. Another machine then resumes from the push without the review state. This run hides the bug because the branch
+`ai-framework` happens to equal the stem.
+Refuted: Downgraded from major by the verifier. Downgraded. `implementing-plans` step 4
+(claude/skills/implementing-plans/SKILL.md:46) always names the branch after the plan's stem (`plan-42-login.md` →
+`42-login`), so inside the skill `plan-<branch>-review-*` and `plan-<stem>-review-findings-*` name the same files. A
+plan `plan-foo.md` on branch `issue-42` can't come out of the skill's own flow. The naming still differs from
+review-log.md:11 and Tasks 13 and 15, so it stays as a wording fix: write `<stem>`.
+
+### R11-24 · minor · consistency
+
+Task 17, Change, 'The skill' (the in-place edits list): The edits Task 17 makes in place cover the opening line's
+"nothing is committed", the review-input line's "`BASE..HEAD` is empty" and the "A checkpoint commit is safer" red
+flag. They leave out `implementing-plans` § *Checkpoint in the index* "The plan file is never staged", which the
+session-end `git add -u --` on the plan file contradicts. Scenario: After Task 17 is built, the skill tells the
+session both never to stage the plan file and to stage it at every session end. An executor following the checkpoint
+rule skips the plan, or one following the new paragraph breaks the older rule. Neither is marked as the exception.
+
+### R11-25 · minor · consistency
+
+Task 15, Tests, 'Counts' bullet ("at company level the plan's and branch's words redacted from the introspection
+(15b)"): Task 15's test list includes a test of Task 15b's company-level redaction in `ai-log note`. Task 15b's own
+Redaction test bullet doesn't list the plan- and branch-word case. Scenario: The build order is 16, 15, 17, 15b, so
+whoever builds Task 15 must write a test for a `note` subcommand that doesn't exist yet, and the task can't go green.
+Whoever builds 15b, reading only 15b's Tests, never adds the plan- and branch-word redaction test.
+
+### R11-26 · minor · consistency
+
+Task 15, Tests, 'Real data' ("No real `record` runs here: the first is Task 15b's end to end"); Follow-ups, Revisit
+("After ... Task 15b's first real entry"); § Approvals, 2026-11-05 log-repo yes ("From Task 15b on"): Several places
+assume the first real entry comes from Task 15b. Under the build order 16, 15, 17, 15b, Task 17's session-end steps
+run a real `ai-log record` before 15b is built. The 2026-11-09 Approvals also say that until Task 17 is built, session
+ends follow its steps by hand. Scenario: A session ends between building Tasks 15 and 15b. It runs a real `record`
+that commits and pushes to `andrelin/ai-framework-log`, which contradicts Task 15's statement. That write falls before
+the 'From Task 15b on' standing yes, and the Revisit's trigger then points at the wrong first entry.
+
+### R11-27 · minor · consistency
+
+§ Implementation status, 'Final code review' row (✅ DONE): The row is ✅ DONE, carried over from Task 14's and the
+2026-11-02 run's reviews. The Order, the Handover and Task 13's 2026-11-05 deviation all require a new final code
+review after 16, 15, 17, 15b and 13's fold. Scenario: An executor resuming from the status table, as
+`implementing-plans` does, reads the final review as already done. It may then skip straight to `ai-log record`, the
+`git rm` commit and the PR, or fail to flip the row at Completion.
+
+### R11-28 · minor · consistency
+
+§ Handover, opening paragraph, item 0 and 'Start next session here' ("first round 10 of the plan review"): The
+handover says the plan review ran 7 rounds and that round 10 comes next. The task sections already cite round-10
+findings that have been folded in (R10-1, R10-9, R10-17, R10-30), so round 10 has run. Scenario: A resuming session
+follows the handover and runs round 10 again, or numbers its next round wrongly. Item 0's 'Not yet reviewed, for round
+10' no longer says what is actually unreviewed.
+
+### R11-29 · minor · consistency
+
+Task 13, Deviation (2026-11-03), the list of open items for the issue: The list is stale and disagrees with Handover
+item 6. It still carries 'Task 7's conflict sent to the user', which was ruled 2026-11-05, and 'Task 11's
+CI-on-`main`'. It leaves out what Handover item 6 lists (the audit's recorded Mediums and Lows, R12-4). It also leaves
+out the reruns behind the 🚧 PARTIAL rows of Tasks 5, 8 and 9, the open `planechaser#73`, and the unfiled 2026-10-23
+learnings. Scenario: At Task 13, the executor files the issue from the enumerated list. That issue carries a resolved
+item, and deleting the plan loses the PARTIAL tasks' pending tests and the audit findings.
+
+### R11-30 · minor · consistency
+
+Task 15b, Files, the `claude/docs/work-contexts.md` sentence: The new sentence says only that `reviewing-in-rounds`
+runs `ai-log` after a plan's commit. Task 17, built before 15b, also has `implementing-plans` commit, push and run
+`ai-log record` at every session end, and Task 17's own `work-contexts.md` edit adds only the commit exception, not
+the log write. Scenario: After both tasks, `work-contexts.md` describes when data leaves the machine for the log repo
+but leaves out the session-end records. A reader auditing what is pushed, and when, gets an incomplete account.
+
+### R11-31 · nit · consistency
+
+§ Approvals, 2026-11-09 bulk block ("Any PR counts as squashed" (Task 17)): The pointer names Task 17, but Task 17's
+text no longer has a PR-versus-fast-forward distinction that consumes this ruling. It was a leftover of the superseded
+private-ref design. Scenario: An executor looking in Task 17 for where 'any PR counts as squashed' applies finds
+nothing, and the ruling never reaches the skill line it was meant for.
+
+### R11-32 · nit · consistency
+
+§ Approvals, 2026-11-05 block ("main fast-forwarded, pushed and CI watched, as for Task 14"): This bullet was
+superseded by the 2026-11-09 post-round-9 block (squash-merged PR) but isn't marked as superseded where it stands,
+unlike the private-ref block. Scenario: A reader of the 11-05 block alone lands the run by fast-forward, which
+contradicts the later ruling.
+
+### R11-33 · nit · consistency
+
+§ Implementation status table order vs Order paragraph; Task 16 Interfaces; Follow-ups intro: Three small mismatches.
+The table lists 15, 15b, 16, 17, while the build order is 16, 15, 17, 15b. Task 16's Interfaces says 'none' although
+Task 17 consumes its four freed front-matter lines. The Follow-ups intro says 'neither' over three subsections
+(Revisit, 15c, 15d). Scenario: These are cosmetic inconsistencies that a reader has to reconcile by hand. Task 16's
+executor doesn't see that Task 17 depends on the line count it frees.
+Refuted: Dropped by the verifier. Dropped. The status table isn't a build order: it already lists 14 after 12 and 13
+after M, and the Order paragraph is what governs. That paragraph says Task 17 runs after 16 'which frees the 4 lines
+its skill edit fits in', and Task 17's Line budget says so too, so the dependency is recorded. Task 16 consumes
+nothing and produces no interface, so 'none' is accurate. 'Neither' refers to the two buildable follow-ups, 15c and
+15d; the Revisit is a question, not a follow-up. No failure scenario follows.
+
+### R11-34 · minor · work context
+
+Task 17, Change, 'The level' and 'At personal and company level' (plan lines 3841-3850); Task 15 Interfaces, `ai-log
+level` and exit codes (3548-3555): The session-end commit and push are gated only on `ai-log level` printing
+`personal` or `company`, but the plan never says what happens when `ai-log level` fails, prints nothing, or can't read
+the private clone's `allow` file. Exit 2 ('AI_LOG_DIR not a git clone') is listed for `record` and may apply to
+`level` as well. Task 17 says only 'A failure goes in the report', which does not say whether the commit and push
+still go ahead. The gate needs to fail closed: any output other than exactly `personal` or `company`, a non-zero exit,
+or a missing `ai-log` means nothing is committed or pushed. Scenario: On a fresh machine with no `~/.ai-framework-log`
+clone, or with `ai-log` not on PATH, a session ends in a customer repo that is not yet listed in
+`~/.claude-customers`. The guard resolves that repo as company, so it does not block the write. `ai-log level` exits 2
+and the skill treats that as a failure to report, then still runs `git commit` and `git push -u origin <branch>` to
+the customer's remote. That is a forbidden write at customer level, and this gate is the only thing that was meant to
+stop it.
+Refuted: Downgraded from major by the verifier. Partly refuted. The gate in Task 15 (plan lines 3616-3621) already
+fails closed on its inputs. Any origin outside github.com/andrelin or github.com/uptimeconsulting that is not listed
+in the private clone's `allow` file counts as customer, and `work-context.sh level` exiting non-zero counts as
+customer too. A missing clone or `allow` file therefore leaves an unlisted customer origin at customer level. It does
+not let it through as company. The gap that is left is narrower: Task 17 does not say what the session end does when
+the `ai-log level` command itself errors, either `ai-log` missing from PATH or exit 2 if `level` shares `record`'s
+'AI_LOG_DIR not a git clone' check. In that case 'A failure goes in the report' is ambiguous. This is error handling
+around one command, and one line settles it while implementing ('anything but personal/company on stdout with exit 0
+means customer handling'). It is not an assumption the approach rests on. It stays above nit because the guard does
+not cover an unlisted customer repo, so this gate is the only thing between that repo and a push.
+
+### R11-35 · nit · work context
+
+§ Approvals 2026-11-09 (lines 114-119, 'The squash removes `d88b6fa`'; 125-126 'Squash it out'); Task 17 'Landing'
+(3859-3862); Task 13 deviation (3922-3928): The plan assumes a squash-merge removes the work-in-progress commits and
+keeps a tracked plan out of the default branch's history. On GitHub that holds only for `main`'s history. A pushed
+branch's commits stay world-readable for good through the PR's `refs/pull/<n>/head` and its Commits tab, even after
+the branch is deleted. On a personal-public repo, Task 17 pushes at every session end: the plan, its review-findings
+files and the checkpointed index, before the final code review. Whatever is pushed meets the public bar
+('world-readable forever') at that moment, not at merge. `d88b6fa` (4,528 lines of plan and findings files) is already
+on `origin/ai-framework`, so it stays public whatever the squash does. Either state that the squash cleans only
+`main`, and that the public bar applies to every session-end push, or require a work-context check (no customer names,
+hostnames, internal tooling or secrets) on what is staged before each session-end push on a public repo. Scenario: A
+future personal-public run copies a real hostname into a review-findings file. The final code review would have caught
+it, but a session end pushes first. The user later squash-merges, deletes the branch and believes the content is gone,
+yet it is still served from the PR's commits. The user's 'Squash it out' answer and Task 13's 'removed from git before
+merging to the default branch' both suggest they expect the content to disappear, and on a public repo it does not.
+Refuted: Downgraded from major by the verifier. I confirmed `d88b6fa` is on origin/ai-framework and that
+andrelin/dotfiles is PUBLIC. The finding's harm is not introduced by this plan, though. CLAUDE.md sets the
+personal-public bar on what you commit, and this plan file and its findings files are tracked on a public repo. They
+were bound by the public bar, and pushed publicly, under every design, including Completion's per-task commits and the
+push before the PR that Task 13 already describes. Session-end pushes add no new exposure class. The plan's own claims
+are accurate: lines 114-126 and 3859 say the squash keeps the commits out of the default branch's history, which is
+true, and 'Squash it out' answers a history-readability question, not a secrecy one. What remains is a wording
+clarification: the squash cleans `main` only, and pushed branch or PR commits stay public. Nothing gets built wrong.
+
+### R11-36 · nit · work context
+
+Task 13, Deviation (2026-11-03) paragraph (lines 3941-3946); § Approvals 2026-11-09 'Ask me then' (128): Task 13's
+GitHub issue does not name its repo. If it is `andrelin/dotfiles`, which is public, the plan does not say the public
+bar applies to it. The issue carries Task M 'if still open, with their sketches'. Task M concerns a repo-specific
+`autoMode` block whose real contents (the repo's confidentiality, its external mirror folder, customer names) sit in
+the machine-local `~/.claude/settings.json`. An executor fleshing out the open item could copy those details into a
+world-readable issue. The fix is to name the target repo and say the issue stays as generic as the plan text: no names
+from `~/.claude/settings.json` or `~/.claude-customers`. Scenario: At Task 13 the executor reads
+`~/.claude/settings.json` to describe Task M's remaining work concretely and files an issue on public
+`andrelin/dotfiles` that names the private repo and its customers. The user's 'Ask me then' preview is the only check,
+and nothing tells the executor to keep machine-local facts out.
+Refuted: Downgraded from minor by the verifier. Mostly refuted. Task 13 says the issue carries the open items 'with
+their sketches', and those sketches are the plan's own text, already tracked and pushed on the public repo. Task M's
+sketch is generic and says outright 'Keep the customer names in that private repo; none go into the global block'.
+Nothing tells the executor to read `~/.claude/settings.json` to build the issue, and the scenario needs the executor
+to go beyond the brief. The global personal-public bar governs anything published from this repo, and the user's 'Ask
+me then' preview of the draft before filing is an explicit check. The target repo is clear from context: everything in
+Task 13 happens on andrelin/dotfiles. Naming the repo would be a small wording improvement.
+
+### R11-37 · nit · work context
+
+Task 15b, Files, the `work-contexts.md` text (lines 3688-3691), and Change, the skill step (3701-3704): The
+`work-contexts.md` addition says that after a plan's commit, at every level, `reviewing-in-rounds` runs `ai-log`. At
+customer level, though, the commit is the user's: Claude drafts it and never runs it. The skill step runs 'once the
+commit has run', so at customer level it either never runs or runs after a commit the user made outside the session.
+Saying that at customer level the step is skipped, or that it prints only the deferral line, would stop the doc from
+implying Claude commits there. Scenario: A reader of `work-contexts.md` takes 'after a plan's commit, at every level'
+to mean the workflow commits at customer level, which contradicts § Work contexts' list of forbidden commands.
+
+## Round 12
+
+### R12-1 · major · grounding
+
+Task 17, Change, **When:** (the trigger): The trigger counts 'the run's part-way final report, the one that prints `ai implement <plan-file>`'
+as a session end, but excludes 'a stop to ask'. Those are the same thing in the current skill.
+`claude/skills/implementing-plans/SKILL.md:133` says 'A run that stopped part-way runs no code review; it says which
+tasks aren't ✅ DONE and prints `ai implement <plan-file>` to resume'. Every stop in that skill ('every stop here stops':
+deviations, task reviews sent to the user, a review stopping for a user decision) produces that report. The claim the
+trigger rests on, that a part-way report is something other than a stop to ask, does not hold for the skill as written.
+Scenario: A run stops at a deviation and asks the user. It prints the part-way report with `ai implement plan-x.md`. One
+executor reads the first clause and makes a WIP commit, pushes and records a log entry on every question, which is what
+R9-23/R9-27 ruled out. Another reads the exclusion and never saves on a part-way report. The skill paragraph cannot be
+written without the executor choosing which rule wins.
+Fixed: Task 17's trigger is the user's wrap-up request or a part-way report that asks nothing; every stop to ask prints
+that report too and is not a session end.
+
+### R12-2 · major · grounding
+
+Task 17, Change, **Line budget** and **The skill**: The budget claim is unverified, and the arithmetic suggests it
+fails. I counted `claude/skills/implementing-plans/SKILL.md` at exactly 120 non-blank, non-heading lines, equal to its
+`.md-baseline` pin. Task 16 frees 4 lines (`---`, `name`, `description`, `---`), and the one named fallback cut (the 'On
+resume, rewrite each brief…' sentence, lines 37-38) frees about 2 more. That gives roughly 6 lines. The paragraph must
+hold the trigger, the `ai-log level` gate, the add rules (personal untracked vs company tracked-only), the `Work in progress: Tasks`
+commit with `--allow-empty`, the ref deletion, the push, the counts-only `record`, failure handling, customer level and
+the squash-PR landing rule. On top of that come three in-place rewrites, each of which adds words. At 150 characters a
+line that is about 9-11 lines. The plan gives no second fallback, and the pin is 'never raised'. Scenario: The executor
+writes the paragraph, and `bin/check-md-limits` fails the pin even after moving the resume sentence. The plan forbids
+raising the pin and names no other cut, so the run stops for a user decision partway through Task 17. That costs a round
+trip a pre-check of the draft against the budget would have avoided.
+Fixed: the steps move to a new `claude/docs/session-end-save.md`; the skill keeps a paragraph of about three lines
+(trigger, pointer, landing rule), which fits the 4 lines Task 16 frees.
+
+### R12-3 · major · grounding
+
+Task 15, Interfaces, the entry's per-lens tokens (`An agent's lens comes from its Workflow .meta.json description …`):
+The `.meta.json` lens source does not produce the lens names the plan assumes. The `###` heading mapping is described
+only for the `Lens:` prompt fallback; the meta `description` is taken 'where present' as is. Real Workflow agents in
+this repo's transcripts carry ad-hoc names written by each session's workflow script: `review:fit`,
+`review:conformance`, `review:docs`, `verify:consistency` next to `verify:Consistency`, and `verify:decisions` next to
+`verify:Decisions an executor can't make`. None of these match headings such as 'Fit with the surrounding code' or 'Plan
+conformance'. The description is also free text chosen per run, so storing it raw at company level breaks the 'No free
+text' rule. Scenario: Two plan reviews record Consistency tokens under both `Consistency` and `consistency`, and
+code-review fit tokens under `fit` instead of the heading name. Transcripts are deleted after 30 days, so the stored
+aggregates can never be re-split. Task 15d's 'lenses whose cost recurs with no findings' then compares split and
+misnamed buckets against findings keyed by the `### R<n>-<m> · <sev> · <lens>` headings, and cut candidates come out
+wrong. A workflow description such as `review:<engagement name>` would also be stored verbatim in a company-level entry.
+Fixed: a stored lens is always a `###` heading of `review-lenses.md` or `other`, matched from the description or `Lens:`
+text by heading prefix, first word or a short alias table, never stored raw.
+
+### R12-4 · minor · grounding
+
+Task 15, Change, **The window** (first appearance) and § What the transcripts hold (`cleanupPeriodDays` 30): The plan
+notes the 30-day transcript cleanup but does not check what it does to this plan's own first entry. `cleanupPeriodDays`
+is unset in `~/.claude/settings.json`, so the 30-day default applies. The oldest dotfiles transcripts are from
+2026-10-13, and this plan began 2026-10-16. The first real `record` runs only at the end of this run, after Tasks 16,
+15, 17 and 15b, which is likely more than 30 days after the plan began. The window start is the earliest surviving
+record that names the plan, so the loss produces no warning. Scenario: By the time Task 15b's end-to-end `record` runs,
+the sessions of 2026-10-13 to 10-16 (Tasks 0-3 and the first review rounds) have been deleted. The first entry silently
+starts weeks late and undercounts cost, rounds and majors for the plan the framework is first judged on. Either raise
+`cleanupPeriodDays` before building, or warn when the earliest in-scope record is near the retention edge.
+
+### R12-5 · minor · grounding
+
+Task 17, Change, **The skill** (in-place edits) and **Files** (`work-contexts.md`): The in-place edits list covers the
+opening line, the review-input line and the red flag. It misses `implementing-plans/SKILL.md:104`, 'The plan file is
+never staged', which Task 17's `git add --` of the plan and its review files contradicts directly. It also misses
+`work-contexts.md:86`, '`implementing-plans` checkpoints in the index and never commits', a separate line from line 85,
+the one Task 17 names. Scenario: After Task 17 the skill tells the session both to stage the plan at a session end and
+never to stage it. `work-contexts.md` still says `implementing-plans` never commits. A later session following line 104
+skips the plan, so another machine resumes without the plan's status rows.
+
+### R12-6 · minor · grounding
+
+Task 17, Change, **The level**; Task 15, Interfaces (`ai-log level`, exit 2 when `AI_LOG_DIR` is not a git clone): Task
+17 gates every session-end commit and push on `ai-log level`. That gate reads the `allow` file inside the private log
+clone, and Task 15 defines exit 2 when `AI_LOG_DIR` is not a clone. The plan does not say what `level` prints or exits
+without the clone, or what the session end does then. The user works from more than one machine, and the clone is
+created only on this one. Scenario: On a second machine without `~/.ai-framework-log`, a session end runs `ai-log level`.
+It either exits 2, leaving the save undefined, or treats the repo as customer and skips it. The user's 'Commit and push
+the branch' rule then silently does nothing on that machine, and the next machine resumes from stale work.
+Refuted: Dropped by the verifier. What `ai-log level` does without a clone is error handling, which the out-of-scope
+line leaves to the code. Task 17 also says 'A failure goes in the report', so the save does not fail silently as the
+scenario claims. And for github.com/andrelin and uptimeconsulting origins the gate needs no `allow` file, so an executor
+can check this in the diff.
+
+### R12-7 · nit · grounding
+
+§ Approvals, 'Added 2026-11-05 by the iteration that detailed Task 15' block; Task 17, Change (`then ai-log record <plan-file>`):
+The standing yes to commit and push to `andrelin/ai-framework-log` without asking is worded 'after every plan' and
+covers 'every write the step makes', meaning Task 15b's skill step. Task 17 adds a second writer, a `record` at every
+session end that commits and pushes to the log repo. That write is named only in the user's 'commit and ai log at the
+end of sessions', which said nothing about pushing the log repo. Under the global 'An approval covers what it names',
+the session-end push to the log repo is not clearly covered. Scenario: A later run reads § Approvals (or, after Task 13,
+the skill line) and finds the log-repo yes scoped to after-plan writes. It either asks at every session end, which
+defeats the point, or pushes on an approval that does not name this write. Recording the session-end push explicitly in
+the approval removes the doubt.
+Refuted: Downgraded from minor by the verifier. Downgraded. The user explicitly asked to 'ai log at the end of
+sessions', and `ai-log record` is defined as committing and pushing its entry, which the 2026-11-05 log-repo yes covers
+by name. Task 17 cites the standing yes for this write. Stating the session-end push explicitly in the approval would
+remove a reader's doubt, but no write goes unapproved.
+
+### R12-8 · nit · grounding
+
+Task 15, Interfaces (`framework.dotfiles_commit`, `commit`, the id) together with the 2026-11-09 squash-merge landing (§
+Approvals, Task 17 **Landing**): The new landing rule (every multi-session change lands by a squash-merged PR) was not
+checked against what entries store. When the work repo is this dotfiles repo, `dotfiles_commit` and `commit` are branch
+shas. The squash removes those shas from `main`'s history, and `deleteBranchOnMerge` is false on `andrelin/dotfiles`,
+with no branch deletion approved. Follow-up 15d's 'grouped by framework commit' then groups by shas that sit on no line
+of `main`. Scenario: Every entry recorded while the framework itself is being changed (all of this run's) names an
+`ai-framework` sha. After the squash, 15d cannot order those entries against later framework commits on `main`, or say
+which framework version they measured. They are reachable only through `refs/pull/*` or a leftover branch.
+Refuted: Downgraded from minor by the verifier. Downgraded. `deleteBranchOnMerge` is false and no branch deletion is
+planned, so the `ai-framework` shas stay reachable on origin, and GitHub also keeps them under refs/pull/`<n>`/head. The
+stored shas therefore remain resolvable and entries carry `recorded_at`. 15d is an undetailed follow-up that settles its
+grouping when it is detailed, so no data is lost and this is not costly to reverse.
+
+### R12-9 · nit · grounding
+
+Task 15b, **Why not also `implementing-plans`**: The rationale 'it never commits' is out of date once Task 17 is built:
+`implementing-plans` then commits and runs `ai-log record` at session ends. The conclusion still holds, since the
+introspection is written only once, after the final commit, but the stated reason no longer does. Scenario: A reader of
+the folded doc or the skill sees `implementing-plans` committing and recording, and the reason no longer explains why
+the introspection step lives only in `reviewing-in-rounds`.
+
+### R12-10 · nit · grounding
+
+§ Approvals, 2026-11-05 run block (lines 91-92) and the superseded 2026-11-09 block (line 109 vs line 121): The
+2026-11-05 bullet still says 'committed after the final code review, `main` fast-forwarded, pushed and CI watched' with
+no superseded mark, though the later block replaces the fast-forward. The sentence 'This run's session ends before Task
+17 is built follow its steps by hand' appears both in the superseded block and in the current one, and neither notes
+that `ai-log` does not exist until Task 15 is built. Scenario: An executor scanning § Approvals finds both 'fast-forward
+`main`' and 'squash-merge a PR' for this run. A session end before Task 15 is built cannot run the `ai-log record` step
+'by hand'.
+Refuted: Partly refuted. The 2026-11-09 block explicitly says it replaces 'the fast-forward of `main` for this run', so
+the 2026-11-05 bullet is superseded in the text. The remaining point stands as a nit: a session end before Task 15 is
+built cannot run `ai-log record` 'by hand', and neither block says so.
+
+### R12-11 · nit · grounding
+
+§ Approvals, 'Asked and answered 2026-11-09, in bulk' (`d88b6fa`: 'Squash it out'): Squash-merging removes `d88b6fa`
+from `main` only. The pushed `origin/ai-framework` branch keeps it in this public repo unless the branch is deleted, and
+no branch deletion is approved (`deleteBranchOnMerge` is false). Scenario: After the PR merges, `d88b6fa` and the other
+WIP commits stay publicly reachable on `ai-framework`. If 'squash it out' meant keeping the WIP commit out of the public
+history, that intent is only half met.
+Refuted: Dropped by the verifier. `d88b6fa` was already pushed to origin/ai-framework in this public repo, so deleting
+the branch would not unpublish it (refs/pull keeps it too). The approval's context shows that 'Squash it out' was about
+dropping the planned rebuild and force push in favour of the squash keeping it off `main`, and the squash does that. The
+scenario rests on a speculative reading of the user's intent, with no failure or requirement named.
+
+### R12-12 · major · scope and slicing
+
+Task 15, Interfaces, the entry's per-lens tokens ("An agent's lens comes from its Workflow `.meta.json` `description`
+(`review:<lens>`, `verify:<lens>`)..."): The per-lens cost data rests on an assumption the 2026-11-05 field inspection
+never checked. That inspection lists no `.meta.json` fields. This repo's real Workflow metas carry free-form lens names
+that the session's own workflow scripts wrote, not the `###` headings of `review-lenses.md`. A sample of
+`~/.claude/projects/-Users-andrelin--dotfiles/*/subagents/workflows/wf_*/agent-*.meta.json` shows `review:Scope and slicing`
+and `review:Work context` (headings) next to `review:fit`, `review:whole`, `review:tests`, `verify:correctness` and
+`verify:conformance` (slugs). The plan maps only the `Lens:` text to a heading, so either the description value is
+stored raw or it falls to `other`. Scenario: Run against real data, the same lens lands under two keys: "fit" in one run
+and "Fit with the surrounding code" in another. Or most code-review lenses collapse into `other`. Task 15d's cut
+candidates then compare lenses whose costs are split or merged, and the stored entries can't be re-keyed after the
+transcripts expire at 30 days. Fix: make inspecting real metas the task's first step, and state how a description value
+is normalised to a heading.
+Fixed: as R12-3.
+
+### R12-13 · minor · scope and slicing
+
+Task 17, Tests: The tests prove the git mechanics (`grep -c` counts, `write-tree` equals `HEAD^{tree}`, `Base:` is an
+ancestor) but not the behaviour the task actually adds: that Claude runs the session-end save when the user asks to wrap
+up or when the part-way report is printed, and not at a stop to ask. The git invariants are predictable. The unverified
+part is the trigger. Other skill changes in this plan (Tasks 9 and 14) got headless scenario runs; this one gets none.
+Scenario: The paragraph reads cleanly and passes its grep tests, but in a real run the model either skips the save on
+"let's wrap up" or runs it before an `AskUserQuestion` stop. The result is a missing work-in-progress push (another
+machine resumes from stale work) or a stray commit and log entry. Nothing in the task would catch either. Fix: add one
+headless scenario pair, a wrap-up request that saves and a question stop that doesn't.
+Refuted: Downgraded from major by the verifier. Downgraded. The gap is real: Task 17's tests check the git invariants
+but never check that the paragraph fires on a wrap-up request and not at a stop to ask, while Tasks 9 and 14 got
+headless scenario runs. Choosing exact test cases is largely out of scope, though, and adding one headless scenario pair
+costs little while implementing, under the existing 2026-10-30 yes for headless agents. The approach doesn't rest on it,
+since the trigger wording is the user's own ruling.
+
+### R12-14 · minor · scope and slicing
+
+Task 17, Change, "commit the index ... with `--allow-empty`, so every session end has its own `HEAD` and so its own log
+entry": The empty commit buys nothing the user asked for. Task 15 already defines a same-`HEAD` re-run as replacing its
+own entry, with the window starting at the previous *other* entry's end, so the counts of both sessions survive in one
+entry. Task 15's own test says "two runs at the same `HEAD` → one entry, the later window". The empty commit only splits
+that entry in two. Scenario: Each idle session end adds an empty `Work in progress` commit and a log entry to the
+branch, with no data lost if it were left out. Fix: drop `--allow-empty` and the matching test ("A second session end
+with nothing new checkpointed still makes a commit"), or name the requirement that needs one entry per session.
+
+### R12-15 · minor · scope and slicing
+
+Task 15, Tests, Counts bullet ("at company level the plan's and branch's words redacted from the introspection (15b)"):
+A test of Task 15b's `note` redaction sits in Task 15's test list. `note` and the redaction are built only in 15b.
+Scenario: An executor building Task 15 can't make this test pass, or builds part of 15b's redaction early to satisfy it,
+blurring the slice. Fix: move the line to Task 15b's Redaction tests.
+
+### R12-16 · minor · scope and slicing
+
+Task 15, Tests, "Real data, last" ("No real `record` runs here: the first is Task 15b's end to end") versus the Order
+line "16, 15, 17, 15b" and Approvals "This run's session ends before Task 17 is built follow Task 17's steps by hand":
+Task 17's session-end steps run a real `ai-log record`, which commits and pushes to `andrelin/ai-framework-log`. With 17
+built before 15b, and earlier session ends following its steps by hand, the first real push happens at whichever session
+end comes first after Task 15 is built, not at 15b's end to end. The 2026-11-05 log-repo yes reads "From Task 15b on,
+after every plan", which names neither session ends nor the time before 15b. Scenario: A session ends between Tasks 15
+and 15b. The session runs `ai-log record` for real, pushing an entry no test has checked. Either the approval doesn't
+name this write (and the session should stop to ask), or the plan's claim about the first real record is wrong. Fix: say
+whether session-end records before 15b are covered by the user's "commit and ai log at the end of sessions", and reword
+Task 15's sentence to match.
+Refuted: Partly refuted. The approval half of the scenario fails: the user's 2026-11-05 'commit and ai log at the end of
+sessions', recorded as a standing rule in Approvals, and the yes to 'push to it as Task 15 builds' both cover a real
+session-end `record` before Task 15b. The inconsistency half stands. The Order runs 15, 17, 15b, and Approvals says
+session ends before Task 17 follow its steps by hand, so a session end between 15 and 15b runs a real `record`. That
+contradicts Task 15's 'No real `record` runs here: the first is Task 15b's end to end'. One sentence settles it.
+
+### R12-17 · minor · scope and slicing
+
+Task 15, Tests and Change ordering (the real-data dry run and price check placed last): The real-data dry run is the
+cheapest probe of every assumption about the transcripts (lens attribution, `.meta.json` phases, dedup across resumed
+sessions, prices against `cost-state`), yet it is the last thing done, after the review-key increments, company hashing
+and the plugin allowlist are all built. The order doesn't put the riskiest assumption first. Scenario: The dry run shows
+a field shape the parser didn't expect, as the lens metas above already do. The parser, its fixtures and their tests are
+then reworked after the fact. Fix: open the task with a read-only probe over real transcripts (field shapes and the lens
+and phase values) and build the fixtures from what it finds.
+
+### R12-18 · minor · scope and slicing
+
+Task 17, Change, Landing ("work that has such commits lands by a squash-merged PR ... `reviewing-in-rounds` is
+unchanged"): The task says the work lands by a squash-merged PR but doesn't say whether the skill paragraph opens or
+merges that PR, or only states the rule. Nothing marks PR creation as out of scope for Task 17, and this run's landing
+steps (in Approvals and Task 13) do open and merge one. Scenario: An executor adds `gh pr create` and squash-merge steps
+to `implementing-plans`, which would be an unrequested platform write wired into a skill. Or the executor leaves them
+out while a reader assumes the skill handles landing. Fix: one line saying the paragraph states the landing rule only,
+and the PR is opened per the plan's `## Approvals`.
+Refuted: Dropped by the verifier. Refuted by the plan text. Task 17's 'The skill' bullet lists exactly what the
+paragraph holds: 'the trigger, the level, the steps, customer level and the landing rule — a branch holding session-end
+commits lands by a squash-merged PR, never a fast-forward'. The steps it lists (add, commit, delete refs, push, record)
+don't include opening or merging a PR, and the landing item is stated as a rule. Adding `gh pr create` would go beyond
+the task's stated content, and the global approvals rule already forbids unrequested platform writes. A reader can check
+this in the diff.
+
+### R12-19 · nit · scope and slicing
+
+Task 13, Tests (`git ls-files 'plan-ai-framework*'` prints nothing after the commit) versus the 2026-11-05 deviation
+(the `git rm` is a separate commit after the final code review and `ai-log record`): Task 13's fold is task-reviewed
+like any task, but its tests include a check that can pass only after the `git rm` commit, which comes later, after the
+final review. The task's tests mix the reviewable fold with the post-review delete. Scenario: The task review of Task 13
+runs its tests, `git ls-files` still lists the plan, and the task is marked failing or the implementer deletes the plan
+early, before `record` reads it. Fix: split the tests into those for the fold (at the task review) and those for the
+delete (after the `git rm` commit).
+Refuted: Downgraded from minor by the verifier. Mostly refuted, so downgraded. The test is already scoped: 'prints
+nothing after the commit', and the only commit Task 13 makes is the `git rm`. The task text says 'Only the delete waits'
+and places the `git rm` after the final review and `ai-log record`. An implementer who deletes early would be ignoring
+an explicit instruction, not misreading the test. Splitting the test list in two would only make the wording clearer.
+
+### R12-20 · nit · scope and slicing
+
+Task 16, Change ("`bin/check-md-limits` stops counting front matter toward the length aim and cap of every file"):
+"Length aim and cap" can be read as the 150-character line-length limit as well as the line-count aim and cap. Only the
+line count is meant. Scenario: An executor also exempts front-matter lines from the 150-character check, widening the
+change beyond what the user asked for. Fix: say "line-count aim and cap".
+
+### R12-21 · minor · decisions
+
+Task 17, Change, 'At personal and company level' (the plan file committed when untracked at personal level) and
+'Landing'; writing-plans § Plans are temporary: Task 17 has the session-end commit add an untracked personal-level plan
+to the branch. Doing that turns the plan into a tracked file. But no task says who `git rm`s that plan before the squash
+merge, or when relative to 15b's `ai-log record`. Task 17's Files leave out `writing-plans`, whose § Plans are temporary
+still says most plans are untracked and get deleted after the work lands. `reviewing-in-rounds` Completion stages 'never
+plan-*' and commits only the paths in task Files lists, so it won't make that commit either. The executor would ask: in
+a future run, which skill step removes a plan that a session-end commit started tracking, and does writing-plans change
+to match? Scenario: A later personal plan has one session-end commit. Completion commits per task, 15b records, and
+nothing removes the plan. The squash-merged PR then publishes the plan and its review files on `main` of a public repo,
+which breaks writing-plans' delete rule and 'never reference a plan from anything that outlives it'.
+Refuted: Downgraded from major by the verifier. Downgraded. `claude/skills/writing-plans/SKILL.md` § Plans are temporary
+(lines 121-124) already covers a tracked plan: "a tracked one with a `git rm` commit on the branch before it merges",
+after the commit and log step. A plan that a session-end commit started tracking falls under that clause, so
+writing-plans needs no change, and the plan's fold task is the step that runs it. What stays open is a one-line pointer
+in Task 17's skill paragraph saying the plan is now tracked and needs that `git rm`. That is cheap to add while
+implementing.
+
+### R12-22 · minor · decisions
+
+Task 17, Change, personal level, citing the user's 'Commit it on the branch' (2026-11-09, plan review R11-15); §
+Approvals 2026-11-09 blocks: Before this change, personal plans stayed untracked and never left the machine. Pushing
+them on a branch makes them public, because the PR's commits stay visible on GitHub after a squash. The quote that
+approves this appears only inside Task 17 and is missing from § Approvals. That breaks the global rule that an approval
+covers only what it names and is recorded up front. The executor would ask: is publishing plan and review-file contents
+on a public branch approved for every future personal plan, and where is that recorded? Scenario: A future run pushes a
+personal plan that holds review findings or follow-up notes to `origin`. That content stays readable in the PR's commit
+list after the squash. Nothing in § Approvals or a durable skill shows the user agreed to that.
+Refuted: Downgraded from major by the verifier. Downgraded. The approval exists. Task 17 quotes it and dates it ("Commit
+it on the branch", 2026-11-09, R11-15), and § Approvals 2026-11-05 records the standing "Commit and push the branch" for
+every future personal and company run, so publishing the branch is approved for all of them. Global § Approvals requires
+each approval to be named and asked. It does not require a copy in a § Approvals list, and Task 17 makes the skill line
+the place that yes outlives the plan. Mirroring the quote into § Approvals is real but a cheap edit, and nothing here is
+built wrong.
+
+### R12-23 · minor · decisions
+
+Task 16, Change (front matter leaves the line count) and Task 17, 'Line budget': Once Task 16 stops counting front
+matter, every file's count drops. `.md-baseline` says 'Regenerate with: bin/check-md-limits --update-baseline', and that
+command lowers pins to their current size. Task 16 doesn't say whether to re-pin. If the Task 16 executor tightens the
+pins, `implementing-plans` drops from 120 to 116. Pins are never raised, so the 4 lines Task 17 relies on are gone for
+good. The executor would ask: does Task 16 leave `.md-baseline` untouched? Scenario: Task 16's executor sees every count
+fall and runs `--update-baseline` to tidy up. Task 17's edits then can't fit, and the pin can't be raised to make room.
+Task 17 is forced into its fallback cut, or it can't pass `check-md-limits` at all.
+Refuted: Downgraded from major by the verifier. Downgraded. Nothing in Task 16 tells its executor to run
+`--update-baseline`. The Order (line 190) and Task 17 both say Task 16 frees the 4 lines for Task 17. If the pin were
+tightened anyway, Task 17 has a named fallback cut, moving resume step 1's last sentence to the reference doc, so it
+would not be blocked. A sentence in Task 16 ('leave `.md-baseline` untouched') settles it cheaply. The finding is real
+but not major.
+
+### R12-24 · minor · decisions
+
+Task 13, deviation paragraphs (the issue 'filed with writing-issues on the user's yes') and § Approvals 2026-11-09 ('Ask
+me then') vs the landing sequence in § Approvals / Implementation status Order: Task 13's issue has to carry the
+`Deferred:` lines, and the final code review produces some of those. Yet the fold is 'built and task-reviewed like any
+task' before the final review. The landing sequence (final review commits, `ai-log record`, the `git rm` commit, push,
+PR) doesn't include the stop to show the issue draft. The executor would ask: is the issue drafted and filed during Task
+13's fold, before the final review, or after the final review and before the `git rm`? Scenario: Reading one: the
+executor files the issue during the fold, so every `Deferred:` line from the final code review is lost when the plan is
+deleted. Reading two: the executor stops mid-landing for the user's look, a step the Order and Approvals sequence never
+lists.
+Refuted: Downgraded from major by the verifier. Downgraded. Task 13's deviation says the issue is filed "before the
+delete". The delete is the `git rm` commit after the final review's commits and `ai-log record`, so the text already
+places filing after the final review, which carries its `Deferred:` lines. Handover item 6 gives the same order. The
+Order paragraph does leave out the user-look stop, which is worth one clause. But a draft shown early can still be
+updated before it is filed, so no data is lost. Cheap to settle.
+
+### R12-25 · minor · decisions
+
+Task 17, Change, 'Landing' and 'The skill' (the landing rule written into implementing-plans): The rule 'a branch
+holding session-end commits lands by a squash-merged PR, never a fast-forward' goes into `implementing-plans`. Landing
+itself happens in the plan's `## Approvals` and `reviewing-in-rounds` Completion, which Task 17 leaves unchanged.
+Opening and merging a PR is a platform write that needs its own approval. The executor would ask: in a future run, who
+opens and merges the PR, does the run ask for it, and which wins when a plan's Approvals say 'fast-forward main' (as the
+2026-11-02 block did)? Scenario: A future plan's Approvals say 'fast-forward main'. Session-end commits exist on the
+branch. The final run either fast-forwards, putting 'Work in progress' commits onto `main`, or opens and merges a PR
+nobody approved.
+Refuted: Downgraded from major by the verifier. Downgraded. Task 17 states the precedence outright: "a branch holding
+session-end commits lands by a squash-merged PR, never a fast-forward". That answers the 'which wins' question. Opening
+and merging a PR falls under global § Approvals' ask-in-bulk-up-front rule, which already makes a future run ask for it
+with the rest of its approvals. Writing a cross-reference into the skill paragraph is cheap. Nothing gets built wrong in
+this run, since this run's own PR landing is approved.
+
+### R12-26 · minor · decisions
+
+Task 17, Change ('At personal and company level' ... `ai-log record <plan-file>`) and the 2026-11-09 Approvals line
+'This run's session ends before Task 17 is built follow Task 17's steps by hand'; Task 15 Tests 'No real record runs
+here: the first is Task 15b's end to end': The run builds 16, 15, 17, 15b in that order. A session that ends before Task
+15 is built can't run `ai-log level` or `record` by hand. A session end after Task 17 does run a real `record`, which
+contradicts 'the first is Task 15b's end to end'. The executor would ask: before Task 15 exists, does a session end skip
+the log step, and does a real session-end entry count as the first entry for the Revisit? Scenario: The session stops
+after Task 16. Following Task 17 by hand, the executor hits `ai-log: command not found` and has no instruction for it,
+so they either skip the commit or stop.
+
+### R12-27 · minor · decisions
+
+Task 15, Change ('Customer level, deferred', the clone's `allow` file) and Files ('Outside this repo'): `ai-log level`
+reads a `<host>/<owner>` allowlist from an `allow` file in the private clone, but no task creates that file or sets its
+first contents. It also duplicates `~/.claude-company-orgs`, which Task M already treats as the list of company owners.
+Task 17 consumes this through `ai-log level`. The executor would ask: does the allowlist live in the log clone or in the
+existing company-orgs file, and who fills it? Scenario: A company repo on a Forgejo host resolves as company through
+`~/.claude-company-orgs`, but `ai-log level` prints `customer`. Session-end saves there then commit and push nothing,
+with no warning that the allow file was never written.
+Refuted: Partly refuted, kept as minor. The duplication claim is wrong: `claude/hooks/work-context.sh` never reads
+`~/.claude-company-orgs`, and the only repo mention is in `test/test_work_context.sh`. A missing `allow` file also has
+defined, conservative behaviour (treat as customer, record nothing). The real gap is that Task 15's 'Outside this repo'
+creates only `entries/` and `README.md`. So a company Forgejo repo silently gets no session-end commit or push from Task
+17 until someone writes the file. Saying who seeds it, and with what, is a cheap decision.
+
+### R12-28 · minor · decisions
+
+Task 15b, Change, 'The mechanical redaction' (company level: plan and branch words, 'plan and generic words aside');
+Task 15 Tests ('at company level the plan's and branch's words redacted from the introspection (15b)'): The plan never
+defines 'generic words', and that list decides what an introspection keeps at company level. This redaction test also
+sits in Task 15's test list, although 15b builds the feature and comes after 17 in the run order. The executor would
+ask: which stop-word list applies, and which task's tests own the case? Scenario: With branch
+`feature/add-acme-billing`, one executor treats 'add' and 'billing' as generic and keeps them. Another redacts every
+word, which also strips 'feature' and 'billing' from the evidence. Meanwhile Task 15's suite either fails or the case
+gets skipped.
+Refuted: Dropped by the verifier. Out of scope. The stop-word list behind 'generic words' is an executor choice that a
+reviewer can check in the diff. The plan already sets its intent (`plan` and generic words aside, mirroring Task 15's
+hashing) and gives examples of generic host labels. The test case's placement is labelled '(15b)' in Task 15's list, so
+whose test it is was never ambiguous, and exact test cases are out of scope anyway.
+
+### R12-29 · nit · decisions
+
+Task 13, deviation (2026-11-03) list of items for the issue: The list still names 'Task 7's conflict sent to the user',
+which was decided and reworded on 2026-11-05 (§ Approvals, Handover item 5). That gives two readings: carry a settled
+item into the issue, or drop it. It also doesn't say which repo the 'GitHub issue' goes to. The executor would ask: does
+the 2026-11-05 ruling drop the Task 7 item, and is the issue filed on `andrelin/dotfiles` or on the private log repo?
+Scenario: The issue shown to the user lists an already-settled conflict as open. Or, if the private log repo is chosen
+instead, follow-ups 15c and 15d end up where `writing-issues` and colleagues don't look.
+Refuted: Downgraded from minor by the verifier. Downgraded to nit. Task 7's conflict is plainly settled elsewhere: its
+status row says ruled and reworded 2026-11-05, § Approvals has the ruling, and Handover item 5 says decided. So the
+stale list item is a wording leftover, and the user sees the draft before filing anyway ('Ask me then'). Which repo the
+issue goes to is a `writing-issues` choice that the user's look at the draft also checks, and the items concern dotfiles
+work.
+
+### R12-30 · minor · decisions
+
+Task 17, Change ('commit the index as `Work in progress: Tasks <list>`' with `--allow-empty`): The plan doesn't say what
+the commit message is when nothing has been checkpointed since the last save. That is exactly the case `--allow-empty`
+exists for, and the test 'A second session end with nothing new checkpointed' exercises it. The message is a fixed
+string the Files-edits test greps for. The executor would ask: is it 'Work in progress: Tasks' with an empty list,
+'none', or the last list repeated? Scenario: Two executors write different subjects for an empty save, such as 'Work in
+progress: Tasks ' and 'Work in progress: Tasks none'. The PR's commit list then reads inconsistently.
+Refuted: Dropped by the verifier. Out of scope. The subject of an empty-list commit is an output-format choice the
+executor makes and a reviewer can check in the diff. The Files-edits test greps only the fixed prefix `Work in progress: Tasks`,
+which any of the variants satisfies.
+
+### R12-31 · minor · decisions
+
+§ Approvals 2026-11-09 ('Claude opens the PR on andrelin/dotfiles and squash-merges it') and Task 13 deviation: Nothing
+says what the squash commit's message on `main` should be. GitHub's default squash body lists every branch commit,
+including the 'Work in progress' ones that the squash is meant to keep out of the readable history. The executor would
+ask: does the squash commit take the PR description's title and body, or GitHub's default? Scenario: `gh pr merge --squash`
+runs without `--subject` or `--body`. Main's single commit then carries a list of 'Work in progress: Tasks …' lines,
+which undoes the reason for squashing.
+Refuted: Dropped by the verifier. Out of scope. The squash commit's subject and body are command flags and output
+format, chosen by the executor and visible to review. The plan already routes the PR description through
+`writing-mr-descriptions`, and GitHub repository settings can make the PR title and body the squash default, so nothing
+here needs a planning decision.
+
+### R12-32 · minor · consistency
+
+Task 17, Tests (Resume across a session-end commit; Customer level), against Task 15's `ai-log level` gate: Task 17's
+personal-level test builds a scratch repo whose `origin` is a local bare repo. But Task 17 gates every commit and push
+on `ai-log level`. Task 15 defines that gate to print `customer` for any origin other than `github.com/andrelin/…`,
+`github.com/uptimeconsulting/…` or an `allow`-file host. A local-path origin is none of those. Run as the skill words
+them, the session-end steps commit nothing and push nothing. The expected new `HEAD`, the empty `refs/checkpoints/` and
+the fresh clone's state then never appear. The customer case's 'bare origin's refs unchanged' also assumes a bare origin
+behind a `github.com` URL. Neither case says how to set that up, for example `remote.origin.pushurl` or
+`url.<bare>.insteadOf`, so that `ai-log level` sees the allowlisted URL while pushes reach the bare repo. Separately,
+the steps include `ai-log record`, and the test never sets `AI_LOG_DIR`. Once the level is fixed, the test would commit
+and push a fixture entry to the real private log clone. Scenario: The executor builds Task 17 and runs the resume test
+with `git remote add origin /tmp/x/bare.git`. `ai-log level` prints `customer`, so the skill's steps skip the commit and
+push. Every assertion about the new `HEAD` and the clone fails. If the executor fixes this by pointing origin at
+`git@github.com:andrelin/x.git` without a pushurl, the push goes to GitHub. Either way, `ai-log record` writes to
+`$HOME/.ai-framework-log` unless `AI_LOG_DIR` is set.
+Refuted: Downgraded from major by the verifier. The finding holds but I've downgraded it to minor. Task 15's gate prints
+`customer` for any origin outside github.com/andrelin, github.com/uptimeconsulting or the `allow` file. Task 17's
+'Resume across a session-end commit' test uses a local bare repo as origin and runs the steps 'as the skill words them',
+so as written it commits and pushes nothing and its assertions fail. Task 15's own tests avoid this by using a
+github.com URL, but they never push from the work repo, and Task 17 does. The fix is cheap and the executor can settle
+it while implementing: set a github.com `url` and push through `remote.origin.pushurl` or `insteadOf` to the bare repo,
+and set `AI_LOG_DIR`. A reviewer can check that setup in the diff. The risk of a fixture entry reaching the real log is
+also small. `AI_LOG_PROJECTS` defaults to the real transcripts, and a session only counts when its `cwd` is inside the
+scratch repo, which the running session's isn't, so `record` most likely exits 1 with nothing written. Nothing here is
+costly to reverse, so it doesn't reach major.
+
+### R12-33 · minor · consistency
+
+Task 15, Tests › Counts (last line), and Task 15b, Tests › Redaction: Task 15's test list includes 'at company level the
+plan's and branch's words redacted from the introspection (15b)'. That is Task 15b's `note` redaction, which does not
+exist when Task 15 is built (build order 16, 15, 17, 15b). Task 15b's own Redaction test list leaves out the
+company-level plan and branch words case, even though its Change lists it as a redaction kind. The test sits in a task
+that can't run it and is missing from the task that builds the feature. Scenario: Task 15's implementer can't write or
+pass a redaction test for `note` and either stalls or skips it. Task 15b's implementer follows 15b's test list and never
+tests company-level plan and branch word redaction (R7-3, R7-40).
+
+### R12-34 · minor · consistency
+
+Task 15, Tests › Real data ('No real `record` runs here: the first is Task 15b's end to end'); § Approvals, 2026-11-05
+block ('From Task 15b on'); Task 15b, Files (work-contexts.md text): This run builds Task 17 before Task 15b. §
+Approvals also says the run's session ends before Task 17 is built follow Task 17's steps by hand. Both run a real
+`ai-log record` that commits and pushes to the log repo. So the first real record is a session end after Task 15, not
+Task 15b's end-to-end run. The standing yes for log pushes is dated 'From Task 15b on, after every plan', and Task 15b's
+`work-contexts.md` text describes only the push after a plan's commit. Neither covers the session-end record that Task
+17 adds, at the time it first runs. Scenario: A session ends between Task 15 and Task 15b. Following Task 17 by hand, it
+runs `ai-log record`, which pushes to `andrelin/ai-framework-log` before the scope 'From Task 15b on' starts.
+Afterwards, `work-contexts.md` tells readers that only post-commit records leave the machine.
+Refuted: Partly refuted, the rest stands. The approval side is largely covered. The 2026-11-05 yes includes 'push to it
+as Task 15 builds', and the user's own 'commit and ai log at the end of sessions too' covers a session-end `ai-log record`.
+Two inconsistencies remain. Task 15 says 'No real `record` runs here: the first is Task 15b's end to end', but a
+hand-run session end after Task 15 would be the first. And the `work-contexts.md` text in Task 15b, plus Task 17's edit
+to that file, describe only the post-commit log push, not the session-end one. Both are cheap wording fixes.
+
+### R12-35 · minor · consistency
+
+Task 17, Change › At personal and company level ('Commit it on the branch', 2026-11-09, R11-15) vs § Approvals: Task 17
+cites the user's 'Commit it on the branch' ruling as the authority for committing an untracked plan file at personal
+level. No § Approvals block records that answer. Both 2026-11-09 blocks cover how a session end saves, but not this
+point. Scenario: An executor or reviewer checks § Approvals for the yes that permits committing an untracked plan file,
+and does not find it. Under the global rule that an approval covers only what it names, they stop to ask again, or treat
+the step as unapproved.
+
+### R12-36 · minor · consistency
+
+Handover › Start next session here, item 0 and the opening paragraph: The Handover says the plan review 'ran 7 rounds'
+and that the next session starts with 'round 10 of the plan review'. Item 0 lists the Task 17 rewrite as 'Not yet
+reviewed, for round 10'. Yet Tasks 15 and 17 already cite R10-1, R10-9, R10-17, R10-30 and R11-15, so rounds 10 and 11
+have run. The resume point no longer matches the task sections. Scenario: A resuming session reads 'first round 10' and
+believes the Task 17 rewrite is unreviewed. It numbers its next round wrongly, or re-reviews work that rounds 10 and 11
+already covered.
+
+### R12-37 · minor · consistency
+
+Implementation status table, rows 'Final code review' and '7': The 'Final code review' row reads ✅ DONE, with notes
+about Task 14 and the 2026-11-02 run. This run still needs a final code review for Tasks 16, 15, 17, 15b and 13's fold,
+and the Order and Handover both schedule it. Row 7 still says 'checkpointed on `ai-framework`', but the Handover says
+that checkpoint was committed (`d88b6fa`) and its ref deleted. Scenario: `implementing-plans` skips rows that are
+already ✅ DONE. Reading the stale ✅ on 'Final code review', a resumed run may treat the review as done and go straight
+to the record, `git rm` and PR steps without a `Done (code):` for this run's tasks. A reader of row 7 also looks for a
+checkpoint ref that no longer exists.
+Refuted: The stale rows stand, but the failure scenario is weaker than claimed. The `implementing-plans` skill says the
+work isn't finished until the final code review says `Done (code):`, and the Order and Handover both schedule the
+review. So a resumed run probably wouldn't skip it just because of the ✅ row. Still, the row shows ✅ DONE with notes
+only about earlier runs. Row 7 also still says 'checkpointed on `ai-framework`', though the Handover says that
+checkpoint ref was deleted. The status table is what a resume reads, so this is a real but cheap inconsistency.
+
+### R12-38 · minor · consistency
+
+Task 13, Deviation (2026-11-03, code review R3) list of open items: The list is meant to catch every item still open
+before the plan is deleted, but it is out of date. It still names 'Task 7's conflict sent to the user', which was ruled
+and reworded on 2026-11-05 (§ Approvals, status row 7). It leaves out open items that the Handover's item 6 and items
+1–4 name: the audit's recorded Mediums and Lows, R12-4, the unfinished reruns behind Tasks 5, 8 and 9's 🚧 PARTIAL rows,
+closing `planechaser#73`, Task 3b's real-settings merge, and the unfiled `filing-learnings` detours. Scenario: The Task
+13 executor drafts the issue from Task 13's list. The issue then includes a settled conflict and drops the PARTIAL
+reruns and R12-4. After the `git rm`, those open items exist nowhere, which breaks the task's own requirement 'so
+deleting the plan loses none of them'.
+
+### R12-39 · minor · consistency
+
+Task 15b, Tests › End to end ('Record here only that it ran, and the id'): The end-to-end check runs only at this plan's
+final code review, after its commit. Under Task 13's deviation, the next steps are `ai-log record` and then the `git rm`
+commit of this plan. The 'record here' note therefore lands in a file being deleted, and after the commit the review has
+already passed. Task 15b also can't reach ✅ DONE on that test, because it runs after every task's review. Scenario: The
+run records the id in `plan-ai-framework.md` after the final review's commit, then `git rm`s the file and squash-merges.
+The evidence that 15b's step ran is lost unless it goes into the PR or Task 13's issue, which no step says to do.
+
+### R12-40 · minor · consistency
+
+Task 15, Interfaces (entry fields `commit`, `framework.dotfiles_commit`), against the 2026-11-09 squash-merge landing
+(Task 17, § Approvals): The squash-merge ruling has not been folded back into Task 15's entry design. Every entry from a
+session end, and the 15b record before the PR, stores branch commit shas: `commit` and the `dotfiles_commit` of
+`bin/ai-log`'s tree. The squash merge removes those shas from `main`'s history. Follow-up 15d plans to group trends 'by
+framework commit', which then points at commits unreachable from `main`. Scenario: After this run's PR is squash-merged
+and the branch deleted, Task 15d groups entries by `dotfiles_commit`. None of the recorded shas resolve on `main`, so
+the grouping by framework version can't be tied to a commit.
+Refuted: Dropped by the verifier. Dropped. Follow-up 15d is a Sketch, not a task of this run, and how it groups by
+framework commit is left for when it is detailed. Sketch detail is out of scope. A sha also still works as a grouping
+key whether or not `main` reaches it. GitHub keeps PR head commits under `refs/pull/N/head` after a squash merge. And
+only work done in the dotfiles repo on a branch records a branch sha as `dotfiles_commit`; entries from other repos
+record whatever the dotfiles checkout is at. No concrete failure in this run's scope.
+
+### R12-41 · nit · consistency
+
+Follow-ups, not tasks of this run (opening line); Follow-up 15c notes: The opening line says 'neither can be built', but
+the section holds three items: the Revisit, 15c and 15d. Two of 15c's notes now repeat what Task 15 already builds at
+every level since R7-39 and R3-2: the plugin allowlist folding to `other`, and the `promptSource` list. Scenario: A
+reader counting follow-ups for Task 13's issue is unsure whether the Revisit is included. When 15c is detailed later, it
+may plan the plugin folding again as if it were new work.
+
+### R12-42 · nit · consistency
+
+§ Approvals, 2026-11-05 run block ('its skill line is where that yes outlives this plan'): This says Task 17 writes a
+'skill line'. Task 17's Change specifies a paragraph in § Finish with the final review, plus three edits in place.
+Scenario: A reviewer checking Task 17's diff against § Approvals expects a single line and flags the paragraph as scope
+creep.
+
+### R12-43 · minor · work context
+
+Task 17, Tests, 'Resume across a session-end commit' (with Change, 'The level'): The test's work repo pushes to a local
+bare repo as `origin`, but Task 17 takes the level from `ai-log level`. That gate prints `customer` for any origin that
+is not `github.com/andrelin/…`, `github.com/uptimeconsulting/…` or a `<host>/<owner>` line in the clone's `allow` file.
+A filesystem-path origin matches none of these, so the session-end steps 'run as the skill words them' would commit and
+push nothing. The plan does not say how the scratch repo is meant to resolve as personal. Checked in a scratch repo:
+`work-context.sh level` gives `company` for a local-path origin. On a machine whose `~/.claude-customers` lists
+anything, the guard may even treat that origin as customer, as the 2026-10-23 detour in the Handover recorded. Scenario:
+The executor builds the scratch repo with `git remote add origin <bare path>` and runs the steps. `ai-log level` prints
+`customer`, so no commit and no push happen. `git merge-base`/`write-tree` hold trivially, but 'a second session end
+still makes a commit, a new HEAD' fails, and the clone has no branch. The executor then either changes the gate or
+improvises (for example `url.<bare>.pushInsteadOf git@github.com:andrelin/x.git`), and a reviewer can't tell whether the
+personal path was really exercised. The plan should name the setup: an origin URL of `git@github.com:andrelin/x.git`
+with `pushInsteadOf` (or `insteadOf`) to the bare repo, plus a throwaway `HOME` with no `~/.claude-customers`.
+Refuted: Downgraded from major by the verifier. The defect is real. Task 15's gate prints `customer` for any origin that
+is not on github.com/andrelin, github.com/uptimeconsulting or the clone's `allow` list. A filesystem-path origin matches
+none of these, so the 'Resume across a session-end commit' test as written would commit and push nothing. Downgraded
+from major: the approach itself doesn't rest on this. Only the test's scratch setup is missing a detail. The executor
+finds out on the first run, and the fix is cheap and visible in the diff. One way is an origin of
+`git@github.com:andrelin/x.git` with `pushInsteadOf` pointing at the bare repo, plus a throwaway HOME. Plain `insteadOf`
+would not work, because `git remote get-url` applies it and the gate would again see a path.
+
+### R12-44 · nit · work context
+
+Task 17, Change, 'At personal and company level' (untracked plan committed at personal level): At personal level the
+session end does `git add` on an untracked plan and its review files, commits them, and pushes the branch. It does this
+for personal *public* repos too, under a standing yes. The plan relies on the later `git rm` and squash merge to keep
+the files off `main`. But on GitHub a pushed branch and the PR's `refs/pull/N/head` keep those commits world-readable
+after the squash. Review-findings files carry verbatim reviewer output and user quotes. writing-plans tracks personal
+plans by default, so a plan that is untracked at personal level was probably left untracked on purpose. The step has no
+check that the files meet the personal-public bar (no customer names, hostnames, internal tooling or secrets) before the
+push. Scenario: In a personal public repo, the user keeps `plan-x.md` untracked because its findings quote a customer's
+hostname from an earlier comparison. A part-way final report fires the session end. Claude adds the plan, commits, and
+runs `git push -u origin <branch>`. The hostname is now public in the branch history and in the PR ref, even though the
+squash later drops it from `main`. Either limit the untracked-file add to personal private repos, or run the public-bar
+check on those files before the push.
+Refuted: Downgraded from minor by the verifier. The user ruled on this exact case: 'Commit it on the branch' for an
+untracked plan at personal level (2026-11-09, R11-15). The personal-public bar in the global CLAUDE.md already applies
+to every commit Claude makes, so the skill doesn't need to restate it. writing-plans tracks personal plans by default,
+so in a public repo they are pushed routinely anyway. The idea that a given untracked plan was left untracked to hide a
+customer hostname is speculation. At most a wording reminder.
+
+### R12-45 · minor · work context
+
+Task 15b, Change, the introspection at company level; Approvals, 2026-11-05 'Entries store…': Until Task 15c exists, the
+company-level introspection prose goes to the personal account's private repo after only mechanical redaction. That
+redaction covers `~/.claude-customers` entries, remotes, folder names, and the words of the plan basename, first heading
+and branch. Task 15 itself notes that company repos and plans are often named for an engagement, which is why it hashes
+`repo` and `plan`. A client's name in the plan body or the work itself is caught only if the model obeys 'no customer
+names'. The model terms pass that would catch it is deferred to 15c. The user chose to store company prose now, so this
+is a residual risk, not a forbidden write. Even so, the plan builds and tests nothing to bound it. Scenario: An
+`uptimeconsulting/…` repo's plan is named `plan-integration.md`, but its body and findings discuss 'Acme's SSO tenant'.
+Acme is not in `~/.claude-customers`, because Uptime's own repo is not customer work. The introspection's 'Didn't'
+bullet cites 'Acme SSO setup took 3 rounds'. None of the redaction kinds match, so the line is pushed to
+`andrelin/ai-framework-log`. A cheap step now: also redact the words of the plan's `##` headings at company level, or
+hold company prose until 15c.
+Refuted: Dropped by the verifier. This is the user's explicit decision. The 2026-11-05 approval says the introspection
+is stored at personal and company level until 15c, and the user's re-slice defers the model terms pass to Task 15c. The
+text goes only to the user's own private repo, `andrelin/ai-framework-log`, and Task 15b's prompt already forbids
+customer names. The finding itself calls it a residual risk the user accepted, not a forbidden write. Nothing names a
+requirement that is broken.
+
+### R12-46 · nit · work context
+
+Task 17, Files, `claude/docs/work-contexts.md` edit: The doc line 'At every level, the workflow skills never commit on
+their own' is to gain the session-end commit as 'its one exception'. That line is about every level, but the plan never
+says the exception must be limited to personal and company level in the doc's wording. A reader of the published doc
+could take the session-end commit as allowed at customer level. That contradicts the global § Work contexts and Task
+17's own customer-level step. Scenario: An executor appends 'except the session-end commit (implementing-plans)' to the
+every-level sentence. A later session at customer level reads `work-contexts.md`, takes the session end as permitted,
+and tries a commit, which the guard then blocks. Worse, in a customer repo the guard resolves as company, the commit
+goes through. The edit should say 'at personal and company level, through `ai-log level`'.
+Refuted: Downgraded from minor by the verifier. The doc already carries a customer-level line ('On customer work
+reviewing-in-rounds drafts the commit'). The behaviour is gated by the skill's `ai-log level` step, not by this doc
+sentence. So the exception's exact wording is a phrasing choice the executor makes and a reviewer can check in the diff.
+The scenario where a customer repo resolving as company gets a commit is not caused by the doc: `ai-log level` prints
+`customer` for any unlisted origin. Only the wording is left.
+
+### R12-47 · nit · work context
+
+Approvals, 2026-11-09 'A company plan landing by "a PR" counts as squash-merged'; Task 17, Landing: At company level the
+skill's landing rule says a branch holding session-end commits 'lands by a squash-merged PR'. The user's ruling treats
+any company PR as squashed. A company repo whose PRs use merge commits would then carry the `Work in progress: Tasks …`
+commits onto `main`. That conflicts with the company bar of 'a readable history before it reaches `main`'. The skill
+line should keep the squash requirement explicit for company repos, or say to squash the PR when the repo allows it.
+Scenario: An `uptimeconsulting` repo merges PRs with merge commits by default. Its session-end WIP commits and the
+`--allow-empty` commits reach `main` through an ordinary merge, which breaks the showcase-history bar the company level
+sets.
+Refuted: Dropped by the verifier. Task 17's skill paragraph already states the landing rule outright: 'a branch holding
+session-end commits lands by a squash-merged PR, never a fast-forward'. Its Landing bullet also says the work 'lands by
+a squash-merged PR'. The squash requirement the finding asks for is therefore already in the skill line. The 'Any PR
+counts as squashed' ruling is the user's own decision on reading the Approvals, and it does not weaken that skill text.

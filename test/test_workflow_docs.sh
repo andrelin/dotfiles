@@ -135,7 +135,7 @@ assert "$([[ $RM_CMD == git\ ls-files* && $RM_CMD == *"':(top)plan-x.md'"* ]] &&
 repo="$(cd -P "$(mktemp -d)" && pwd -P)"
 trap 'rm -rf "$repo"' EXIT
 git init -q "$repo"
-function repo_git() { (cd "$repo" && git -c user.name=t -c user.email=t@t "$@"); }
+function repo_git() { (cd "$repo" && git -c user.name=t -c user.email=t@t -c commit.gpgsign=false "$@"); }
 mkdir "$repo/sub"
 printf x >"$repo/keep.txt"
 repo_git add keep.txt

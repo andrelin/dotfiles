@@ -689,7 +689,7 @@ assert "$(redacted_line '7 tokens')" "- Token [token] and [token] and [token] an
 assert "$(redacted_line '1 push')" "- [customer] pushed [repo] and [customer]/x to [host] from [path] and [path] and [path] (1 push)." "the origin owner and repo, another remote's host, owner and repo (a one-letter repo name stays), Windows and absolute paths"
 assert "$(redacted_line 'unchanged')" "- Keep SKILL.md, README.md, bin/ai-log, /reviewing-in-rounds, 5.5.0, e.g. gitlab and www and x, marker and branch-marker-y unchanged (no evidence)." "file names, relative paths, a slash command, a version, generic labels and short names, and a personal repo's plan and branch words stay"
 assert "$(printf '%s' "$redacted" | grep -ciE 'acme|zetaco|quoted|clienthost|example|dirclient|rel-dir|second|urlowner|scpowner|zzcorp|andrelin|redactrepo|mirror|ghp_|akia|glpat|bob|mailer|/var')" "0" "no listed name survives in any case"
-assert "$(tail -c 1 "$LOG/entries/$ID5.md" | xxd -p)" "0a" "the file ends with a newline"
+assert "$(tail -c 1 "$LOG/entries/$ID5.md" | od -An -tx1 | tr -d ' \n')" "0a" "the file ends with a newline"
 history="$(gitin "$BARE" log -p --all -- 'entries/*.md')"
 assert "$(grep -ciE 'acme|zetaco|clienthost|example-owner|dirclient|urlowner|scpowner|zzcorp|redactrepo|mirrorowner|ghp_|AKIA|mailer' <<< "$history")" "0" "no listed name reached the origin's notes"
 

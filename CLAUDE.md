@@ -28,5 +28,7 @@ Before changing the workflow skills (writing-issues, -plans, implementing-plans,
   (`Cmd / Ctrl + X`, `pbcopy` before `xclip`); never drop the non-macOS variant.
 - **Docs ship with the change.** A user-facing alias, function or script under `source/` or `bin/` updates its
   tip in the same commit, as do the READMEs and this file when a convention changes — the `writing-tips` skill.
+- **One source for the work context:** a script that needs the level or an origin's owner calls
+  `claude/hooks/work-context.sh`, never a list or parser of its own.
 - CI runs on `push` and fails hard. **No `continue-on-error`, no informational-only modes** — don't propose one.
 - The Renovate dependency-dashboard issue is **dotfiles#3**: working state, not a task. Leave it open.

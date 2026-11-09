@@ -1,0 +1,8 @@
+{
+ "runId": "wf_aaa",
+ "timestamp": "2026-01-09T10:14:00.000Z",
+ "agentCount": 2,
+ "durationMs": 5000,
+ "totalTokens": 999999,
+ "status": "completed"
+}

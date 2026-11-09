@@ -78,6 +78,9 @@ If a skill would need two unrelated triggers to be found, that's a sign it shoul
 its trigger has to be vague enough to catch both — which makes it fire when neither is.
 A doc it points at explains in full within the same cap, repeating nothing; if it won't fit, it was two docs.
 
+**A skill's first 100 counted lines carry everything needed to do its task**; up to its cap of 250, the rest is only
+detail and clarification the task can be done without, since a reader who stops early must still do it right.
+
 ### Where the rest of the detail lives
 
 - **`paths:` globs** — how they match, why a dead glob is silent, how to verify one: `~/.claude/docs/rule-globs.md`.

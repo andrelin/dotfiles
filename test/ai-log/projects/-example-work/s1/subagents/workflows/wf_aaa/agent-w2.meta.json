@@ -1,0 +1,6 @@
+{
+ "agentType": "workflow-subagent",
+ "description": "check",
+ "workflowPhase": "Verify",
+ "model": "opus"
+}

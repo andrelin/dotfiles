@@ -79,14 +79,15 @@ Add a skill by creating `claude/skills/<name>/SKILL.md` with `name` and `descrip
 ```bash
 bin/check-md-limits                        # every tracked markdown file
 bin/check-md-limits --no-warn              # errors only, as CI runs it
+bin/check-md-limits --count-raw FILE       # the counted lines a Claude-loaded file's cap sees
 bin/check-md-limits --update-baseline F... # pin a long file at its current size
 ```
 
 Fails on a line over 150 characters (front matter, code fences, table rows and URLs excepted) or a file over its
-type's cap: 50 lines for a rule or project `CLAUDE.md`, 75 for the global one, 150 for a skill, 200 otherwise.
-A skill's `description` is capped at 300 characters, since every session's skill list carries it.
-Nearing a cap is a note, not a failure; a directory holding a `VENDORED.md` is skipped, and a plan file or follow-up tracker has no length cap.
-Blank lines and headings never count. Beyond those, Claude-loaded files count line for line, since every line
+type's cap: 50 lines for a rule or project `CLAUDE.md`, 75 for the global one, 250 for a skill, 200 otherwise.
+A skill's `description` is capped at 300 characters, and a skill has no aim, so no note (250 passes, 251 fails): its first 100 lines hold the task.
+A `VENDORED.md` directory is skipped; plans and follow-up trackers have no length cap; a file nearing its aim gets a note, not a failure.
+Front matter, blank lines and headings never count. Beyond those, Claude-loaded files count line for line, since every line
 costs tokens on every task; human-facing pages count content, so comments, badge blocks and a doctoc ToC are free.
 `.md-baseline` pins a file at a length you have decided not to shorten — it fails only if it grows past that.
 A `PostToolUse` hook runs it on any markdown you edit, the pre-commit hook covers staged files, and CI runs the
@@ -120,16 +121,13 @@ skill-trigger-eval writing-plans --description "Read before …"     # score a c
 skill-trigger-eval writing-plans --model sonnet                    # override the model
 ```
 
-Every query is three real `claude -p` runs, so a 20-query set costs 60 runs per description, made one at a time:
+Every query is three real `claude -p` runs, made one at a time, so a 20-query set costs 60 runs per description:
 in parallel each run sees the others' copies of the candidate and mostly takes the wrong one.
-Each run has every tool call blocked by a hook, so a query is scored on the tool it reaches for without ever acting,
-and is killed with its tool shells once decided; Ctrl-C or a plain `kill` stops every run still going.
-The skill is moved out of `claude/skills/` for the run, since the installed copy outcompetes the candidate, which
-hides it from every session on the machine until the run ends; a run killed with `-9` leaves
-`caches/.skill-trigger-eval-moved` naming where it went, and the next run refuses until it is put back, and leaves
-its undecided `claude` runs going: `pkill -f 'claude -p .* --include-partial-messages'`.
-A failed or hung `claude` run fails the whole score rather than counting as a miss. The `tuning-skill-descriptions`
-skill says how to use the numbers.
+Every tool call is blocked by a hook, so a query is scored on the tool it reaches for, then killed with its shells.
+Ctrl-C or a plain `kill` stops every run still going; a failed or hung run fails the whole score, never counts as a miss.
+The skill leaves `claude/skills/` for the run (the installed copy outcompetes the candidate), hidden from every session until it ends.
+A run killed with `-9` leaves `caches/.skill-trigger-eval-moved`, and the next run refuses until the skill is put back;
+stop its undecided runs with `pkill -f 'claude -p .* --include-partial-messages'`. `tuning-skill-descriptions` says how to use the numbers.
 
 From `bin/skill-trigger-eval`.
 
@@ -151,6 +149,9 @@ The models are suggestions: override one per call with `ai --model haiku issue`,
 with `export AI_MODEL_PLAN=sonnet` (also `AI_MODEL_ISSUE`, `AI_MODEL_REVIEW`, and `AI_MODEL_IMPLEMENT` for the
 implementer subagents, default sonnet).
 Run it from a terminal: inside a Claude session it refuses.
+
+At personal and company level each session end commits `Work in progress: Tasks …` and pushes; resume elsewhere with
+`git fetch && git switch <branch>` (copy a company plan by hand), and land by squash-merged PR after the plan's `git rm -f`.
 
 From `bin/ai`.
 

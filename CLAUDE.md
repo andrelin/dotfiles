@@ -19,6 +19,8 @@ Each entry under `claude/` is symlinked into `~/.claude/`, so "write it to the r
 instructions" can be the same edit. Pick by scope: a rule about *dotfiles* goes here, one about *how Claude works
 everywhere* goes in `claude/CLAUDE.md`.
 This is a **personal public** repo — everything committed is published, per the global § *Work contexts*.
+Before changing the workflow skills (writing-issues, -plans, implementing-plans, reviewing-in-rounds),
+`bin/ai` or `bin/ai-log`, read why they are built as they are: `claude/docs/staged-workflow.md`.
 
 ## Conventions
 
@@ -27,4 +29,4 @@ This is a **personal public** repo — everything committed is published, per th
 - **Docs ship with the change.** A user-facing alias, function or script under `source/` or `bin/` updates its
   tip in the same commit, as do the READMEs and this file when a convention changes — the `writing-tips` skill.
 - CI runs on `push` and fails hard. **No `continue-on-error`, no informational-only modes** — don't propose one.
-- The Renovate dependency-dashboard issue is **#3**: working state, not a task. Leave it open.
+- The Renovate dependency-dashboard issue is **dotfiles#3**: working state, not a task. Leave it open.

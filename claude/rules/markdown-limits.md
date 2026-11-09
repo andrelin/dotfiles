@@ -17,10 +17,11 @@ paths:
 | --- | --- | --- |
 | A rule, or a project `CLAUDE.md` | 30 | 50 |
 | The global `~/.claude/CLAUDE.md` | 60 | 75 |
-| A skill | 100 | 150 |
+| A skill | — | 250 |
 | Anything else | 100 | 200 |
 
-- **Readability that costs next to no tokens is wanted, but only where it helps.** Blank lines and headings don't
+- **A skill's first 100 counted lines hold everything needed to do the task**; lines past 100 only add detail that is not critical.
+- **Readability that costs next to no tokens is wanted, but only where it helps.** Front matter, blank lines and headings don't
   count, so use them to help a reader find their way, never just because they are free, and remove one that helps
   no one when you edit nearby: the goal is still a small, concise file.
   Beyond those, every line of an agent-loaded file (`CLAUDE.md`, `SKILL.md`, `claude/`, `.claude/`) counts, because it is loaded whole;

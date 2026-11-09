@@ -29,7 +29,7 @@ merge/split provenance go in the HTML comments; the body stays the user's own re
    `gh issue list -R <host>/<owner>/<repo> --search 'in:title "<title>"' --author @me --state all --limit 100`, or
    `GITLAB_HOST=<host> glab issue list -R <project path> --in title --search '<title>' --all --per-page 100 --output json`,
    or `fj -H <host> issue search --repo <owner>/<repo> -s all --all -c <fj whoami's user> '<title>'`.
-   It gets the number, written `issue #<n>` as `writing-follow-up-items` says, only from the one issue whose title
+   It gets the number, written `issue <repo>#<n>` as `writing-follow-up-items` says, only from the one issue whose title
    equals the item's title — on glab also whose `author.username` is `glab api user`'s `username`; several equal
    titles → ask, and an item with no `Target:` is listed for the user, unchanged.
 3. **Delete items whose code is on `main`** (step 2) outright — don't check them off; the list is always just

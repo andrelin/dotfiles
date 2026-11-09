@@ -35,22 +35,31 @@ Both numbers tighten with how easily the file loads.
 | --- | --- | --- | --- |
 | A rule, or a project `CLAUDE.md` | 30 | 50 | a rule loads on a bare path match or, with no `paths:`, every session; a `CLAUDE.md` on nothing at all |
 | The global `~/.claude/CLAUDE.md` | 60 | 75 | same, plus permission rules that cannot live anywhere else |
-| A skill | 100 | 150 | loads only when its task matches, and carries a procedure end to end |
+| A skill | none | 250 | loads only when its task matches, and carries a procedure end to end |
 | Anything else | 100 | 200 | read on purpose, so length costs a reader rather than every task |
 
-`bin/check-md-limits` warns at the aim for every type.
+`bin/check-md-limits` warns at the aim for every type but a skill.
+
+**Why a skill has no aim:** a skill loads only when its task matches, so a long one costs less than a long rule.
+A warning point would only push the whole file towards it; the cap with a placement rule keeps what matters early instead.
+The first 100 counted lines must hold everything needed to do the task, and the 150 after them only additional
+detail and clarification that is not critical to doing it.
+The checker cannot judge that split, so it enforces the 250 cap and leaves the placement to the author and the reviewer.
+With no aim there is nothing to pin, so a skill's pin is ignored and `--update-baseline` drops it.
 
 **Why a skill's `description` is capped at 300 characters:** the body loads only when the skill is used, but the
 description sits in the skill list of every session, so it is paid for on every task like a `CLAUDE.md` line.
 It says when to read the skill and stops; a summary of the body gets followed in its place.
 
-**Blank lines and headings never count.** Each costs next to no tokens, and both make a file easier to read,
-so a cap that charged for them would push a file towards one dense, unheaded block.
+**Front matter, blank lines and headings never count.** Each costs next to no tokens or is never read by Claude,
+and the last two make a file easier to read, so a cap that charged for them would push a file towards one dense, unheaded block.
+A rule's `paths:` block is never shown to Claude, and a skill's `description` has its own 300-character cap.
+The length limits exist to cut tokens, so a long glob list or a readable front matter is not what they police.
 Free is not a reason to add more: a heading earns its place by helping a reader find something, and a file split
 into many tiny sections is no easier to read than a dense one.
 Padding is cut like any other filler when you edit nearby: a heading over a single line, an "Overview" that only
 introduces what follows, or a blank line between every bullet of a short list.
-A `#` line inside a code fence or front matter is not a heading and still counts.
+A `#` line inside a code fence is not a heading and still counts.
 **Beyond those, what counts depends on who reads the file.**
 
 - **Claude-loaded** — `CLAUDE.md`, any `SKILL.md`, anything under `claude/` or `.claude/`: **every line counts**,

@@ -82,10 +82,25 @@ Approving the *content* of the next change ("yes, remove that line") is not appr
 Ask again, every time, however recently they said yes and however similar the next one looks.
 This binds hardest where a repo's own `CLAUDE.md` sets the rule being waived — that file governs, and a one-off exception does not amend it.
 
-At every level, the workflow skills never commit on their own.
-`implementing-plans` checkpoints in the index and never commits,
-`reviewing-in-rounds` commits only after the user's yes, and `reviewing-for-feedback` never edits.
-On customer work `reviewing-in-rounds` drafts the commit rather than committing.
+The workflow skills commit only where the user said yes. `implementing-plans` checkpoints in the index; its session end and
+`reviewing-in-rounds`' (both run `session-end-save.md`) commit `Work in progress: Tasks …`
+and push the branch on the standing yes, never at customer level.
+`reviewing-in-rounds` also commits Completion's fixes and a tracked plan's `git rm -f`, each only after the user's yes
+(one in the plan's `## Approvals` counts; drafted on customer work), and `reviewing-for-feedback` never edits.
+After Completion and at each session end, at every level but customer, `ai-log` commits and pushes to the user's own private log repo.
+Out go counts, durations, tokens and versions, the redacted introspection, built-in tool names and model ids,
+the repo and plan names (hashed at company); at company level project skills, custom agents and MCP tools leave only as counts.
+At customer level nothing is recorded and nothing leaves the machine.
+Why the workflow is built this way, only when changing it: `~/.claude/docs/staged-workflow.md`.
+
+## Why one user-level hook, not a split of the config
+
+- **A `CLAUDE_CONFIG_DIR` profile per context is rejected:** it fragments the skill set and plugin installs and splits history and memory.
+- **A per-tree `.claude/settings.json` is rejected:** settings and hooks load only from the working directory's `.claude/`, with no parent fallback.
+  Parent-directory `CLAUDE.md` files do load, which is why the customer-tree context works.
+- **A hook, because `CLAUDE.md` is context, not enforcement,** and only exit 2 blocks a call, so the hook exits 2 on any error.
+  The mechanics are in § *Enforcement*.
+- **A blocked command is denied, not turned into "ask":** Claude drafts it for the user's `!`, outside the hook, so the approval stays theirs.
 
 ## Enforcement — what the guard blocks, and what it can't see
 

@@ -32,6 +32,9 @@ file, resuming, closing): their formats are literal.
    whose worktree column isn't blank — unstaged or untracked — as a `Leftovers before round 1:` line at the top of
    the findings file, so a resumed session has it too. Completion compares against it.
 
+**A session end before `Done (code):`** in a code review of a plan
+(the user wraps up, or the run stops part-way) follows `~/.claude/docs/session-end-save.md`.
+
 ## The inputs
 
 - **The plan copy:** `<scratchpad>/reviewed-plan.md`, rewritten each round from the plan with every `## Review log (`
@@ -83,6 +86,7 @@ the spec requires, and stopping because the remaining findings don't affect corr
 
 1. **Stage** the paths the fixes changed: the leftovers now that weren't leftovers before round 1, never `plan-*`.
    One that was a leftover both times stays unstaged, and the report names it.
+   A session end during the review may already have committed fixes (`session-end-save.md`): those are no leftovers.
 2. **Pathspecs:** each task's Files list (`writing-plans` § *What each task carries*) intersected with
    `git diff --cached --name-only --no-renames`, so a rename's deletion is kept. One commit per task when every pair
    of lists is disjoint, a fix outside every list going with the last task; else one commit of them all. No plan:
@@ -92,11 +96,19 @@ the spec requires, and stopping because the remaining findings don't affect corr
 4. **Personal and company:** offer the commit, run it only on a yes — one recorded in the plan's `## Approvals`
    counts. **Customer:** draft it for the user.
    **Company, no plan, on the default branch:** offer none, and say the company bar wants a branch.
+   **Nothing staged** (session-end commits already hold every task): offer and run no commit.
 5. **Flip the plan's `Final code review` row** to ✅ DONE, the `Done (code):` round in its notes.
 6. **After the commit runs** — yours on a yes, or the drafted one once the user says it ran — delete every
    `refs/checkpoints/<branch>/*` with `git update-ref -d`. A declined commit keeps them, and the report says so.
-7. **The report** names the changed files no verified finding touched — where the user's own read should start.
-8. Then `filing-learnings`, before reporting the review done.
+7. **With a plan,** once the commit has run, or when there was nothing to commit,
+   run `ai-log record <plan-file>` and do what it prints, without asking:
+   the user's standing yes of 2026-11-05 covers `record` and `note` writing to their private log repo, at every level.
+   A failure goes in the report and never undoes the commit. A declined commit records nothing.
+8. **Landing:** a branch holding session-end commits lands by a squash-merged PR, never a fast-forward or a local merge, whatever
+   `finishing-a-development-branch` offers. Before any branch merges, a tracked plan goes in a `git rm -f` commit (`session-end-save.md` § *Landing*),
+   offered and run only on a yes like step 4's (one in `## Approvals` counts), drafted at customer level.
+9. **The report** names the changed files no verified finding touched — where the user's own read should start.
+10. Then `filing-learnings`, before reporting the review done.
 
 ## Red flags
 

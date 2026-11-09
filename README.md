@@ -79,6 +79,7 @@ The `/bin` directory is added to `$PATH` and contains:
 - [claude-settings-merge](bin/claude-settings-merge) - add the dotfiles-owned hooks, deny rules and clean-up allow rules to `~/.claude/settings.json`.
 - [skill-trigger-eval](bin/skill-trigger-eval) - score how often a skill's description makes Claude load it.
 - [ai](bin/ai) - start a fresh Claude session for one stage (`issue`, `plan`, `implement`, `review`) on that stage's model.
+- [ai-log](bin/ai-log) - record a plan's counts, names and a redacted introspection in the private `ai-framework-log` repo.
 
 The `src` function (defined in [.zshrc](link/.zshrc) and [.bashrc](link/.bashrc)) re-sources the files in
 `/source` — every `*sh` under zsh, `*.sh` only under bash — useful after a change without opening a new shell.

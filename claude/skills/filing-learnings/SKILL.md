@@ -11,17 +11,19 @@ A detour is worth one line in a file that loads next time, so the next session d
 ## The close-out, in this order
 
 1. **The report** of the task, as usual.
-2. **The proposal** — at most one per task, as the last thing in the message, in this shape:
+2. **The proposals** — every candidate that clears **The bar** below, most costly first, as the last thing in the
+   message, each in this shape:
 
    > **Learning:** `<the exact line, as it would appear in the file>`
+   > **Earned by:** `<what the detour cost this time, and the trigger that brings it back>`.
    > **Goes in:** `<path>`, under `<section>`.
    > **Cut to pay for it:** `<the line it replaces or removes>` (a `CLAUDE.md` only).
    > Write it?
 
-3. **The write**, only after a yes — the line as approved, and the cut in the same edit.
+3. **The write**, only after a yes to that one — the line as approved, and the cut in the same edit.
 
 "Please remember this" gets the proposal too: it asks for the learning to be kept, not for your wording,
-destination or cut. Several candidates from one task: propose the one that cost the most, and drop the rest.
+destination or cut. No candidate clears the bar: no proposal, and the report says nothing about learnings.
 
 ## The line
 
@@ -50,11 +52,16 @@ Adding to a `CLAUDE.md` means removing from it, per **Cut on sight** in `writing
 § *The length budget*: a line the new one supersedes, a duplicate of the global file, a rule no longer true.
 Name it in the proposal. Found nothing to cut? Say so in that slot, and the user weighs the line knowing it.
 
-## Skip it when
+## The bar — a learning proves its worth before it is proposed
 
-- The learning is already in a file that loads here — the detour was not reading it, and that's no new line.
-- It only matters to this conversation, or to this one task.
-- The task went as planned. No detour, no proposal.
+Every line loads on every task its file covers, so a candidate is proposed only when all of these hold:
+
+- **It cost something real:** time spent, a wrong result, or a correction the user had to give, named in **Earned by**.
+- **It comes back:** a trigger future tasks will hit, not a one-off quirk of a tool, an API or this conversation.
+- **A line prevents it:** a session that had read it would have taken the right path, not just known a fact.
+- **It isn't already said:** not in a file that loads here, where the detour was not reading it, and that's no new line.
+
+The task went as planned: no detour, no proposal.
 
 ## Red flags — excuses to file anyway
 

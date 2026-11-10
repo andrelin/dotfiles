@@ -1,0 +1,50 @@
+{
+  "level": "personal",
+  "sources": [
+    "<root>/merge/a/.claude-pm.json",
+    "<root>/merge/a/b/.claude-pm.json"
+  ],
+  "tracker": {
+    "kind": "github",
+    "repo": "github.com/example-client/far"
+  },
+  "tiers": {
+    "issue_create": "auto",
+    "label": "auto",
+    "comment": "draft",
+    "close": "auto",
+    "release_notes": "auto"
+  },
+  "vocabulary": {
+    "labels": [
+      "chore"
+    ],
+    "priority": [
+      "p1"
+    ]
+  },
+  "limits": {
+    "max_writes_per_run": 5,
+    "footer": "near footer"
+  },
+  "schedule": {
+    "standup": "daily 09:15",
+    "grooming": "mon 09:00"
+  },
+  "decisions_dir": "docs/far",
+  "roadmap": {
+    "status": "project"
+  },
+  "redact": [
+    "Acme",
+    "Beta",
+    "Gamma"
+  ],
+  "adjustments": [],
+  "warnings": [],
+  "follow_ups": {
+    "backlog": "<root>/merge/a/b/sub/near-backlog.md",
+    "in_flight": "<root>/merge/a/far-flight.md"
+  },
+  "notes": "far note"
+}

@@ -83,6 +83,7 @@ while IFS='|' read -r url expected; do
   n=$((n + 1))
   mkrepo "$root/lv/$n" "$url"
   assert "$(wc_run level "$root/lv/$n")" "$expected" "$url"
+  assert "$(wc_run level --url "$url")" "$expected" "level --url $url"
 done <<'EOF'
 git@github.com:andrelin/dotfiles.git|personal
 ssh://git@github.com:22/andrelin/dotfiles.git|personal
@@ -102,6 +103,10 @@ https://github.com/UptimeConsulting/x|company
 https://gitlab.example.com/uptimeconsulting/sub/x.git|company
 https://andrelin@github.com/andrelin/x.git|personal
 EOF
+
+assert "$(wc_run level --url https://forgejo.example.com/example-client/x)" customer "level --url: a listed Forgejo owner"
+assert "$(wc_run level --url "")" company "level --url: an empty URL is unparseable"
+wc_run level --url >/dev/null 2>&1; assert "$?" 64 "level --url without a URL"
 
 mkdir -p "$root/not-a-repo"
 assert "$(wc_run level "$root/not-a-repo")" "company" "a directory outside any repo"
@@ -561,6 +566,89 @@ assert "$(PATH="$root/fjbin:$PATH" wc_run can-file-issue "$FJX")" none "company 
 assert "$(PATH="$root/fjbin:$PATH" wc_run can-file-issue "$FJPORT")" fj "a login stored with a scheme and port"
 assert "$(PATH="$root/fjbin:$PATH" wc_run can-file-issue "$MFJ")" none "customer on Forgejo under a marker"
 
+e_header "host-kind"
+
+assert "$(wc_run host-kind github.com)" github "github.com"
+assert "$(wc_run host-kind GitHub.com)" github "github.com in any case"
+assert "$(wc_run host-kind gitlab.com)" gitlab "gitlab.com"
+assert "$(wc_run host-kind gitlab.example.com)" gitlab "a GitLab-named host"
+assert "$(wc_run host-kind bitbucket.org)" none "bitbucket.org"
+assert "$(wc_run host-kind github.com:22)" github "a host:port"
+assert "$(PATH="$root/fjbin:$PATH" wc_run host-kind forgejo.example.com)" forgejo "a host fj is logged in to"
+assert "$(PATH="$root/fjbin:$PATH" wc_run host-kind FORGEJO.example.com)" forgejo "a Forgejo host in any case"
+assert "$(PATH="$root/fjbin:$PATH" wc_run host-kind forge.example.net:2222)" forgejo "a host:port fj stores with another port"
+assert "$(PATH="$root/fjbin:$PATH" wc_run host-kind git.example.org)" none "a host fj has no login for"
+assert "$(PATH="$root/fjbin:$PATH" wc_run host-kind github.com)" github "github.com wins over fj"
+assert "$(wc_run host-kind forgejo.example.com)" none "a Forgejo host without fj on PATH"
+assert "$(wc_run host-kind "")" none "an empty host"
+wc_run host-kind >/dev/null 2>&1; assert "$?" 64 "host-kind without a host"
+
+e_header "origin"
+
+# Every host in the table resolves through ssh -G, so a scratch config stands in for the developer's.
+printf '%s\n' 'Host github.com-work' '  HostName github.com' 'Host ghwork' '  HostName github.com' \
+  'Host glwork' '  HostName gitlab.example.com' > "$root/ssh_config"
+export WORK_CONTEXT_SSH_CONFIG="$root/ssh_config"
+
+n=0
+while IFS='|' read -r url expected; do
+  n=$((n + 1))
+  mkrepo "$root/or/$n" "$url"
+  assert "$(wc_run origin "$root/or/$n")" "$expected" "origin of $url"
+done <<'EOF'
+git@github.com:andrelin/dotfiles.git|github.com/andrelin/dotfiles
+ssh://git@github.com:22/andrelin/dotfiles.git|github.com/andrelin/dotfiles
+https://github.com/andrelin/uptime-demo|github.com/andrelin/uptime-demo
+https://github.com/andrelin/UptimeTalk.git|github.com/andrelin/UptimeTalk
+git@github.com:uptimeconsulting/x.git|github.com/uptimeconsulting/x
+https://github.com/uptimeconsulting/x|github.com/uptimeconsulting/x
+git@gitlab.com:example-client/group/sub/repo.git|gitlab.com/example-client/group/sub/repo
+https://dev.azure.com/example-client/proj/_git/repo|dev.azure.com/example-client/proj/_git/repo
+git@ssh.dev.azure.com:v3/example-client/p/r|ssh.dev.azure.com/example-client/p/r
+git@gitlab.com:andrelin/x.git|gitlab.com/andrelin/x
+git@github.com:Andrelin/dotfiles.git|github.com/Andrelin/dotfiles
+https://andrelin@github.com/andrelin/x.git|github.com/andrelin/x
+https://gitlab.example.com/uptimeconsulting/sub/x.git|gitlab.example.com/uptimeconsulting/sub/x
+https://example-org.visualstudio.com/proj/_git/repo|dev.azure.com/example-org/proj/_git/repo
+https://github.com/andrelin/x/|github.com/andrelin/x
+EOF
+
+for url in "not a url" "/some/local/path" "ftp://github.com/a/b" "git@github.com:onesegment"; do
+  n=$((n + 1))
+  mkrepo "$root/or/$n" "$url"
+  out="$(wc_run origin "$root/or/$n")"; rc=$?
+  assert "$rc:$out" "1:" "origin of an unparseable $url"
+done
+mkrepo "$root/or/noorigin"
+out="$(wc_run origin "$root/or/noorigin")"; rc=$?
+assert "$rc:$out" "1:" "origin with no origin remote"
+out="$(wc_run origin "$root/not-a-repo")"; rc=$?
+assert "$rc:$out" "1:" "origin outside a repository"
+mkrepo "$root/or/other-remote"; git -C "$root/or/other-remote" remote add upstream git@github.com:a/b.git
+out="$(wc_run origin "$root/or/other-remote")"; rc=$?
+assert "$rc:$out" "1:" "origin when only another remote exists"
+
+mkrepo "$root/or/alias" git@github.com-work:example-client/x.git
+assert "$(wc_run origin "$root/or/alias")" github.com/example-client/x "an scp-form alias resolves to its HostName"
+assert "$(wc_run host-kind "$(wc_run origin "$root/or/alias" | cut -d/ -f1)")" github "host-kind of the resolved alias"
+mkrepo "$root/or/dotless" git@ghwork:example-client/x.git
+assert "$(wc_run origin "$root/or/dotless")" github.com/example-client/x "a dotless alias resolves"
+mkrepo "$root/or/sshalias" ssh://git@github.com-work:2222/example-client/x.git
+assert "$(wc_run origin "$root/or/sshalias")" github.com/example-client/x "an ssh:// alias with a port resolves"
+mkrepo "$root/or/glalias" git@glwork:example-client/group/sub/x.git
+assert "$(wc_run origin "$root/or/glalias")" gitlab.example.com/example-client/group/sub/x "an alias for a GitLab host keeps subgroups"
+mkrepo "$root/or/unlisted" git@git.example.org:example-client/x.git
+assert "$(wc_run origin "$root/or/unlisted")" git.example.org/example-client/x "a host the config doesn't list prints as written"
+mkrepo "$root/or/https-alias" https://github.com-work/example-client/x.git
+assert "$(wc_run origin "$root/or/https-alias")" github.com-work/example-client/x "an https origin prints as written whatever the config says"
+assert "$(cd "$root/or/alias" && wc_run origin)" github.com/example-client/x "origin of the current directory"
+assert "$(cd "$root/or/alias" && WORK_CONTEXT_SSH_CONFIG="$root/missing_config" wc_run origin)" github.com-work/example-client/x \
+  "a config ssh cannot read leaves the host as written"
+mkdir -p "$root/gitonly"; ln -s "$(command -v git)" "$root/gitonly/git"
+assert "$(PATH="$root/gitonly" /bin/bash "$SCRIPT" origin "$root/or/alias" 2>/dev/null)" github.com-work/example-client/x \
+  "no ssh on PATH leaves the host as written"
+unset WORK_CONTEXT_SSH_CONFIG
+
 # --- session-start -------------------------------------------------------------------------------------------
 
 e_header "session-start"
@@ -798,6 +886,84 @@ printf '%s\n' 'dev.azure.com/example-acquired' >> "$HOME/.claude-customers"
 expect_argv 2 "$root/orgs/1" git push
 pop_customers
 expect_argv 0 "$root/orgs/1" git push
+
+# --- pm config guard -----------------------------------------------------------------------------------------
+
+e_header "pm config guard"
+
+# The pm config is what later work trusts from a tree, so only the user writes it, at every level.
+for tree in "$P" "$C"; do
+  cfg="$tree/.claude-pm.json"
+  lvl=${tree#"$root"/}
+  assert "$(hook_rc "$(file_json Write file_path "$cfg")")" 2 "$lvl: Write of the pm config"
+  assert "$(hook_rc "$(file_json Edit file_path "$cfg" new_string x)")" 2 "$lvl: Edit of the pm config"
+  assert "$(hook_rc "$(file_json MultiEdit file_path "$cfg" new_string x)")" 2 "$lvl: MultiEdit of the pm config"
+  assert "$(hook_rc "$(file_json NotebookEdit notebook_path "$cfg" new_source x)")" 2 "$lvl: NotebookEdit of the pm config"
+  assert "$(hook_rc "$(file_json Write file_path "$tree/.Claude-PM.json")")" 2 "$lvl: Write of a mixed-case spelling"
+  assert "$(hook_rc "$(file_json Write file_path "$tree/x.claude-pm.json")")" 0 "$lvl: Write of a name merely ending in it"
+  assert "$(hook_rc "$(file_json Write file_path "$tree/.claude-pm.json.bak")")" 0 "$lvl: Write of a name merely starting with it"
+  ln -s "$cfg" "$root/pm-link"
+  assert "$(hook_rc "$(file_json Write file_path "$root/pm-link")")" 2 "$lvl: Write through a link to the pm config"
+  rm "$root/pm-link"
+  expect_bash 2 "$tree" "echo x > $cfg"
+  expect_bash 2 "$tree" "echo x >> $cfg"
+  expect_bash 2 "$tree" "printf x >\"$cfg\""
+  expect_bash 2 "$tree" "echo x > .claude-pm.json"
+  expect_bash 2 "$tree" "echo x > .Claude-PM.json"
+  expect_bash 2 "$tree" "cp x $cfg"
+  expect_bash 2 "$tree" "sed -i '' s/a/b/ $cfg"
+  expect_bash 2 "$tree" "sed -i.bak s/a/b/ $cfg"
+  expect_bash 2 "$tree" "sed --in-place=.bak s/a/b/ $cfg"
+  expect_bash 2 "$tree" "perl -pi -e s/a/b/ $cfg"
+  expect_bash 2 "$tree" "ruby -i -pe '' $cfg"
+  expect_bash 2 "$tree" "ruby -i.bak -pe '' $cfg"
+  expect_bash 2 "$tree" "truncate -s0 $cfg"
+  expect_bash 2 "$tree" "dd of=$cfg"
+  expect_bash 2 "$tree" "dd if=/dev/null of=.claude-pm.json"
+  expect_bash 2 "$tree" "gdd of=.claude-pm.json"
+  expect_bash 2 "$tree" "dd of=\".claude-pm.json\""
+  expect_bash 2 "$tree" "dd of=.Claude-PM.json"
+  expect_bash 2 "$tree" "rm $cfg"
+  expect_bash 2 "$tree" "tee $cfg"
+  expect_bash 2 "$tree" "find $tree -name .claude-pm.json -exec rm {} \;"
+  expect_bash 2 "$tree" "touch .Claude-PM.json"
+  # Only the name itself is protected; reading the file, or a name merely containing it, is not writing it.
+  expect_bash 0 "$tree" "cat $cfg"
+  expect_bash 0 "$tree" "cp $cfg /tmp/backup"
+  expect_bash 0 "$tree" "sed -i x $tree/x.claude-pm.json.bak"
+  expect_bash 0 "$tree" "ruby -i -pe '' $tree/x.claude-pm.json.bak"
+  expect_bash 0 "$tree" "ruby script.rb $cfg"
+  expect_bash 0 "$tree" "dd of=x.claude-pm.json.bak"
+  expect_bash 0 "$tree" "dd if=.claude-pm.json of=out.bin"
+  expect_bash 0 "$tree" "dd of=out.bin"
+  expect_bash 0 "$tree" "touch x.claude-pm.json.bak"
+done
+# ruby -i and a bare dd of= close the same gaps for the marker and the customers file.
+for name in .claude-files-issues .claude-customers; do
+  expect_bash 2 "$P" "ruby -i -pe '' $name"
+  expect_bash 2 "$P" "dd of=$name"
+  expect_bash 2 "$P" "gdd of=$name"
+  expect_bash 2 "$P" "dd of=${name/claude/Claude}"
+  expect_bash 0 "$P" "ruby x.rb $name"
+done
+expect_bash 2 "$P" "echo x >> ~/{.claude-pm.json,}"
+expect_bash 2 "$P" "rm ~/.claude-p(m|x).json"
+expect_bash 2 "$P" "chmod 000 ~/.cla''ude-pm.json"
+expect_bash 2 "$P" "dd of=.claude-p?.json"
+pdeny="$(printf '%s' "$(file_json Write file_path "$P/.claude-pm.json")" | wc_run pre-tool-use 2>&1 >/dev/null)"
+[[ "$pdeny" == *"Only the user writes .claude-pm.json"* && "$pdeny" == *"$P/.claude-pm.json"* ]] &&
+  e_success "the denial asks the user to save it themselves" || e_error "the denial asks the user to save it themselves: $pdeny"
+[[ "$pdeny" != *touch* && "$pdeny" != *issue_create* ]] && e_success "and offers neither touch nor issue_create" ||
+  e_error "and offers neither touch nor issue_create: $pdeny"
+gdeny="$({ bash_json "$P" "rm ~/.claude-p(m|x).json" | wc_run pre-tool-use >/dev/null; } 2>&1)"
+[[ "$gdeny" == *"could match"*".claude-pm.json"* ]] && e_success "a pattern's denial names the pm config" ||
+  e_error "a pattern's denial names the pm config: $gdeny"
+hdeny="$({ bash_json "$P" "rm -rf ~" | wc_run pre-tool-use >/dev/null; } 2>&1)"
+[[ "$hdeny" == *"reaches \$HOME"*".claude-pm.json"* ]] && e_success "a HOME removal's denial names the pm config" ||
+  e_error "a HOME removal's denial names the pm config: $hdeny"
+assert "$(nojq_hook "$(file_json Write file_path "$P/.claude-pm.json")" 2>/dev/null; echo $?)" 2 "without jq, a pm config write blocks"
+assert "$(nojq_hook "$(bash_json "$P" "echo x > .claude-pm.json")" 2>/dev/null; echo $?)" 2 "without jq, a call naming the pm config blocks"
+assert "$(nojq_hook "$(bash_json "$P" "ls")" 2>/dev/null; echo $?)" 0 "without jq, a call naming no protected file passes"
 
 # --- customers file: entry forms and repository locations ----------------------------------------------------
 

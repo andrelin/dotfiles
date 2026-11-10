@@ -1,0 +1,33 @@
+{
+  "level": "customer",
+  "sources": [
+    "<root>/low/a/.claude-pm.json"
+  ],
+  "tracker": {
+    "kind": "github",
+    "repo": "github.com/example-client/x"
+  },
+  "tiers": {
+    "issue_create": "suggest",
+    "label": "off",
+    "comment": "off",
+    "close": "off",
+    "release_notes": "draft"
+  },
+  "vocabulary": {
+    "labels": [],
+    "priority": []
+  },
+  "limits": {
+    "max_writes_per_run": 3,
+    "footer": "Drafted with Claude"
+  },
+  "schedule": {},
+  "decisions_dir": "docs/adr",
+  "roadmap": {
+    "status": "derived"
+  },
+  "redact": [],
+  "adjustments": [],
+  "warnings": []
+}

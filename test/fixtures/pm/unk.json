@@ -1,0 +1,1 @@
+{"colour":"red","tiers":{"lable":"auto","label":"suggest"},"tracker":{"kind":"github","repo":"github.com/example-client/x","extra":1},"roadmap":{"status":"labels","colour":"red"},"limits":{"burst":1},"vocabulary":{"x":[]},"follow_ups":{"backlog":"b.md","other":"o.md"}}

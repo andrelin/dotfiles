@@ -117,14 +117,17 @@ Why the workflow is built this way, only when changing it: `~/.claude/docs/stage
 - **`issue create`** is allowed at customer level only to origin's own issues, below a `.claude-files-issues` marker
   in an ancestor of the repo under `$HOME`, for `gh` and `glab` only — `can-file-issue` never offers `fj` for customer work;
   only the user creates the marker, and the guard blocks Claude's writes to it.
+- **`.claude-pm.json`** is written only by the user too, at every level: the guard blocks `Write`, `Edit`, a redirection or a
+  file-writing command naming it in any letter case, so what a later tool trusts from a tree was never Claude's to write.
 - **Revealed git-secret files, at every level:** a `Read`, `Grep` `path`, file write or shell word naming a path the
   nearest `.gitsecret/paths/mapping.cfg` lists, and `git secret reveal|cat|changes`; not a `Grep` over a directory or an interpreter opening one.
 - **Accepted gaps:** a script calling `/usr/bin/git` by absolute path, past the shims; a GraphQL mutation sent from a file;
-  `GH_REPO=x; export GH_REPO`; a script or an interpreter (`python3 -c`) writing the marker or the customers file; a git alias's arguments past its
-  first word; `curl` writes, which it never parses; every `fj` call; a script that sets `HOME` elsewhere before a git write,
-  which the shims then judge against that home's customers file; a `git clone` and a write in the new clone in one
-  call, or a `git worktree add` and a write in the new worktree, where the directory doesn't exist yet when the hook
-  runs, or a `git config` that picks a push target and the push in one call, so only the shims judge the write;
+  `GH_REPO=x; export GH_REPO`; a script or an interpreter (`python3 -c`) writing the marker, the customers file or the pm config;
+  a git alias's arguments past its first word; `curl` writes, which it never parses; every `fj` call;
+  a script that sets `HOME` elsewhere before a git write, which the shims then judge against that home's customers file;
+  a `git clone` and a write in the new clone in one call, or a `git worktree add` and a write in the new worktree,
+  where the directory doesn't exist yet when the hook runs,
+  or a `git config` that picks a push target and the push in one call, so only the shims judge the write;
   and a script, a tool outside its list, `xargs` given the name on stdin, a glob not starting with a dot, a name
   held in a variable (`rm ~/$f`) or built by a command substitution, or a copy or sync of a folder into `$HOME`,
   removing or overwriting the customers file.

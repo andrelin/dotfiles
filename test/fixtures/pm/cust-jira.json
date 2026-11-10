@@ -1,0 +1,1 @@
+{"tracker":{"kind":"jira","repo":"ACME"},"tiers":{"issue_create":"auto","label":"auto","comment":"auto","close":"auto","release_notes":"auto"}}

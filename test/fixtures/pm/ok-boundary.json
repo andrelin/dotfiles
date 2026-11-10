@@ -1,0 +1,1 @@
+{"limits":{"max_writes_per_run":0},"schedule":{"a":"daily 00:00","b":"mon,fri 23:59","c":"weekdays 08:30","d":"sun 12:00"},"redact":["x"]}

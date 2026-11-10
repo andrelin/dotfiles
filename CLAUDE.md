@@ -19,6 +19,8 @@ Each entry under `claude/` is symlinked into `~/.claude/`, so "write it to the r
 instructions" can be the same edit. Pick by scope: a rule about *dotfiles* goes here, one about *how Claude works
 everywhere* goes in `claude/CLAUDE.md`.
 This is a **personal public** repo — everything committed is published, per the global § *Work contexts*.
+A worktree's `claude/` isn't live (`~/.claude` links to `~/.dotfiles`): to exercise a branch's skill, have a subagent read the
+worktree's `claude/<x>` for every `~/.claude/<x>`; a scratch `HOME` loses `gh`, `fj`, git, SSH and the guard's hooks.
 Before changing the workflow skills (writing-issues, -plans, implementing-plans, reviewing-in-rounds),
 `bin/ai` or `bin/ai-log`, read why they are built as they are: `claude/docs/staged-workflow.md`.
 

@@ -124,7 +124,7 @@ while (( i < n )); do
   (( i++ ))
 done
 
-rule="and fix a failure at once, even one this change didn't cause: a red main branch is never okay unless the user says it is."
+rule="and fix a failure at once, even one this change didn't cause: a red main branch is never okay unless the user says it is. Watch it with \`gh run watch <id> --exit-status\`: a sleep loop returns at once here."
 if [[ -n $pushed ]]; then
   pushed=${pushed//[\"\\]/}
   msg="This pushed to \`$pushed\`, a default branch. Watch its CI until every run on the new commit is green, $rule"

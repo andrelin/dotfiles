@@ -56,10 +56,14 @@ All answered yes by the user on 2026-11-10, in one question.
 - Push `98-pm-config` with `git push -u origin 98-pm-config`: after Task 3, to get the RHEL 9 (jq 1.6) CI verdict the
   § *Revisit* waits on, at each session end (`Work in progress: Tasks …`), and before the PR — yes, 2026-11-10.
 - Open a PR from `98-pm-config` to `main` titled for dotfiles#98, its body per `writing-mr-descriptions` — yes, 2026-11-10.
+  Opened 2026-11-10 as draft PR andrelin/dotfiles#110 after Tasks 1-3 (no closing keyword); update that PR, never open another,
+  and once the final code review says `Done (code):`, ask the user before marking it ready for review.
 - How the branch lands: squash merge, merged by the user — yes, 2026-11-10.
 - Closing dotfiles#98: `Closes #98` in the PR body if dotfiles#96's change to `writing-mr-descriptions` has landed by then, else the
   user closes it after the merge — yes, 2026-11-10.
 - The plan is untracked, so no `git rm -f` commit; it is deleted once the work is on `main` and logged — yes, 2026-11-10.
+  Superseded on 2026-11-10: the session-end save committed both plan files to the branch, so before the squash merge they need
+  the `git rm -f` commit (§ *Landing* of the session-end save), which needs the user's yes; ask for it with the merge.
 - By-hand step for the end-to-end check: the user places a scratch config (`! cp test/fixtures/pm/<f>.json <scratch-repo>/.claude-pm.json`)
   and removes it afterwards (`! rm <scratch-repo>/.claude-pm.json`), because only the user writes that file;
   the live guard enforces that only once this change is merged and `~/.dotfiles` is pulled — yes, 2026-11-10.

@@ -31,10 +31,11 @@ Script the sweep across repos into one file in the scratchpad. One call per repo
 
 Map every alert to what fixes it, then every bot PR to an action:
 
-- **On personal repos, Dependabot never does Renovate's job.** Where Renovate runs, there's no `dependabot.yml` version
-  updates and Dependabot's security-fix PRs are off (`gh api -X DELETE repos/<repo>/automated-security-fixes`).
-  Renovate's presets raise `[SECURITY]` PRs itself. Keep Dependabot alerts on, since Renovate reads them.
-  A repo without Renovate keeps Dependabot as its only updater.
+- **Every personal repo is updated by Renovate, never Dependabot.** No `dependabot.yml`, and Dependabot's security-fix PRs off
+  (`gh api -X DELETE repos/<repo>/automated-security-fixes`): Renovate's presets raise `[SECURITY]` PRs themselves.
+  Keep Dependabot alerts on (`gh api -X PUT repos/<repo>/vulnerability-alerts`), since Renovate reads them.
+  A repo without Renovate gets a `.github/renovate.json` extending this repo's presets and is added to the Renovate app;
+  switch Dependabot off once Renovate's dashboard shows it running there, then close Dependabot's leftover PRs (`dependency-bot-prs`).
 
 - **An alert covered by an open bot PR** is fixed by merging that PR. A Renovate `[SECURITY]` PR and a Dependabot PR
   for the same bump are duplicates: merge one, and the other bot closes its own.

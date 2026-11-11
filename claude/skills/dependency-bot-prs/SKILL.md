@@ -24,3 +24,6 @@ decline the bump, and the bot respects that.
 - The Renovate dashboard issue is working state, not a task to close. Leave it alone.
 - If a bot PR genuinely has to go (the dependency is being dropped, not bumped), that's the user's call to make
   and the user's action to take — surface it rather than closing it.
+- **The one exception, on personal repos only:** a Dependabot PR that is months old and already superseded on the default branch,
+  and that Dependabot has left open after a `@dependabot rebase` request, may be closed by hand.
+  Leave a comment saying what superseded it.

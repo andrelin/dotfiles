@@ -23,12 +23,18 @@ Per repo, after resolving its work context (§ *Work contexts* decides whether y
 | Code scanning | `gh api 'repos/<repo>/code-scanning/alerts?state=open'` (a 403 or 404 means it's off or has no analysis) |
 | Secret scanning | `gh api 'repos/<repo>/secret-scanning/alerts?state=open'`. It needs the `admin:repo_hook` scope on public repos. Without it, say the check was skipped. |
 | Merge setup | `gh api repos/<repo>` for the allowed merge methods. Branch protection, and with it `--auto`, is unavailable on free private repos. |
+| Who updates | `.github/renovate.json` (or another Renovate config), `.github/dependabot.yml`, and `gh api repos/<repo>/automated-security-fixes` for Dependabot's security-fix PRs |
 
 Script the sweep across repos into one file in the scratchpad. One call per repo per source is slow but complete.
 
 ## 2. Decide
 
 Map every alert to what fixes it, then every bot PR to an action:
+
+- **On personal repos, Dependabot never does Renovate's job.** Where Renovate runs, there's no `dependabot.yml` version
+  updates and Dependabot's security-fix PRs are off (`gh api -X DELETE repos/<repo>/automated-security-fixes`).
+  Renovate's presets raise `[SECURITY]` PRs itself. Keep Dependabot alerts on, since Renovate reads them.
+  A repo without Renovate keeps Dependabot as its only updater.
 
 - **An alert covered by an open bot PR** is fixed by merging that PR. A Renovate `[SECURITY]` PR and a Dependabot PR
   for the same bump are duplicates: merge one, and the other bot closes its own.

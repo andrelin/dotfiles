@@ -106,6 +106,8 @@ Written for a reader who never saw the conversation:
 - **English, and the level's bar on content** — a personal public repo's issues are world-readable.
   Never quote the follow-up tracker in the body.
 - **Labels** only from those the repo already uses; never create one. No assignee unless the user names one.
+- **Never rewrite an issue in place into different work:** its PRs, commits and comments keep pointing at it;
+  file the new work as its own issue, and close or trim the old one.
 
 ## Red flags
 

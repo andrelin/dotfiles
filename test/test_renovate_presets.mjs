@@ -237,10 +237,12 @@ await check('.github/renovate.json', async () => {
 
 // Renovate keeps bumping the validator pin in the workflow: the renovate-comments manager this repo's
 // config sets up must select the workflow file and extract a version from it.
+// Built-in presets add managers of their own for workflow files (security:php2shell, via config:recommended),
+// so only a regex manager can be ours.
 await check('validator pin', async () => {
   const workflow = '.github/workflows/renovate-presets.yml';
   const managers = (await resolve(read('.github/renovate.json'))).customManagers ?? [];
-  const manager = managers.find((m) => matchRegexOrGlobList(workflow, m.managerFilePatterns));
+  const manager = managers.find((m) => m.customType === 'regex' && matchRegexOrGlobList(workflow, m.managerFilePatterns));
   assert.ok(manager, `no custom manager selects ${workflow}`);
   const m = regEx(manager.matchStrings[0]).exec(fs.readFileSync(workflow, 'utf8'));
   assert.ok(m, 'no renovate comment matched');

@@ -28,9 +28,12 @@ both is `writing-issues`.
 | File | Holds |
 | --- | --- |
 | `00-follow-ups-backlog.md` | everything not in flight — bugs, cleanups, decisions, hand-offs |
-| `00-follow-ups-in-flight.md` | every open PR and every review-ready plan, one item each, plus meta items |
+| `00-follow-ups-in-flight.md` | every session at work, open PR and review-ready plan, one item each, plus meta items |
 
-- **In flight means a PR, a review-ready plan, or a meta item.** A plan counts once written, independently
+- **A session that starts work on an issue or item records it in flight first**, before planning or code: the issue,
+  the session's name as `ListAgents` shows it, its clone and branch, and the day. Look there and at the issue's assignee
+  before starting, so two sessions never take the same one; the item leaves when its work merges or stops.
+- **In flight means a session at work, a PR, a review-ready plan, or a meta item.** A plan counts once written, independently
   reviewed per `writing-plans` and ready to implement as it stands; an unreviewed draft is backlog. A **meta
   item** is work on the tracker itself, such as a handover triage, in its own section saying why it has no PR.
 - **In flight is a standing condition, not a stage reached.** An item moves in the day it qualifies and stays only

@@ -39,6 +39,13 @@ Map every alert to what fixes it, then every bot PR to an action:
   locally at the new version. Fix it in your own PR to the default branch, and the bot rebases its PR onto the fix.
   Don't push the fix to the bot's branch, because Renovate stops managing a branch someone else edits.
 - **A major bump** merges only after the project's tests, build and lint pass locally on its branch, since CI is often one thin check.
+  With no CI, or CI whose path filters skip every test job, every PR gets that local run (`renovate/stability-days` is not a test).
+  Run a clean install (`npm ci`, `uv sync --locked`) as well as the build: a bot's lockfile can drop pinned overrides,
+  and a renamed option can type-fail the build while the tests still pass.
+- **Take a baseline on the default branch first.** If it's already broken (a failing `npm ci`, lint debt, no tests),
+  fix what blocks installs in a PR of your own, and judge each bump as "no worse than the default branch".
+- **Check the floors a bump moves**: `rangeStrategy: bump` can raise `requires-python` or `engines` past what the docs
+  and setup scripts promise. Report it as the user's decision.
 - **A dashboard item** waiting on a schedule or blocked by an edit gets created or reset by ticking its checkbox.
   Ticking edits the issue, so it needs approval like any other write.
 
@@ -49,6 +56,7 @@ question, ask for every approval it needs, per `## Approvals` in the global `CLA
 ## 3. Do it
 
 - **Repos are independent:** fan them out to one agent each, with the full brief. Keep the repo with the hardest problem yourself.
+  Each works in a fresh clone in the scratchpad and leaves global toolchains (npm, JDKs, Python) as it found them.
 - **Never force-push a bot's branch.** To get a conflicted PR rebased, tick `rebase-check` in the PR body
   (`gh pr edit --body-file`), comment `@dependabot rebase`, or wait for the bot. Then poll
   `gh pr view N --json mergeable,statusCheckRollup`.

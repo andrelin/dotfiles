@@ -32,6 +32,8 @@ What each step does is in the skill; this file holds the decisions and what was 
 - **Reviewers and verifiers stay fresh agents;** only the fixing is the driver's, and that anchoring is accepted.
 - **Subagents can't dispatch subagents,** so a stage that fans out runs in the main session.
 - **`writing-issues` still prints `ai plan …`,** since the interview needs the user anyway.
+- **A session claims its issue in the in-flight tracker before planning,** not once the plan is ready:
+  parallel sessions had picked up the same issue, unseen until a plan or PR appeared.
 - **A new session restarts the issue interview;** only compaction resumes it, from the scratchpad draft.
 - **The issue's last turn asks "anything to change?"** before Claude files: a world-readable issue earns a last look.
 

@@ -27,3 +27,18 @@ if ((${#to_install[@]} > 0)); then
 fi
 
 unset to_install
+
+# Each Node ships the npm current at its release, and a project's `engines` can ask for a newer one than any Node
+# bundles, so bring every fnm-installed Node's npm to the latest. --engine-strict leaves a Node it doesn't support alone.
+latest_npm="$(npm view npm version 2>/dev/null)"
+if [[ "$latest_npm" && "$(type -P fnm)" ]]; then
+  for version in $(fnm list | sed -nE 's/^\* (v[0-9.]+).*/\1/p'); do
+    current_npm="$(fnm exec --using="$version" npm --version 2>/dev/null)"
+    [[ "$current_npm" == "$latest_npm" ]] && continue
+    e_header "Updating npm $current_npm → $latest_npm for Node $version"
+    fnm exec --using="$version" npm install -g --engine-strict "npm@$latest_npm" ||
+      e_arrow "npm $latest_npm doesn't support Node $version — leaving its npm $current_npm."
+  done
+fi
+
+unset latest_npm version current_npm

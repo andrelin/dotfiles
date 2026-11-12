@@ -155,6 +155,7 @@ for (const [policy, [minorMerges, majorMerges]] of Object.entries(policies)) {
       assert.equal((await update(config, u)).minimumReleaseAge, '3 days', `hold on ${u.datasource ?? 'npm'} ${u.updateType}`);
     }
     assert.equal(value(config, 'minimumReleaseAgeBehaviour'), 'timestamp-optional', 'a release with no publish date would be held forever');
+    assert.equal((await update(config, { updateType: 'major', datasource: 'java-version', manager: 'github-actions' })).minimumReleaseAge, null, 'no hold on JDKs');
     assert.equal((await update(config, { updateType: 'pinDigest', datasource: 'github-tags', manager: 'github-actions', depType: 'action' })).pinDigests, true, 'action digests pinned');
     assert.equal(value(config, 'rangeStrategy'), 'bump', 'manifest bumps');
     // Non-major updates of every kind share one group; majors get their own PR.

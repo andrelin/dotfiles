@@ -17,5 +17,12 @@
     "minimumReleaseAge": null,
     "automerge": true
   },
-  "osvVulnerabilityAlerts": true
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Adoptium publishes JDK releases without a date, so the hold can't apply and Renovate warns on every run; JDKs are pinned by major in setup-java, so this lets only majors through untimed, as timestamp-optional already did.",
+      "matchDatasources": ["java-version"],
+      "minimumReleaseAge": null
+    }
+  ]
 }

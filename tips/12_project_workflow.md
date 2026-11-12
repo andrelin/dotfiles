@@ -62,7 +62,8 @@ Docs: <https://direnv.net/>
 Install and switch between Node.js versions per project. Opening a shell in, or entering, a directory with a
 `.nvmrc`, `.node-version` or `package.json` `engines` field (here or in a parent) switches automatically.
 Any other directory switches back to the default, which also undoes a manual `fnm use`.
-`dotfiles` keeps the two latest LTS lines and the latest release installed, with the newest LTS as the default.
+`dotfiles` keeps the two latest LTS lines and the latest release installed, with the newest LTS as the default,
+and brings each installed Node's npm to the latest release, since a project's `engines` can ask for a newer npm than Node bundles.
 
 ```sh
 fnm install --lts                     # install latest LTS

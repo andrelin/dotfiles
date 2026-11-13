@@ -1,0 +1,37 @@
+{
+  "level": "customer",
+  "sources": [
+    "<root>/restrict/a/.claude-pm.json",
+    "<root>/restrict/a/b/.claude-pm.json"
+  ],
+  "tracker": {
+    "kind": "github",
+    "repo": "github.com/example-client/x"
+  },
+  "tiers": {
+    "issue_create": "off",
+    "label": "off",
+    "comment": "off",
+    "close": "off",
+    "release_notes": "draft"
+  },
+  "vocabulary": {
+    "labels": [],
+    "priority": []
+  },
+  "limits": {
+    "max_writes_per_run": 3,
+    "footer": "in footer"
+  },
+  "schedule": {},
+  "decisions_dir": "docs/out",
+  "roadmap": {
+    "status": "labels"
+  },
+  "redact": [
+    "Secret"
+  ],
+  "adjustments": [],
+  "warnings": [],
+  "notes": "outside note"
+}

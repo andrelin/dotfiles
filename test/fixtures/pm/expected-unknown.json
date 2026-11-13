@@ -1,0 +1,44 @@
+{
+  "level": "personal",
+  "sources": [
+    "<root>/unk/a/.claude-pm.json"
+  ],
+  "tracker": {
+    "kind": "github",
+    "repo": "github.com/example-client/x"
+  },
+  "tiers": {
+    "issue_create": "auto",
+    "label": "suggest",
+    "comment": "auto",
+    "close": "auto",
+    "release_notes": "auto"
+  },
+  "vocabulary": {
+    "labels": [],
+    "priority": []
+  },
+  "limits": {
+    "max_writes_per_run": 3,
+    "footer": "Drafted with Claude"
+  },
+  "schedule": {},
+  "decisions_dir": "docs/adr",
+  "roadmap": {
+    "status": "labels"
+  },
+  "redact": [],
+  "adjustments": [],
+  "warnings": [
+    "<root>/unk/a/.claude-pm.json: unknown key colour",
+    "<root>/unk/a/.claude-pm.json: unknown key follow_ups.other",
+    "<root>/unk/a/.claude-pm.json: unknown key limits.burst",
+    "<root>/unk/a/.claude-pm.json: unknown key roadmap.colour",
+    "<root>/unk/a/.claude-pm.json: unknown key tiers.lable",
+    "<root>/unk/a/.claude-pm.json: unknown key tracker.extra",
+    "<root>/unk/a/.claude-pm.json: unknown key vocabulary.x"
+  ],
+  "follow_ups": {
+    "backlog": "<root>/unk/a/b.md"
+  }
+}

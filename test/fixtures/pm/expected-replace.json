@@ -1,0 +1,34 @@
+{
+  "level": "personal",
+  "sources": [
+    "<root>/replace/a/.claude-pm.json",
+    "<root>/replace/a/b/.claude-pm.json"
+  ],
+  "tracker": {
+    "kind": "jira",
+    "repo": "ACME"
+  },
+  "tiers": {
+    "issue_create": "draft",
+    "label": "draft",
+    "comment": "draft",
+    "close": "draft",
+    "release_notes": "draft"
+  },
+  "vocabulary": {
+    "labels": [],
+    "priority": []
+  },
+  "limits": {
+    "max_writes_per_run": 3,
+    "footer": "Drafted with Claude"
+  },
+  "schedule": {},
+  "decisions_dir": "docs/adr",
+  "roadmap": {
+    "status": "derived"
+  },
+  "redact": [],
+  "adjustments": [],
+  "warnings": []
+}

@@ -1,0 +1,34 @@
+{
+  "level": "personal",
+  "sources": [
+    "<root>/kindonly/a/.claude-pm.json",
+    "<root>/kindonly/a/b/.claude-pm.json"
+  ],
+  "tracker": {
+    "kind": "github",
+    "repo": "github.com/example-client/x"
+  },
+  "tiers": {
+    "issue_create": "auto",
+    "label": "auto",
+    "comment": "auto",
+    "close": "auto",
+    "release_notes": "auto"
+  },
+  "vocabulary": {
+    "labels": [],
+    "priority": []
+  },
+  "limits": {
+    "max_writes_per_run": 3,
+    "footer": "Drafted with Claude"
+  },
+  "schedule": {},
+  "decisions_dir": "docs/adr",
+  "roadmap": {
+    "status": "derived"
+  },
+  "redact": [],
+  "adjustments": [],
+  "warnings": []
+}

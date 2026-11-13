@@ -9,14 +9,15 @@
 # It also keeps revealed git-secret files out of Claude's reach at every level: their paths, and the commands that
 # reveal them.
 #
-# Usage: work-context.sh level [dir] | check-argv <dir> <tool> [args...] | pre-tool-use | can-file-issue [dir]
-#        | session-start
+# Usage: work-context.sh level [dir] | level --url <url> | check-argv <dir> <tool> [args...] | pre-tool-use
+#        | can-file-issue [dir] | host-kind <host> | origin [dir] | session-start
 
 # Byte semantics, so substring offsets into a command stay cheap and match the separator scan.
 LC_ALL=C
 
 MARKER=.claude-files-issues
 CUSTOMERS=.claude-customers
+PM_CONFIG=.claude-pm.json
 SECRET_MAPPING=.gitsecret/paths/mapping.cfg
 WAIVE_VAR=WORK_CONTEXT_WAIVE
 TRACKED="GH_REPO GH_HOST GITLAB_HOST GL_HOST GITLAB_URI GITLAB_REPO GIT_DIR GIT_WORK_TREE"
@@ -214,10 +215,10 @@ check_secret_path() {
 
 # --- level resolution ----------------------------------------------------------------------------------------
 
-# parse_url <url> -> U_HOST U_OWNER U_REPO; fails when it isn't a remote URL.
+# parse_url <url> -> U_HOST U_OWNER U_REPO U_PATH (the whole project path); fails when it isn't a remote URL.
 parse_url() {
   local u=$1 rest host path
-  U_HOST="" U_OWNER="" U_REPO=""
+  U_HOST="" U_OWNER="" U_REPO="" U_PATH=""
   case $u in
     *://*)
       case ${u%%://*} in ssh|git+ssh|ssh+git|https|http|git) ;; *) return 1 ;; esac
@@ -253,7 +254,7 @@ parse_url() {
     path=${host%%.*}/$path; host=dev.azure.com
   fi
   [[ $path == */* ]] || return 1
-  U_HOST=$host U_OWNER=${path%%/*} U_REPO=${path##*/}
+  U_HOST=$host U_OWNER=${path%%/*} U_REPO=${path##*/} U_PATH=$path
   [[ -n $U_OWNER && -n $U_REPO ]]
 }
 
@@ -1374,11 +1375,13 @@ deny_protected() {
   local base=${1##*/}
   base=${base//[\"\']/}
   if [[ $base == *[*?[\{\(]* ]]; then
-    echo "\`$1\` could match ~/$CUSTOMERS or $MARKER, which only the user writes: narrow it, or give the user the" \
+    echo "\`$1\` could match ~/$CUSTOMERS, $MARKER or $PM_CONFIG, which only the user writes: narrow it, or give the user the" \
       "command to run with \`! \`." >&2
   elif lower_eq "$base" "$CUSTOMERS"; then
     echo "Only the user edits ~/$CUSTOMERS: ask them to run \`! echo '<entry>' >> ~/$CUSTOMERS\`," \
       "where the entry is one of a host/owner, a directory or a customer's name." >&2
+  elif lower_eq "$base" "$PM_CONFIG"; then
+    echo "Only the user writes $PM_CONFIG: show them the content and ask them to save it to \`$1\` themselves." >&2
   else
     echo "Only the user creates $MARKER: ask them to run \`! touch $1\`" >&2
   fi
@@ -1386,7 +1389,7 @@ deny_protected() {
 }
 
 deny_home() {
-  echo "\`$1\` reaches \$HOME, and would take ~/$CUSTOMERS and $MARKER with it: narrow it, or give the user the" \
+  echo "\`$1\` reaches \$HOME, and would take ~/$CUSTOMERS, $MARKER and $PM_CONFIG with it: narrow it, or give the user the" \
     "command to run with \`! \`." >&2
   exit 2
 }
@@ -1438,6 +1441,7 @@ no_jq_path() {
   IFS= read -r -d '' input
   [[ $input == *"$MARKER"* ]] && deny_jq "it names $MARKER"
   [[ $input == *"$CUSTOMERS"* ]] && deny_jq "it names $CUSTOMERS"
+  [[ $input == *"$PM_CONFIG"* ]] && deny_jq "it names $PM_CONFIG"
   [[ $input == *"$WAIVE_VAR"* ]] && deny_jq "it names $WAIVE_VAR"
   re='"command"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)"'
   if [[ $input =~ $re ]]; then
@@ -1575,7 +1579,8 @@ cd_target() {
   CD_TARGET=$1
 }
 
-# The issue marker and the customers file: each loosens the guard, so only the user writes them.
+# The issue marker, the customers file and the pm config: the first two loosen the guard and the third is what it trusts,
+# so only the user writes them.
 # A word that is the name or a glob matching it, in any letter case, as macOS's file system ignores case.
 # With a second argument the word is a find -name pattern, which matches dotfiles whether or not it starts with a dot.
 basename_is_protected() {
@@ -1597,7 +1602,7 @@ basename_is_protected() {
   # A pattern of wildcards alone names no file; find build -name '*' -delete is a cleanup.
   [[ -n ${2-} && -z ${base//[*?]/} ]] && return 1
   shopt -s nocasematch
-  for name in "$MARKER" "$CUSTOMERS"; do
+  for name in "$MARKER" "$CUSTOMERS" "$PM_CONFIG"; do
     [[ $base == "$name" ]] && r=0
     # shellcheck disable=SC2053 # unquoted on purpose: a glob in the word matches the name it would expand to
     [[ ( $base == .* || -n ${2-} ) && $name == $base ]] && r=0
@@ -1826,7 +1831,7 @@ check_protected_segment() {
         break
       done
       ;;
-    sed|gsed|awk|gawk)
+    sed|gsed|awk|gawk|ruby)
       # These only read the files they're given, unless they edit in place (sed -i, gawk -i inplace).
       for (( i = NI + 1; i < NW; i++ )); do
         case ${WORDS[i]} in -i* | --in-place* | -[!-]*i*) last=1 ;; esac
@@ -1843,7 +1848,14 @@ check_protected_segment() {
       done
       (( last )) && basename_is_protected "${WORDS[last]}" && deny_protected "${WORDS[last]}"
       ;;
-    touch|tee|ln|perl|dd|truncate|unlink|chmod|chflags|xattr|shred|ed|ex|curl|wget|gtouch|gtee|gln|gdd|gtruncate|gunlink|\
+    dd|gdd)
+      # dd writes the file its of= operand names, so a bare of=name is checked as the name.
+      for (( i = NI + 1; i < NW; i++ )); do
+        basename_is_protected "${WORDS[i]}" && deny_protected "${WORDS[i]}"
+        [[ ${WORDS[i]} == of=* ]] && basename_is_protected "${WORDS[i]#of=}" && deny_protected "${WORDS[i]#of=}"
+      done
+      ;;
+    touch|tee|ln|perl|truncate|unlink|chmod|chflags|xattr|shred|ed|ex|curl|wget|gtouch|gtee|gln|gtruncate|gunlink|\
     gchmod|gshred|vi|vim|nvim)
       for (( i = NI + 1; i < NW; i++ )); do
         basename_is_protected "${WORDS[i]}" && deny_protected "${WORDS[i]}"
@@ -2323,6 +2335,44 @@ forgejo_listed() {
   return 1
 }
 
+# host_kind <host>: github, gitlab, forgejo or none. It reads only the host and fj's logins, never the marker or a config.
+host_kind() {
+  local h
+  h=$(host_only "$1")
+  if lower_eq "$h" github.com; then echo github
+  elif is_gitlab_host "$h"; then echo gitlab
+  elif forgejo_host "$h"; then echo forgejo
+  else echo none
+  fi
+}
+
+# ssh_hostname <host>: the host git's own SSH connects to for an alias, from `ssh -G`; the host as written when ssh is
+# missing, fails or prints no hostname. WORK_CONTEXT_SSH_CONFIG names the config to read, for tests.
+ssh_hostname() {
+  local line h="" opts=()
+  [[ -z ${WORK_CONTEXT_SSH_CONFIG-} ]] || opts=(-F "$WORK_CONTEXT_SSH_CONFIG")
+  if command -v ssh >/dev/null 2>&1; then
+    while IFS= read -r line; do
+      if [[ $line == "hostname "* ]]; then h=${line#hostname }; break; fi
+    done < <(ssh ${opts[@]+"${opts[@]}"} -G -- "$1" 2>/dev/null </dev/null)
+  fi
+  printf '%s' "${h:-$1}"
+}
+
+# origin_of <dir>: origin's <host>/<path>; fails, printing nothing, without a parseable origin. An scp-form or ssh://
+# origin's host is resolved as an SSH alias; an http(s) or git:// one is used as is.
+origin_of() {
+  local url host
+  url=$( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$1" remote get-url origin 2>/dev/null )
+  [[ -n $url ]] && parse_url "$url" || return 1
+  host=$U_HOST
+  case $url in
+    http://*|https://*|git://*) ;;
+    *) host=$(ssh_hostname "$host") ;;
+  esac
+  printf '%s/%s\n' "$host" "$U_PATH"
+}
+
 can_file_issue() {
   local dir=$1 url tool
   url=$( unset GIT_DIR GIT_WORK_TREE; "$GIT" -C "$dir" remote get-url origin 2>/dev/null )
@@ -2411,12 +2461,23 @@ main() {
   local cmd=$1
   shift
   case $cmd in
-    level) level_of_dir "$(abs_path "${1:-$PWD}")"; echo "$CL" ;;
+    level)
+      if [[ ${1-} == --url ]]; then
+        (( $# >= 2 )) || return 64
+        url_class "$2"
+      else
+        level_of_dir "$(abs_path "${1:-$PWD}")"
+      fi
+      echo "$CL"
+      ;;
     check-argv) (( $# >= 2 )) || return 64; check_argv "$@" ;;
     pre-tool-use) pre_tool_use ;;
     can-file-issue) can_file_issue "$(abs_path "${1:-$PWD}")" ;;
+    host-kind) (( $# >= 1 )) || return 64; host_kind "$1" ;;
+    origin) origin_of "$(abs_path "${1:-$PWD}")" ;;
     session-start) session_start ;;
-    *) echo "usage: work-context.sh level|check-argv|pre-tool-use|can-file-issue|session-start" >&2; return 64 ;;
+    *) echo "usage: work-context.sh level [--url]|check-argv|pre-tool-use|can-file-issue|host-kind|origin|session-start" >&2
+       return 64 ;;
   esac
 }
 

@@ -1,0 +1,31 @@
+{
+  "level": "",
+  "sources": [],
+  "tracker": {
+    "kind": "none",
+    "repo": ""
+  },
+  "tiers": {
+    "issue_create": "auto",
+    "label": "auto",
+    "comment": "auto",
+    "close": "auto",
+    "release_notes": "auto"
+  },
+  "vocabulary": {
+    "labels": [],
+    "priority": []
+  },
+  "limits": {
+    "max_writes_per_run": 3,
+    "footer": "Drafted with Claude"
+  },
+  "schedule": {},
+  "decisions_dir": "docs/adr",
+  "roadmap": {
+    "status": "derived"
+  },
+  "redact": [],
+  "adjustments": [],
+  "warnings": []
+}

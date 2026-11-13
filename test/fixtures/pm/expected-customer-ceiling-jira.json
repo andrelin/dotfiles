@@ -1,0 +1,39 @@
+{
+  "level": "customer",
+  "sources": [
+    "<root>/ccj/a/.claude-pm.json"
+  ],
+  "tracker": {
+    "kind": "jira",
+    "repo": "ACME"
+  },
+  "tiers": {
+    "issue_create": "draft",
+    "label": "draft",
+    "comment": "draft",
+    "close": "off",
+    "release_notes": "draft"
+  },
+  "vocabulary": {
+    "labels": [],
+    "priority": []
+  },
+  "limits": {
+    "max_writes_per_run": 3,
+    "footer": "Drafted with Claude"
+  },
+  "schedule": {},
+  "decisions_dir": "docs/adr",
+  "roadmap": {
+    "status": "derived"
+  },
+  "redact": [],
+  "adjustments": [
+    "tiers.issue_create: auto -> draft (customer ceiling)",
+    "tiers.label: auto -> draft (customer ceiling)",
+    "tiers.comment: auto -> draft (customer ceiling)",
+    "tiers.close: auto -> off (customer ceiling)",
+    "tiers.release_notes: auto -> draft (customer ceiling)"
+  ],
+  "warnings": []
+}

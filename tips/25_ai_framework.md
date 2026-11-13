@@ -41,6 +41,9 @@ without `plan_base`, falls back to the plan's file having been deleted in git si
 Windows chain by wall clock, so a session overlapping a window's end on another machine
 has its earlier records counted in neither entry: an accepted undercount.
 Pass a commit as a second argument to end the window at that commit's time instead of now.
+The plan may sit in the repo or beside it, in a folder above it (a tree of repos keeping its plans at its root):
+`record` takes a relative path from where it runs, else from the repo root, and at company level `note` finds the plan
+in the repo or directly in a folder above it, short of `$HOME`, since it redacts the plan's words.
 `AI_LOG_DIR`, `AI_LOG_PROJECTS` and `AI_LOG_PLUGINS` move the clone, the transcripts and the plugin list.
 `record` and `note` refuse (exit 2, nothing written) unless the clone's origin and its push URL are
 `github.com/andrelin/ai-framework-log`; `AI_LOG_REMOTE=<host>/<owner>/<name>` names another. They push to `origin` explicitly.

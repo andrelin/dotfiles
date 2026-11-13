@@ -772,7 +772,7 @@ function add_folder_terms() {
 
 # build_terms <root> <entry file>: $TMP/terms for the work repo, as note redacts it.
 function build_terms() {
-  local root="$1" ef="$2" line f key base head branch found
+  local root="$1" ef="$2" line f key base head branch found up
   : > "$TMP/terms"
   if [[ -f "$HOME/.claude-customers" && -r "$HOME/.claude-customers" ]]; then
     while IFS= read -r line || [[ -n "$line" ]]; do add_customer_line "$line"; done < "$HOME/.claude-customers"
@@ -781,7 +781,8 @@ function build_terms() {
   add_folder_terms "$root"
   add_folder_terms "$(cd -P "$root" && pwd -P)"
   if [[ "$LEVEL" == company ]]; then
-    # The entry hashes the plan's name, so the plan is any markdown file in the repo that hashes to its plan_key.
+    # The entry hashes the plan's name, so the plan is any markdown file that hashes to its plan_key: one in the repo,
+    # or one directly in a folder above it, short of $HOME, where a tree of repos keeps its plans beside them.
     key="$(jq -r '.plan_key // empty' "$ef")"
     found=0
     while IFS= read -r f; do
@@ -791,8 +792,15 @@ function build_terms() {
       add_words R "${base%.md}"
       head="$(grep -m1 '^# ' "$f" || true)"
       add_words R "$head"
-    done < <(find "$root" \( -name .git -o -name node_modules \) -prune -o -type f -name '*.md' -print)
-    ((found)) || die 1 "company level: no markdown file in this repository is the plan of entry $(jq -r '.id' "$ef"), so its words cannot be redacted; run note in a checkout that holds the plan, inside the repository"
+    done < <(
+      find "$root" \( -name .git -o -name node_modules \) -prune -o -type f -name '*.md' -print
+      up="$(dirname "$root")"
+      while [[ "$up" == "$HOME"/* ]]; do
+        find "$up" -maxdepth 1 -type f -name '*.md' -print
+        up="$(dirname "$up")"
+      done
+    )
+    ((found)) || die 1 "company level: no markdown file in this repository or a folder above it is the plan of entry $(jq -r '.id' "$ef"), so its words cannot be redacted; run note in a checkout whose repository or a folder above it holds the plan"
     branch="$(git symbolic-ref --short -q HEAD 2> /dev/null || true)"
     add_words R "$branch"
   fi
@@ -921,8 +929,11 @@ function cmd_record() {
   fi
   require_clone
 
+  # A relative path is the caller's first, then the repo root's; the plan may sit outside the repo, beside it.
   local plan_path="$plan_arg"
-  [[ "$plan_path" == /* ]] || plan_path="$root/$plan_path"
+  if [[ "$plan_path" != /* ]]; then
+    if [[ -f "$PWD/$plan_path" ]]; then plan_path="$PWD/$plan_path"; else plan_path="$root/$plan_path"; fi
+  fi
   [[ -f "$plan_path" ]] || die 1 "no such plan file: $plan_arg"
   local bn="${plan_path##*/}"
 

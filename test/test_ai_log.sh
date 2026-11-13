@@ -764,6 +764,23 @@ assert "$rc" "0" "a plan in a subfolder records"
 run_note "$WD" "$IDD" $'## Worked\n- The Example plan held (1 round).\n## Didn\'t\n- Nothing (none).\n## Cut candidates\n- Nothing (none).\n'
 assert "$(sed -n 2p "$workdir/out")" "- The [repo] plan held (1 round)." "company: the plan's words are found wherever the plan sits in the repo"
 
+# A plan beside the repo, in the folder of a tree of repos: record takes its path relative to where it runs, and note
+# finds it in a folder above the repo, short of $HOME.
+new_work beside/repo git@github.com:uptimeconsulting/beside.git
+WB="$W"
+for f in "$WB"/plan-example*; do mv "$f" "$workdir/beside/"; done
+commit_at "$WB" 2026-01-11T12:00:00Z "the plan lives beside the repo"
+new_projects projectsbeside "$WB"
+PROJ="$workdir/projectsbeside"
+new_log logbeside
+run_ai "$WB/sub" record ../../plan-example.md "$C1"
+IDB="$(out | head -1 | sed 's/^entry: //')"
+assert "$rc" "0" "a plan beside the repo records, its path relative to the subfolder it runs in"
+HOME="$workdir" run_note "$WB" "$IDB" $'## Worked\n- The Example plan held (1 round).\n## Didn\'t\n- Nothing (none).\n## Cut candidates\n- Nothing (none).\n'
+assert "$rc:$(sed -n 2p "$workdir/out")" "0:- The [repo] plan held (1 round)." "company: the plan's words are found in a folder above the repo"
+HOME="$workdir/beside/repo" run_note "$WB" "$IDB" $'## Worked\n- The Example plan held (1 round).\n## Didn\'t\n- Nothing (none).\n## Cut candidates\n- Nothing (none).\n'
+assert "$rc:$(err | grep -c 'or a folder above it is the plan')" "1:1" "but not past \$HOME: a plan there is not looked for, and note refuses"
+
 # --- Redaction leaks, third review: line breaks, address shapes, service labels, token shapes, %40, short folders ---------
 
 # shellcheck disable=SC2088

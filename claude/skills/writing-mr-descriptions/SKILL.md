@@ -32,8 +32,9 @@ English, matching the title form dominant in the repo's recent `git log`
 
 **Always carry the issue number when the work has one.** Read `git log` to see which form the repo uses —
 `<type> #<n>: <subject>` and a trailing `(#<n>)` are both common — and match it.
-Never use a closing keyword (`closes` / `fixes` / `resolves`) — the `dependency-bot-prs` skill has why that
-matters around bot MRs.
+A closing keyword (`closes` / `fixes` / `resolves`) is allowed in any MR description, such as `Closes andrelin/dotfiles#96`,
+and the merge into the default branch then closes the issue; it is never required.
+Never point a closing keyword at a Dependabot or Renovate PR — the `dependency-bot-prs` skill has why.
 
 **Never write bare angle brackets anywhere in title or body.** GitLab and GitHub both render raw HTML, so
 placeholders like `<id>`, `<title>` or `<name>` are parsed as tags — `<title>` in particular swallows the

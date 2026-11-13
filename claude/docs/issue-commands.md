@@ -1,6 +1,6 @@
 # Issue commands
 
-The `gh`, `glab` and `fj` forms the `writing-issues` skill uses, and the one target rule they share.
+The `gh`, `glab` and `fj` forms the `writing-issues` and `managing-roadmaps` skills use, and the one target rule they share.
 Every call runs from the root of the repo the issue is for, after `~/.claude/hooks/work-context.sh can-file-issue`.
 
 ## The target rule, for every gh, glab and fj call
@@ -57,6 +57,105 @@ On a no, file as planned.
 with `fj -H <host> issue edit <owner>/<repo>#<n> labels --add <label>`.
 A failed search or `label list` is reported and filing still goes ahead, with no `--label`.
 **Never create a repo, remote or label to make filing work.**
+
+## Roadmaps
+
+For the `managing-roadmaps` skill, with the target rule; `<epic>`, `<phase>`, `<n>` and `<m>` are issue numbers, and `<ref>` is `<owner>/<repo>#<n>`.
+Forgejo has no sub-issues, so there an epic *depends on* its phases.
+`fj` has no JSON: it reads plain text, with each `<ref>` in full, because a bare `#<n>` target fails and a bare `<n>` needs a clone's remote.
+
+### Setting up labels
+
+Creating labels is a platform write: on the user's approval only, one call per label from the set `kind/epic`, `kind/feature`, `kind/chore`,
+`kind/idea`, `area/<name>`, and for `labels` status mode `status/in-progress` and `status/in-review`.
+
+- `gh label create 'kind/epic' --color 0e8a16`
+- `fj -H <host> repo labels <owner>/<repo> create 'kind/epic' 0e8a16 --exclusive` — for the `kind/` and `status/` scopes,
+  so Forgejo keeps one per issue
+- An existing Forgejo label becomes exclusive with `fj -H <host> repo labels <owner>/<repo> edit 'kind/epic' --exclusive true`
+
+GitHub labels are flat: the agent keeps one `kind/` and one `status/` label itself.
+
+### Epics and phases
+
+- `gh issue create --title '…' --body-file <path> --label kind/epic --label area/<name>` — the epic
+- `gh issue create --title '…' --body-file <path> --label kind/feature --parent <epic>` — a phase, linked on creation
+- `gh issue edit <epic> --add-sub-issue <n>` — an existing issue
+- Forgejo: `fj issue create` takes no labels, so create, then `fj -H <host> issue edit <owner>/<repo>#<n> labels --add 'kind/epic'`;
+  link with `fj -H <host> issue depend add <owner>/<repo>#<epic> <owner>/<repo>#<phase>` — the epic depends on the phase
+
+`fj issue depend add` refuses `#<n>` as a target, accepts a bare number only inside a clone,
+and accepts an issue depending on itself, so check the numbers.
+Adding a dependency that closes a cycle fails with a `500`; `depend remove` works but reports `unexpected status code 201`.
+
+### An epic's phases
+
+- `gh issue view <epic> --json subIssues --jq '.subIssues.nodes[] | "#\(.number) \(.state) \(.title)"'`
+- `gh api --paginate repos/<owner>/<repo>/issues/<epic>/sub_issues --jq '.[].number' | wc -l` — when the count matters,
+  since `subIssuesSummary` lags after a re-parent; without `--paginate` the REST list stops at 30
+- `fj -H <host> issue depend list <owner>/<repo>#<epic>` — one `#<n> <title> (open)` or `(closed)` line per phase, so state needs no per-phase call;
+  `No dependencies.` when none.
+  Piped, `fj` writes these lines as plain text, with or without `--style minimal` (checked with `cat -v`);
+  only `repo labels` output carries colour codes, and `--style minimal` doesn't remove them, so strip them with `sed` before matching there
+
+### Dependencies and ready work
+
+- `gh issue edit <n> --add-blocked-by <m>`, read back with `gh issue view <n> --json blockedBy --jq '.blockedBy.nodes[] | "#\(.number) \(.state)"'`
+- `fj -H <host> issue depend add <owner>/<repo>#<n> <owner>/<repo>#<m>` — `<n>` depends on `<m>`;
+  `fj -H <host> issue block list <owner>/<repo>#<m>` lists what `<m>` blocks
+- Ready work on GitHub, as one call (the search index lags a few seconds after an edit):
+  `gh issue list --state open --search '-is:blocked -label:kind/epic -label:kind/idea' --json number,title,labels,assignees`
+- Ready work on Forgejo has no blocked filter, so take the open issues, drop the epics and ideas, and check each candidate:
+  `fj -H <host> issue search --repo <owner>/<repo> --state open --all`,
+  then the same with `--labels kind/epic` and `--labels kind/idea` to learn what to drop,
+  then `fj -H <host> issue depend list <owner>/<repo>#<n>` per candidate: it is ready when no line ends in `(open)`.
+  Search prints `#<n>: <title> (by <user>)` per issue and no labels.
+  Without `--all` it returns 25 issues a page under a `Page X out of N pages in total` header,
+  so read every page with `-p <page>` until `X` passes `N`.
+  `--labels` takes several labels as AND, not OR, and silently ignores an unknown one, so list the labels first
+  and skip the drop search for a `kind/` label the repo doesn't have, since it would return every issue.
+  Forgejo also refuses to close an issue with an open dependency, so a blocked phase can't be closed out of order.
+
+### Labels and milestones
+
+- `gh issue edit <n> --add-label kind/idea --remove-label kind/chore` swaps one label in one call; `--remove-label` alone removes one
+- `fj -H <host> issue edit <owner>/<repo>#<n> labels --add kind/idea` — Forgejo drops the other label of an exclusive scope itself;
+  `labels --rm <label>` removes one, and an unknown label fails with `doesn't exist`
+- A milestone on GitHub, with its due date: `gh api repos/<owner>/<repo>/milestones -f title='v1' -f due_on=2026-12-31T12:00:00Z`;
+  send noon UTC, since `2026-12-31T00:00:00Z` came back as the 30th.
+  Set it with `gh issue edit <n> --milestone 'v1'` and unset it with `gh issue edit <n> --remove-milestone`
+- A milestone on Forgejo, with no due date: `fj -H <host> milestone --repo <owner>/<repo> create --state open 'v1'`,
+  set with `fj -H <host> issue edit <owner>/<repo>#<n> milestone 'v1'` and unset with `milestone --unset`;
+  it never rejects a duplicate title, and `issue view` doesn't print the milestone, so check with `issue search --milestones 'v1'`
+
+### Status
+
+Derived status needs only the assignee and a linked open PR; the default stores nothing.
+
+- `gh issue view <n> --json state,assignees,closedByPullRequestsReferences` — an open PR whose body says `Closes #<n>`
+  appears there before it merges, though not in the first seconds after it opens
+- `fj -H <host> issue view <owner>/<repo>#<n> assignees` and plain `issue view` for open or closed;
+  neither `issue view` nor a `Closes` line in a PR body names a PR, so Forgejo shows a linked PR only when someone ran
+  `fj -H <host> pr block add --pr <owner>/<repo>#<pr> <owner>/<repo>#<n>`,
+  after which `issue depend list` shows `#<pr> <title> (open)`, then `(merged)`
+- Without that link an assignee alone means in progress on Forgejo.
+  With it the issue can't close until the PR is merged or closed, and the ready-work check reads it as blocked
+- `labels` mode swaps the `status/*` label as in § *Labels and milestones*:
+  `--add-label status/in-review --remove-label status/in-progress` on GitHub
+- `project` mode is GitHub only: Forgejo has no projects API, so it falls back to `labels`.
+  `gh issue view <n> --json projectItems` gives the project's title and Status but no number, so find the number from the title:
+  `gh project list --owner <owner> --format json --jq '.projects[] | "\(.number) \(.title)"'`,
+  then `gh project item-add <number> --owner <owner> --url <issue url>` and
+  `gh project item-edit <number> --owner <owner> --url <issue url> --field Status --value 'In Progress'`
+- Setting a project's Status to `Done` closed the issue in the scratch run, so set it only when the issue should close
+
+### Closing
+
+- A PR body line `Closes #<phase>` (or `Closes <owner>/<repo>#<phase>`) closes the phase when the PR merges into the default branch, on GitHub;
+  on Forgejo `fj -H <host> pr merge <owner>/<repo>#<pr> --method squash` closed the phase for both forms
+- `gh issue close <epic> --comment '…'` closes at once, even with an open sub-issue, so check `An epic's phases` first
+- `fj -H <host> issue close <owner>/<repo>#<epic> --with-msg '…'` refuses while a phase is open, yet posts the comment anyway;
+  close the phases, then the epic
 
 ## Claude files
 

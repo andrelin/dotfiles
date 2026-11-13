@@ -12,3 +12,5 @@ and before a task only the user can do.
   An attempt fails when the implementer reports itself blocked, or the task's review or tests still fail after its fix loop.
   Twice failed → once more with `model: "opus"` unless already on Opus, then the user.
   Each new attempt starts from the failed one's tree, told what failed; nothing is reverted.
+- **A green report from an implementer that added .NET tests:** check the passed count rose by the tests it added;
+  an unchanged count means it ran stale binaries, its new tests never compiled.

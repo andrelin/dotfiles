@@ -157,6 +157,19 @@ assert "$out" "" "guard missing: never reaches git"
 err="$(shim_call "$P" "$root/broken/claude/shims:$stubs" git log 2>&1 >/dev/null)"
 assert "${err/*blocking to stay safe*/found}" found "guard missing: prints the fail-closed message"
 
+# A git wrapper ahead of the shim that execs the shim: the shim finds the wrapper as the next git, and round it goes.
+mkdir -p "$root/loop"
+printf '#!/bin/sh\nexec "%s" "$@"\n' "$shims/git" >"$root/loop/git"
+chmod +x "$root/loop/git"
+out="$(through "$P" "$root/loop:$shims:$stubs" git log)"; rc=$?
+assert "$rc" 2 "wrapper loop: exits 2 instead of looping"
+assert "$out" "" "wrapper loop: never reaches git"
+err="$(shim_call "$P" "$root/loop:$shims:$stubs" git log 2>&1 >/dev/null)"
+assert "${err/*execs the next git*/found}" found "wrapper loop: names the wrapper as the likely cause"
+
+out="$(CLAUDE_SHIM_DEPTH=5 through "$P" "$TEST_PATH" git log)"
+assert "$out" "real git log" "nested a few levels, as under a hook: reaches git"
+
 # --- the waiver ----------------------------------------------------------------------------------------------
 
 e_header "the user's waiver"

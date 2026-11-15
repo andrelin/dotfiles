@@ -17,6 +17,16 @@ esac
 shim_dir=$(cd -P -- "$src_dir" && pwd -P) || { echo "$tool: shim can't find its own directory" >&2; exit 2; }
 guard=$shim_dir/../hooks/work-context.sh
 
+# A wrapper ahead of the shim on PATH that execs the next $tool on PATH finds the shim, which finds the wrapper, so
+# neither ever reaches the real tool. A depth, not a flag: a hook or alias running git nests legitimately, a few levels.
+depth=${CLAUDE_SHIM_DEPTH:-0}
+[[ $depth =~ ^[0-9]+$ ]] || depth=0
+if (( depth >= 32 )); then
+  echo "$tool: the shim was entered $depth times in a row; a $tool wrapper on PATH probably execs the next $tool, which is this shim" >&2
+  exit 2
+fi
+export CLAUDE_SHIM_DEPTH=$((depth + 1))
+
 # PATH without any entry that is the shim dir, however it is spelt; one subshell for the whole walk.
 real_path=$(
   out=""

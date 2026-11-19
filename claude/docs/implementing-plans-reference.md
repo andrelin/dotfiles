@@ -12,3 +12,5 @@ and before a task only the user can do.
   An attempt fails when the implementer reports itself blocked, or the task's review or tests still fail after its fix loop.
   Twice failed → once more with `model: "opus"` unless already on Opus, then the user.
   Each new attempt starts from the failed one's tree, told what failed; nothing is reverted.
+- **After `git apply -3` of parallel side-worktree patches**, check that each test block appended to a shared test file
+  still ends in its own closing line (`});`): blocks appended at the same place share one, and the merge leaves one unclosed.

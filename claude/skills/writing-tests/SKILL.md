@@ -43,6 +43,12 @@ coverage — so the untested branch beside it looks tested.
   them.
 - **Boundaries** — empty, null, one, many, the off-by-one at each end.
 
+## Leave nothing behind
+
+Release what a test opens (files, response bodies, processes, threads): a leftover is freed later, inside some other
+test, and fails one that captures its output exactly, far from its cause. Python's cases and fixes:
+`~/.claude/docs/python-test-leftovers.md`.
+
 ## The excuses, and what's actually true
 
 | Excuse | Reality |

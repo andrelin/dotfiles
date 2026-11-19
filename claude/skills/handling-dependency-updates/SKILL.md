@@ -67,6 +67,8 @@ question, ask for every approval it needs, per `## Approvals` in the global `CLA
 - **Never force-push a bot's branch.** To get a conflicted PR rebased, tick `rebase-check` in the PR body
   (`gh pr edit --body-file`), comment `@dependabot rebase`, or wait for the bot. Then poll
   `gh pr view N --json mergeable,statusCheckRollup`.
+- **After a fix for a bot PR lands on the default branch, tick that PR's `rebase-check`**: Renovate rebases only conflicted PRs,
+  so a green fix otherwise waits beside a stale red run.
 - **Merge only on green CI** with the repo's allowed method (`gh pr merge N --squash`).
 - **Verify by re-listing the alerts** after the merges. Fixed alerts close once GitHub rescans the default branch, so recheck after a few minutes.
 - **Report per repo:** what merged, what you fixed and how you proved it, what's still open and why

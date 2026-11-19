@@ -12,7 +12,8 @@ fi
 statusline="$DOTFILES/claude/statusline-command.sh"
 # Not a git repo until the last case, so the info section is the model alone.
 cwd=$(mktemp -d)
-trap 'rm -rf "$cwd"' EXIT
+cache=$(mktemp -d)
+trap 'rm -rf "$cwd" "$cache"' EXIT
 
 # Runs the status line on a session with the given topic, plus any extra JSON fields, at the given COLUMNS
 # ("unset" leaves it out of the environment), and prints its output with the colour codes removed.
@@ -81,6 +82,24 @@ out=$(LC_ALL=C render 500 "$(printf 'Æ%.0s' {1..60})")
 assert "$out" "$row1 · $(printf 'Æ%.0s' {1..49})…" "long topics are cut at 50 characters, not bytes, in the C locale"
 out=$(render 500 "Fix"$'\e'"[2J"$'\n'"bug")
 assert "$out" "$row1 · Fix[2Jbug" "control characters are dropped from the topic"
+
+# Credits: the cost since a window was first seen spent, kept per session under XDG_CACHE_HOME.
+export XDG_CACHE_HOME="$cache"
+spent='{session_id: "s1", cost: {total_cost_usd: 4.5}, rate_limits: {five_hour: {used_percentage: 40}, seven_day: {used_percentage: 100}}}'
+out=$(render 500 "" "$spent")
+assert "$(sed -n 2p <<< "$out")" "5h ████░░░░░░ 40% | 7d ██████████ 100% | credits ≈ \$0.00" "a spent week starts credits at zero"
+spent='{session_id: "s1", cost: {total_cost_usd: 5.75}, rate_limits: {five_hour: {used_percentage: 40}, seven_day: {used_percentage: 100}}}'
+out=$(render 500 "" "$spent")
+assert "$(sed -n 2p <<< "$out" | sed 's/.*| //')" "credits ≈ \$1.25" "credits count only the cost since the limit was spent"
+out=$(render 500 "" '{session_id: "s1", cost: {total_cost_usd: 6}, rate_limits: {five_hour: {used_percentage: 100}}}')
+assert "$(sed -n 2p <<< "$out" | sed 's/.*| //')" "credits ≈ \$1.50" "a spent 5-hour window counts too"
+out=$(render 500 "" '{session_id: "s1", cost: {total_cost_usd: 7}, rate_limits: {five_hour: {used_percentage: 3}}}')
+assert "$(sed -n 2p <<< "$out")" "5h ░░░░░░░░░░ 3%" "no credits once no window is spent"
+out=$(render 500 "" '{session_id: "s1", cost: {total_cost_usd: 8}, rate_limits: {seven_day: {used_percentage: 100}}}')
+assert "$(sed -n 2p <<< "$out" | sed 's/.*| //')" "credits ≈ \$0.00" "a new spell of spent limits starts from zero again"
+out=$(render 500 "" '{session_id: "s2", cost: {total_cost_usd: 2}, rate_limits: {seven_day: {used_percentage: 99.9}}}')
+assert "$(sed -n 2p <<< "$out")" "7d █████████░ 99%" "under 100 % is not spent"
+unset XDG_CACHE_HOME
 
 # The branch belongs to the info section, so it drops together with the model.
 git -C "$cwd" -c init.defaultBranch=main init -q

@@ -12,6 +12,11 @@ ctx_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 session_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 five_hour_resets_at=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
 week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+session_id=$(echo "$input" | jq -r '.session_id // empty')
+total_cost=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
+# A window at 100 % means further work is paid for with usage credits.
+limit_spent=$(echo "$input" | jq -r '[.rate_limits.five_hour, .rate_limits.seven_day]
+  | any((.used_percentage? // 0) >= 100)')
 
 # ANSI colour codes — yellow at 75 %+, red at 90 %+.
 YELLOW=$'\033[33m'
@@ -155,6 +160,24 @@ if [ -n "$week_pct" ]; then
   segment="7d ${bar} ${BOLD}${week_int}%${BOLD_OFF}"
   [ -n "$row2" ] && row2="${row2} | "
   row2="${row2}$(colourise "$week_int" "$segment")"
+fi
+
+# Estimated cost since a limit was spent, i.e. what this session is drawing from usage credits.
+# total_cost_usd counts the whole session, so its value when the limit was first seen spent is kept per session
+# and subtracted; the record goes once no window is spent. List-price estimate, not the bill.
+if [ -n "$session_id" ] && [ -n "$total_cost" ]; then
+  baseline_file="${XDG_CACHE_HOME:-$HOME/.cache}/claude-statusline/credits-${session_id//[^A-Za-z0-9-]/}"
+  if [ "$limit_spent" = true ]; then
+    if [ ! -s "$baseline_file" ]; then
+      mkdir -p "$(dirname "$baseline_file")" && printf '%s\n' "$total_cost" > "$baseline_file"
+    fi
+    spent_usd=$(awk -v now="$total_cost" -v base="$(cat "$baseline_file" 2>/dev/null)" \
+      'BEGIN { d = now - base; printf "%.2f", (d > 0 ? d : 0) }')
+    [ -n "$row2" ] && row2="${row2} | "
+    row2="${row2}${RED}credits ≈ ${BOLD}\$${spent_usd}${BOLD_OFF}${RESET}"
+  else
+    rm -f "$baseline_file"
+  fi
 fi
 
 if [ -n "$row2" ]; then

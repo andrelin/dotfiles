@@ -33,6 +33,8 @@ read before the first search.
   until every section below can be written without a guess — above all the acceptance criteria and what is out of scope.
 - **Ask at least one question that challenges the premise:** is this the real problem, and is it this repo's to fix?
   Stop asking the moment that holds; a concise issue needs few answers.
+- **Before filing or planning work that overlaps an issue another live session holds,** message that session
+  (`ListAgents`, `SendMessage`) and agree the split before either side files or edits.
 - **The last turn shows the title and body** and asks only "anything to change, or file it?" — the user's last look,
   which matters most for a world-readable issue — and files only on an explicit yes.
 - **The draft file:** after each answer, the draft and the answers so far go to `<scratchpad>/issue-draft-<n>.md`

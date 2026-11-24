@@ -227,4 +227,26 @@ assert "$(grep -cF 'offered and run only on the user' "$SAVE")" "1" "the save's 
 assert "$(grep -cF 'offered and run only on a yes' "$ROUNDS")" "1" "Completion's plan-removal commit waits for a yes"
 assert "$(grep -cF 'git diff --cached <Base:>' "$SAVE")" "1" "a public repo's push is checked against the bar first"
 
+# --- issue-commands.md roadmap forms ----------------------------------------
+
+COMMANDS="$CHECKOUT/claude/docs/issue-commands.md"
+assert "$(grep -cxF '## Roadmaps' "$COMMANDS")" "1" "issue-commands.md has one Roadmaps section"
+for title in 'Setting up labels' 'Epics and phases' "An epic's phases" 'Dependencies and ready work' 'Labels and milestones' 'Status' 'Closing'; do
+  assert "$(grep -cxF "### $title" "$COMMANDS")" "1" "the Roadmaps section has one '$title' subsection"
+done
+for form in '--parent <epic>' '--add-sub-issue <n>' 'issue depend add <owner>/<repo>#<epic>' '-is:blocked' '/milestones' '--add-label kind/idea' 'labels --add '\''kind/epic'\'''; do
+  assert "$([[ $(grep -cF -e "$form" "$COMMANDS") -ge 1 ]] && echo yes)" "yes" "issue-commands.md carries the roadmap form '$form'"
+done
+assert "$(grep -cE 'fj -H [^<]' "$COMMANDS")" "0" "every fj -H in issue-commands.md names <host>, never a real host"
+
+# --- closing keywords --------------------------------------------------------
+
+MRDESC="$CHECKOUT/claude/skills/writing-mr-descriptions/SKILL.md"
+BOTPRS="$CHECKOUT/claude/skills/dependency-bot-prs/SKILL.md"
+assert "$(grep -cF 'Never use a closing keyword' "$MRDESC")" "0" "writing-mr-descriptions no longer bans closing keywords outright"
+assert "$(grep -cF 'Closes andrelin/dotfiles#96' "$MRDESC")" "1" "writing-mr-descriptions shows a closing keyword example"
+assert "$([[ $(grep -cF 'dependency-bot-prs' "$MRDESC") -ge 1 ]] && echo yes)" "yes" "writing-mr-descriptions still names dependency-bot-prs"
+assert "$(grep -cF 'Never point a closing keyword at a Dependabot or Renovate PR' "$MRDESC")" "1" "writing-mr-descriptions keeps the bot-PR ban"
+assert "$(grep -cF 'never write `closes #N`' "$BOTPRS")" "1" "dependency-bot-prs still bans closes #N at a bot PR"
+
 test_done

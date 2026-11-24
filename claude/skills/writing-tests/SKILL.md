@@ -42,6 +42,9 @@ coverage — so the untested branch beside it looks tested.
   only line of defence — negative tests there are high-value logic tests, and this rule is not licence to skip
   them.
 - **Boundaries** — empty, null, one, many, the off-by-one at each end.
+- **What the user sees on each path of a UI flow** — for a save, the confirmation, the error and the state after a
+  reload, on success and on failure, not only the request sent: a fix that sends the right request can still leave
+  the button silent or show one failure twice.
 
 ## Leave nothing behind
 
